@@ -227,7 +227,8 @@ button.guide-entity {
     font-size: 32px;
   }
 
-  .caption {
+  .caption,
+  .text {
     display: none;
   }
 
@@ -269,19 +270,34 @@ button.guide-entity {
 
     &.top {
       bottom: 100%;
+      left: 0;
       margin-bottom: @guide-arrow-dim;
     }
 
     &.right {
-      /*left: 100%;*/
+      left: 100%;
+      /*right: 0;*/
       margin-left: @guide-arrow-dim;
     }
     &.bottom {
       top: 100%;
+      left: 50%;
       margin-top: @guide-marker-margin;
     }
+    &.bottomleft {
+      top: 100%;
+      left: 0;
+      margin-top: @guide-marker-margin;
+    }
+    &.bottomright {
+      top: 100%;
+      right: 0;
+      margin-top: @guide-marker-margin;
+    }
+
     &.left {
-      /*right: 100%;*/
+      right: 100%;
+      top: 0;
       margin-right: @guide-marker-margin;
     }
   }

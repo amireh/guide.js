@@ -139,7 +139,7 @@
         $el.addClass(KLASS_TARGET);
       }
 
-      this.$.trigger('target:add', [ target, this ]);
+      this.$.triggerHandler('add', [ target, this ]);
 
       return true;
     },
@@ -215,7 +215,7 @@
       }
 
       this.$container.addClass(klasses.join(' '));
-      this.$.trigger('show');
+      this.$.triggerHandler('show');
 
       _.each(this.context.targets, function(target) {
         target.$el.addClass(KLASS_TARGET);
@@ -250,7 +250,7 @@
         this.cTarget.$el.removeClass(KLASS_FOCUSED);
       }
 
-      this.$.trigger('hide');
+      this.$.triggerHandler('hide');
 
       return this;
     },
@@ -266,7 +266,7 @@
     },
 
     dismiss: function(optContextId) {
-      this.$.trigger('dismiss');
+      this.$.triggerHandler('dismiss');
     },
 
     /**
@@ -343,18 +343,18 @@
       if (this.pTarget) {
         this.pTarget.$el.
           removeClass(KLASS_FOCUSED).
-          trigger('guide:defocus', this.cTarget.$el);
+          triggerHandler('guide:defocus', this.cTarget.$el);
 
         // this.onDefocus(this.pTarget.$el);
-        this.$.trigger('defocus', [ this.pTarget, this.cTarget, this ]);
+        this.$.triggerHandler('defocus', [ this.pTarget, this.cTarget, this ]);
       }
 
       _.defer(function() {
         $el.
           addClass(KLASS_FOCUSED).
-          trigger('guide:focus', (that.pTarget||{}).$el);
+          triggerHandler('guide:focus', (that.pTarget||{}).$el);
 
-        that.$.trigger('focus', [ target, that ]);
+        that.$.triggerHandler('focus', [ target, that ]);
       });
 
       return true;
@@ -428,13 +428,37 @@
   }); // guide.prototype
 
   _.extend(Target.prototype, {
-    hasText: function() {
-      return !!((this.options.text||'').length) || this.hasCaption();
+    cursor: function() {
+      return _.indexOf(this.context.targets, this);
     },
+
+    getCursor: function() {
+      return this.cursor();
+    },
+
+    getText: function() {
+      return this.options.text;
+    },
+
+    /** Whether the target has any text defined. */
+    hasText: function() {
+      return !!((this.getText()||'').length);
+    },
+
+    getCaption: function() {
+      return this.options.caption;
+    },
+
+    /** Whether the target has a caption defined. */
     hasCaption: function() {
-      return !!(this.options.caption||'').length;
+      return !!(this.getCaption()||'').length;
+    },
+
+    /** Whether the target has either a caption or text content. */
+    hasContent: function() {
+      return this.hasText() || this.hasCaption();
     }
-  })
+  });
 
   /**
    * Convenience method for adding a jQuery selector element as a guide target.
