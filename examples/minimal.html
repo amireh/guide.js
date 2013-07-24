@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Marker placement | guide.js</title>
+    <link href="../dist/guide.css" rel="stylesheet" />
+    <link href="./examples.css" rel="stylesheet" />
+
+    <!-- guide.js dependencies -->
+    <script src="../vendor/jquery-1.10.2.js"></script>
+    <script src="../vendor/lodash.js"></script>
+    <script src="../ext/lodash.js"></script>
+
+  </head>
+
+  <body>
+    <h1>guide.js: Minimal example</h1>
+    <div class="example">
+      <section>
+        <div>
+          <button
+            data-guide="A top positioned guideling in inline placement"
+            data-guide-options="marker.position:top, marker.placement:inline">An action
+          </button>
+
+          <p
+            data-guide="A right positioned guideling in inline placement"
+            data-guide-options="marker.position:right, marker.placement:inline">
+            Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+            proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+          </p>
+
+          <button
+            data-guide="Hiring a Servant Monkey has never been easier,
+            simply push this button and one will pop right behind you."
+            data-guide-caption="Monkeys everywhere"
+            data-guide-options="">Hire
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <hr />
+    <div id="controls">
+      <button onclick="guide.first();">First</button>
+      <button onclick="guide.prev();">&lt;</button>
+      <button onclick="guide.next();">&gt;</button>
+      <button onclick="guide.last();">Last</button>
+      <button onclick="guide.toggle();">Toggle</button>
+    </div>
+
+
+    <!-- guide.js scripts -->
+    <script src="../src/js/guide.js"></script>
+    <!-- some extensions -->
+    <script src="../src/js/extensions/guide-tutor.js"></script>
+    <script src="../src/js/extensions/guide-marker.js"></script>
+    <script>
+
+      $(function() {
+        guide.fromDOM($('.example')).show().focus(0);
+      });
+
+    </script>
+  </body>
+</html>

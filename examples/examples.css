@@ -1,0 +1,18 @@
+body {
+  font-family: "Arial";
+}
+.example > section {
+  display: inline-block;
+  margin-right: 5%;
+  max-width: 40%;
+  vertical-align: top;
+}
+.example > section.single {
+  max-width: inherit;
+}
+.example > section > div {
+  margin: 80px 0;
+}
+
+.example button.guide-target-right { margin-right: 80px; }
+.example button.guide-target-left { margin-left: 80px; }

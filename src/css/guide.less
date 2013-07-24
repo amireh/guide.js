@@ -1,0 +1,383 @@
+/**
+ * Variables
+ */
+
+/* color schemes */
+@guide-pink: #F70077;
+@guide-blue: #33B5E5;
+@guide-green: #98BF0D;
+
+/* set this to any of the colors defined above to skin guide.js */
+@guide-highlight-color: @guide-pink;
+
+@guide-padding: 10px;
+@guide-arrow-dim: 16px;
+@guide-marker-margin: @guide-arrow-dim;
+
+/**
+ * Helpers
+ */
+.guide-box-shadow(@x: 0, @y: 0, @blur: 5px, @spread: 0, @color: rgba(0, 0, 0, 0.5)) {
+  -webkit-box-shadow: @arguments;
+  -moz-box-shadow: @arguments;
+  -o-box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+.guide-fullscreen(@offset: 0) {
+  position: absolute;
+  top:    @offset;
+  bottom: @offset;
+  left:   @offset;
+  right:  @offset;
+  content: " ";
+  display: block;
+  pointer-events: none;
+}
+
+.guide-rounded-corners (@radius: 5px) {
+  -webkit-border-radius: @radius;
+  -moz-border-radius: @radius;
+  -o-border-radius: @radius;
+  border-radius: @radius;
+}
+
+.guide-appearance(@value: none) {
+  -webkit-appearance: @value;
+  -moz-appearance: @value;
+  -o-appearance: @value;
+  appearance: @value;
+}
+
+.guide-transform (@rotate: 0deg, @scale: 1, @skewX: 0deg, @skewY: 0deg, @translate: 0px) {
+  -webkit-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
+  -moz-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
+  -o-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
+  -ms-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
+  transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
+}
+
+.guide-icon-replacement (@imgtouse: "guide.png", @height: 20px, @width: 20px, @bgposition: 0 0) {
+  background: transparent url(@imgtouse) @bgposition no-repeat;
+  height: @height;
+  overflow: hidden;
+  text-indent: -999px;
+  width: @width;
+}
+
+.guide-transition(@prop: all, @time: 1s, @ease: linear) {
+  -webkit-transition: @prop @time @ease;
+  -moz-transition: @prop @time @ease;
+  -o-transition: @prop @time @ease;
+  -ms-transition: @prop @time @ease;
+  transition: @prop @time @ease;
+}
+
+/**
+ * guide.js Skin
+ */
+.guide-target {
+  position: relative;
+
+  &:after {
+    .guide-fullscreen(0);
+    .guide-box-shadow(0, 0, 1px, 1px, rgba(147, 0, 119, 0.25));
+    background-color: fade(@guide-highlight-color, 10%);
+  }
+}
+
+.guide-target-focused {
+  &:after {
+    background-color: fade(@guide-highlight-color, 20%);
+  }
+}
+
+#guide_spotlight {
+}
+
+#guide_tutor {
+  position: fixed;
+
+  left: 100px;
+  right: 100px;
+  bottom: 0;
+
+  padding: @guide-padding;
+  min-height: 2 * @guide-padding;
+  line-height: 20px;
+  background: white;
+
+  background: rgba(0, 0, 0, 0.85);
+  color: white;
+  font-size: 16px;
+  overflow-y: auto;
+
+  .guide-rounded-corners(3px 3px 0 0);
+  .guide-box-shadow(0, 0, 9px, 4px, rgba(0, 0, 0, 0.4));
+  .guide-transition();
+}
+
+#guide_tutor .navigation {
+  display: inline-block;
+  vertical-align: top;
+}
+
+#guide_tutor .content {
+  display: inline-block;
+  margin-left: 20px;
+  vertical-align: top;
+}
+
+#guide_tutor .fwd,
+#guide_tutor .bwd {
+  .guide-appearance(none);
+  .guide-icon-replacement ("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAVCAYAAAByrA+0AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyRpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYxIDY0LjE0MDk0OSwgMjAxMC8xMi8wNy0xMDo1NzowMSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNS4xIE1hY2ludG9zaCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo4MjU5MjM2OTg4QkExMUUxODFFQUI0QjhGOEVCQTk1QSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo4MjU5MjM2QTg4QkExMUUxODFFQUI0QjhGOEVCQTk1QSI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOjgyNTkyMzY3ODhCQTExRTE4MUVBQjRCOEY4RUJBOTVBIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjgyNTkyMzY4ODhCQTExRTE4MUVBQjRCOEY4RUJBOTVBIi8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+eySFcAAAAKRJREFUeNqMk1ENhDAQROfjDNQCFs5CLWABC5wELGABCyChFrBQCz2aQELKvtImk5CyLxtmBqWUlmSf7pBK6XwRDWAlIGuELT0BWbsB5DtHgIctIwECA+LdgBJwYMBCQM0AT0BWAAMQQAMIoC2BhgcK0hp2tapYwFQrYzn8fUu75UPjvU8tgQ1Wl1zrP3E9zLU6lAClOlsZfST5Q5ue52fc6S/AABXAQWeCQoWGAAAAAElFTkSuQmCC", 30px, 30px, 10px 4px);
+  border: none;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+#guide_tutor .bwd {
+  .guide-transform(-180deg, 1, 0, 0, 0);
+}
+
+#guide_tutor span {
+  background: fade(@guide-highlight-color, 95%);
+  .guide-rounded-corners(3px);
+  color: #fff;
+  display: inline-block;
+  font-size: 32px;
+  height: 46px;
+  line-height: 50px;
+  overflow: hidden;
+  vertical-align: middle;
+  text-align: center;
+  width: 50px;
+}
+#guide_close_tutor {
+  position: absolute;
+  top:  0;
+  right: @guide-padding;
+
+  background: @guide-highlight-color;
+  border: none;
+  .guide-appearance(none);
+  .guide-rounded-corners(0 0 3px 3px);
+  color: #fff;
+  display: inline-block;
+  font-size: 11px;
+  height: 24px;
+  line-height: 26px;
+  text-align: center;
+  padding: 0 10px;
+
+  cursor: pointer
+}
+
+button.guide-entity {
+  cursor: pointer;
+}
+
+.with-overlayed-guide {
+  &:after {
+    .guide-fullscreen();
+    background: rgba(0,0,0,0.75);
+    z-index: 99;
+  }
+  .guide-entity {
+    z-index: 100;
+  }
+}
+
+.guide-target.guide-target-inline {
+  position: relative;
+}
+
+#guide_tutor .caption,
+.guide-marker .caption {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  padding: 0 0 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.5);
+}
+
+/**
+ * guide.js markers
+ */
+.guide-marker {
+  @w: 50px;
+  @h: 46px;
+
+  color: white;
+  background-color: @guide-highlight-color;
+  background: fade(@guide-highlight-color, 30%);
+  text-decoration: none;
+  font-size: 12px;
+
+  /*.guide-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
+  .guide-transition(all; 0.25s; ease-in);
+
+  cursor: pointer;
+  padding: 10px;
+  display: inline-block;
+  z-index: 101;
+
+  .index {
+    font-size: 32px;
+  }
+
+  .caption {
+    display: none;
+  }
+
+  &.focused {
+    z-index: 102;
+    background-color: fade(@guide-highlight-color, 20%);
+  }
+
+  &.inline-marker {
+    position: absolute;
+
+    &.top {
+      bottom: 100%;
+      margin-bottom: @guide-arrow-dim;
+      left: 0;
+    }
+
+    &.right {
+      left: 100%;
+      margin-left: @guide-arrow-dim;
+      top: 0;
+    }
+
+    &.bottom {
+      top: 100%;
+      margin-top: @guide-marker-margin;
+      left: 0;
+    }
+
+    &.left {
+      right: 100%;
+      margin-right: @guide-marker-margin;
+      top: 0;
+    }
+  }
+
+  &.sibling-marker {
+    position: absolute;
+
+    &.top {
+      bottom: 100%;
+      margin-bottom: @guide-arrow-dim;
+    }
+
+    &.right {
+      /*left: 100%;*/
+      margin-left: @guide-arrow-dim;
+    }
+    &.bottom {
+      top: 100%;
+      margin-top: @guide-marker-margin;
+    }
+    &.left {
+      /*right: 100%;*/
+      margin-right: @guide-marker-margin;
+    }
+  }
+
+  &.overlay-marker {
+    position: absolute;
+  }
+
+
+  &:after {
+    content: " ";
+    display: block;
+    height: 0;
+    left: 0;
+    position: absolute;
+    top: -15px;
+    width: 0;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    border-left: none;
+    top: auto;
+    left: auto;
+    right: auto;
+  }
+
+  &.focused {
+    background: fade(@guide-highlight-color, 95%);
+
+    &.bottom:after {
+      border-bottom: 15px solid fade(@guide-highlight-color, 50%);
+    }
+
+    &.right,
+    &.left,
+    &.top {
+      &:after {
+        border-top: 15px solid fade(@guide-highlight-color, 50%);
+      }
+    }
+  }
+
+  &.bottom {
+    &:after {
+      border-bottom: 15px solid fade(@guide-highlight-color, 30%);
+      border-right: 15px solid transparent;
+      left: 0;
+      top: -15px;
+    }
+    /*&:hover { margin-top: -5px; }*/
+  }
+
+  &.right {
+    &:after {
+      border-top: 15px solid fade(@guide-highlight-color, 30%);
+      border-left: 15px solid transparent;
+      left: -15px;
+      top: 0;
+    }
+    /*&:hover { margin-left: -5px; }*/
+  }
+
+  &.left {
+    &:after {
+      border-top: 15px solid fade(@guide-highlight-color, 30%);
+      border-right: 15px solid transparent;
+      right: -15px;
+      top: 0;
+    }
+    /*&:hover { margin-left: 5px; }*/
+  }
+
+  &.top {
+    &:after {
+      border-top: 15px solid fade(@guide-highlight-color, 30%);
+      border-right: 15px solid transparent;
+      bottom: -15px;
+      left: 0;
+    }
+    /*&:hover { margin-top: 5px; }*/
+  }
+
+  &:hover {
+    background: fade(@guide-highlight-color, 95%);
+
+    &.bottom:after {
+      border-bottom: 15px solid fade(@guide-highlight-color, 50%);
+    }
+
+    &.right,
+    &.left,
+    &.top {
+      &:after {
+        border-top: 15px solid fade(@guide-highlight-color, 50%);
+      }
+    }
+  }
+
+}

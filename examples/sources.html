@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Content sources | guide.js</title>
+    <link href="../dist/guide.css" rel="stylesheet" />
+    <link href="./examples.css" rel="stylesheet" />
+  </head>
+
+  <body>
+    <h1>guide.js: Content sources</h1>
+    <div class="example">
+      <section class="single">
+        <h3>Options</h3>
+        <div>
+          <button id="js_options">Via JavaScript</button>
+
+          <button id="some_button" data-guide-options="marker.placement:overlay, marker.position: right">Via another HTML element</button>
+          <div data-guide-target="#some_button">
+            This is the navigation bar that allows you to take actions and
+            navigate around Pibi.
+
+            <p>This bar doesn't change no matter where you are in Pibi.</p>
+
+            <ul>
+              <li>Feed</li>
+              <li>Expense</li>
+              <li>Income</li>
+            </ul>
+          </div>
+
+          <button
+            data-guide="I should show my marker to the left"
+            data-guide-options="marker.position:left, marker.placement:inline">
+            Via Markup
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <hr />
+    <div id="controls">
+      <button onclick="guide.first();">First</button>
+      <button onclick="guide.prev();">&lt;</button>
+      <button onclick="guide.next();">&gt;</button>
+      <button onclick="guide.last();">Last</button>
+
+      <button onclick="guide.toggle();">Toggle</button>
+      <button onclick="guide.refresh();">Refresh</button>
+    </div>
+
+    <script src="../vendor/jquery-1.10.2.js"></script>
+    <script src="../vendor/lodash.js"></script>
+    <script src="../ext/lodash.js"></script>
+    <script src="../src/js/guide.js"></script>
+    <script src="../src/js/extensions/guide-tutor.js"></script>
+    <script src="../src/js/extensions/guide-marker.js"></script>
+    <script>
+      $(function() {
+        guide.addTargets([
+          {
+            $el: $('#js_options'),
+            text: "I'm a button, click me!",
+            marker: {
+              placement: 'overlay',
+              position: 'top'
+            }
+          }, {
+            $el: $('#second'),
+            text: "I'm another button, do click me",
+            marker: {
+              placement: 'overlay',
+              position: 'right'
+            }
+          }
+        ]).setOptions({
+          // withOverlay: true
+        });
+
+        guide.fromDOM('body');
+        guide.show().focus(0);
+      });
+
+    </script>
+  </body>
+</html>
