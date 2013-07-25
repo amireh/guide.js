@@ -51,3 +51,15 @@ body {
   margin-left: 0;
   margin-right: 0;
 }
+.example .guide-marker .text {
+  text-align: center;
+}
+
+.example ul.node-mix {
+  max-width: 240px;
+}
+
+.example ul.node-mix li {
+  min-height: 40px;
+  margin: 30px 0;
+}

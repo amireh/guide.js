@@ -220,8 +220,13 @@
       marker = new Marker(target, this);
 
       marker.$el
-        .addClass(guide.entityKlass())
-        .on('click', _.bind(guide.focus, guide, target));
+      .addClass(guide.entityKlass())
+      .on('click', function(e) {
+        guide.focus(target);
+
+        e.preventDefault();
+        return false;
+      });
 
       if (guide.isShown()) {
         marker.show();

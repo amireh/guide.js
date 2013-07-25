@@ -103,6 +103,65 @@
           </button>
         </p>
 
+        <p><strong>Different types of nodes</strong></p>
+        <ul class="node-mix">
+          <li>
+            <button data-guide="Placeholder">A button</button>
+          </li>
+          <li>
+            <p data-guide="Placeholder">A paragraph.</p>
+          </li>
+          <li>
+            <a href="#" data-guide="Placeholder">An anchor</a><br />
+          </li>
+          <li>
+            <span href="#" data-guide="Placeholder">A span</span><br />
+          </li>
+          <li><h6 data-guide="Placeholder">A heading</h6></li>
+        </ul>
+
+        <p><strong>Form controls</strong></p>
+        <p>
+          <small>Most form controls can not be marked using <code>inline</code>
+              placement since they can not contain children, so we can use
+              either <code>sibling</code> or <code>overlay</code>
+              placement instead.</small>
+        </p>
+
+        <ul class="node-mix" data-guide-tour="Form Controls">
+          <li><input type="text" data-guide="Placeholder" data-guide-options="marker.placement:sibling" /></li>
+          <li>
+            <textarea data-guide="Placeholder" data-guide-options="marker.placement:sibling"></textarea>
+            <p><small>Tip: resize the textarea to see how well the marker sticks.</small></p>
+          </li>
+
+          <li>
+            <div class="freespace"></div>
+            <input type="checkbox"
+              data-guide-options="marker.placement:sibling, marker.position:top"
+              data-guide="Checking this box will release 2 white monkeys" />A
+            <input type="checkbox"
+              data-guide-options="marker.placement:sibling, marker.position:bottom"
+              data-guide="While checking this one will turn you into one" />B
+            <label data-guide="Placeholder" data-guide-options="marker.placement:sibling">
+              <input type="radio" />X
+            </label>
+            <div class="freespace"></div>
+          </li>
+
+          <li>
+            <input type="submit" data-guide="Placeholder" data-guide-options="marker.placement:sibling" value="Submit button" />
+          </li>
+          <li>
+            <input type="reset" data-guide="Placeholder" data-guide-options="marker.placement:sibling" value="Reset button" />
+          </li>
+          <li>
+            <button data-guide="Placeholder" data-guide-options="marker.placement:sibling">Button</button>
+          </li>
+
+
+        </ul>
+
 
       </section>
 

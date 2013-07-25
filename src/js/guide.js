@@ -482,7 +482,7 @@
       if (this.options.autoScroll && !$scroller.is(":viewport_visible")) {
 
         _.defer(function() {
-          $('body').animate({
+          $('html,body').animate({
             scrollTop: $scroller.offset().top * 0.9
           }, 250);
         })
