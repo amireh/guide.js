@@ -194,11 +194,17 @@
 
       guide.$
         .on('add', _.bind(this.addMarker, this))
-        .on('show', _.bind(this.refresh, this))
+        .on('show', function() {
+          that.showTourMarkers(guide.tour);
+        })
         .on('hide', function() {
-          _.each(guide.context.targets, function(target) {
-            target.marker && target.marker.hide();
-          });
+          that.hideTourMarkers(guide.tour);
+        })
+        .on('activate.tours', function(e, tour) {
+          that.showTourMarkers(tour);
+        })
+        .on('deactivate.tours', function(e, tour) {
+          that.hideTourMarkers(tour);
         })
         .on('focus', function(e, target) {
           target.marker && target.marker.highlight();
@@ -210,7 +216,7 @@
       return this;
     },
 
-    addMarker: function(e, target, guide) {
+    addMarker: function(e, target) {
       var marker;
 
       if (!target.options.withMarker) {
@@ -224,12 +230,14 @@
       .on('click', function(e) {
         guide.focus(target);
 
-        e.preventDefault();
-        return false;
+        return _.consume(e);
       });
 
-      if (guide.isShown()) {
+      if (guide.isShown() && target.tour.isActive()) {
         marker.show();
+      }
+      else {
+        marker.hide();
       }
 
       return marker;
@@ -242,12 +250,23 @@
         return;
       }
 
+      this.showTourMarkers(guide.tour);
+    },
+
+    showTourMarkers: function(tour) {
       _.defer(function() {
-        _.each(guide.context.targets, function(t) {
+        _.each(tour.targets, function(t) {
           t.marker && t.marker.show();
         });
       });
+    },
+
+    hideTourMarkers: function(tour) {
+      _.each(tour.targets, function(target) {
+        target.marker && target.marker.hide();
+      });
     }
+
   }); // Extension.prototype
 
   _.extend(Marker.prototype, {

@@ -11,7 +11,7 @@ body {
   max-width: inherit;
 }
 .example > section > div {
-  margin: 80px 0;
+  /*margin: 40px 0;*/
 }
 
 .example button.guide-target-right { margin-right: 80px; }
@@ -62,4 +62,30 @@ body {
 .example ul.node-mix li {
   min-height: 40px;
   margin: 30px 0;
+}
+
+[data-collapser] {
+  position: relative;
+  cursor: s-resize;
+  padding-right: 40px;
+}
+
+[data-collapser]:after {
+  content: " ";
+  position: absolute;
+  right: 10px;
+  top: 4px;
+  line-height: inherit;
+  font-size: 16px;
+  border: 7px solid transparent;
+  border-top: 14px solid #555;
+}
+
+[data-collapser].collapsed {
+  cursor: n-resize;
+}
+[data-collapser].collapsed:after {
+  top: -2px;
+  border: 7px solid transparent;
+  border-bottom: 14px solid #555;
 }

@@ -8,6 +8,10 @@
     return this;
   },
 
+  Tour = function() {
+    return this.constructor.apply(this, arguments);
+  },
+
   Target = function(options) {
     _.extend(this, options);
     return this;
@@ -20,14 +24,17 @@
     withAnimations: true
   },
 
+  TOUR_DEFAULTS = {
+  },
+
   TARGET_DEFAULTS = {
     withMarker: true,
-    highlight: true,
+    highlight:  true,
     autoScroll: true
   },
 
   KLASS_VISIBLE     = 'with-guide',
-  KLASS_OVERLAYED   = 'with-overlayed-guide',
+  KLASS_OVERLAYED   = 'guide-with-overlay',
   KLASS_ENTITY      = 'guide-entity',
   KLASS_TARGET      = 'guide-target',
   KLASS_FOCUSED     = 'guide-target-focused',
@@ -46,55 +53,71 @@
     },
 
     constructor: function() {
+      // Used for emitting custom events.
+      this.$ = $(this);
+
       _.extend(this, {
         options: _.clone(DEFAULTS),
-        contexts:   [],
+        tours:   [],
         extensions: [],
-        context: null,
+        tour: null,
         cTarget: null,
         pTarget: null,
         cursor:  -1
       });
 
-      // A default context
-      this.context = this.defineContext('default', 'Guide').contexts[0];
-
-      this.$ = $(this);
+      // A default tour
+      this.tour = this.defineTour('Default Tour');
     },
 
-    defineContext: function(id, optLabel, optTargets) {
-      var context;
+    inactiveTours: function() {
+      return _.without(this.tours, this.tour);
+    },
 
-      if (!(context = this.__getContext(id))) {
-        context = this.__mkContext(id, optLabel, this);
+    defineTour: function(label, optTargets) {
+      var tour;
+
+      if (!(tour = this.__getTour(label))) {
+        tour = new Tour(label);
+        this.tours.push(tour);
       }
 
       if (optTargets) {
         var that = this;
 
         if (!_.isArray(optTargets)) {
-          throw "guide.js#defineContext: bad targets, expected array, got: " +
+          throw "guide.js#defineTour: bad targets, expected array, got: " +
                 typeof(optTargets);
         };
 
         this.fromJSON(optTargets);
       }
 
-      return this;
+      return tour;
     },
 
-    switchContext: function(id) {
-      var context;
+    runTour: function(id) {
+      var tour;
 
-      if (!(context = this.__getContext(id))) {
+      if (!(tour = this.__getTour(id))) {
         throw [
-          "guide.js: undefined context '",
+          "guide.js: undefined tour '",
           id,
-          "', did you forget to call #defineContext()?"
+          "', did you forget to call #defineTour()?"
         ].join('');
       }
 
-      this.context = context;
+      if (this.tour) {
+        this.tour.deactivate();
+        this.$.triggerHandler('deactivate.tours', [ this.tour ]);
+      }
+
+      this.tour = tour;
+
+      this.$.triggerHandler('activate.tours', [ this.tour ]);
+      this.tour.activate();
+
+      console.log('guide.js: touring "' + tour.id + '"');
 
       return this;
     },
@@ -104,7 +127,7 @@
      * {
      *   text:
      *   caption:
-     *   context: defaults to the current context
+     *   tour: defaults to the current tour
      *   placement: [ 'inline', 'inline:before', 'inline:after', 'overlay' ]
      *   position: [ 'tl', 't', 'tr', 'r', 'br', 'b', 'bl', 'l' ]
      *
@@ -113,47 +136,17 @@
      * }
      */
     addTarget: function($el, options) {
-      var index,
-          target  = {},
-          context = options.context || this.context;
+      var tour    = this.tour,
+          tour_id = options.tour;
 
-      // has the target been already defined? we can not handle duplicates
-      if ($el.data('guideling')) {
-        console.log('guide.js: [error] duplicate target:');
-        console.log($el);
-
-        if (GRACEFUL) {
-          return false;
-        }
-
-        throw "guide.js: duplicate target, see console for more information";
+      if (tour_id && _.isString(tour_id)) {
+        tour = this.defineTour(tour_id);
+      }
+      else if (tour_id) {
+        tour = tour_id;
       }
 
-      target = new Target({
-        $el: $el,
-
-        // the element that will be used as an indicator of the target's position
-        // when scrolling the element into view, could be modified by extensions
-        $scrollAnchor: $el,
-
-        context: context,
-
-        options: _.defaults(options || {}, TARGET_DEFAULTS)
-      });
-
-      index = context.targets.push(target) - 1;
-
-      $el.
-        addClass(KLASS_ENTITY).
-        data('guideling', target);
-
-      if (this.isShown()) {
-        target.highlight();
-      }
-
-      this.$.triggerHandler('add', [ target, this ]);
-
-      return true;
+      return tour.addStep($el, options);
     },
 
     addTargets: function(targets) {
@@ -177,11 +170,23 @@
 
       $container.find('[data-guide]').each(function() {
         var $this   = $(this),
+            $tour,
             options = {
-              text: $this.attr('data-guide'),
-              caption: $this.attr('data-guide-caption'),
+              text:     $this.attr('data-guide'),
+              caption:  $this.attr('data-guide-caption'),
+              tour:     $this.attr('data-guide-tour')
             },
             tokens  = ($this.attr('data-guide-options') || '').split(/\,?\s+\,?/);
+
+        // if no tour is specified, take a look at the ancestry tree, perhaps
+        // an element has a tour defined in [data-guide-tour]
+        if (!options.tour) {
+          $tour = $this.parents('[data-guide-tour]:first');
+
+          if ($tour.length) {
+            options.tour = $tour.attr('data-guide-tour');
+          }
+        }
 
         for (var i = 0; i < tokens.length; ++i) {
           var pair  = tokens[i].split(':'),
@@ -225,6 +230,10 @@
           options = this.getOptions(options),
           klasses = [ KLASS_VISIBLE ];
 
+      if (!this.tour) {
+        this.runTour(this.tours[0]);
+      }
+
       if (options.withOverlay) {
         klasses.push(KLASS_OVERLAYED);
       }
@@ -232,9 +241,7 @@
       this.$container.addClass(klasses.join(' '));
       this.$.triggerHandler('show');
 
-      _.each(this.context.targets, function(target) {
-        target.highlight();
-      });
+      this.tour.activate();
 
       this.$el.appendTo(this.$container);
 
@@ -257,9 +264,7 @@
         KLASS_OVERLAYED
       ].join(' '));
 
-      _.each(this.context.targets, function(target) {
-        target.dehighlight();
-      });
+      this.tour.deactivate();
 
       if (this.cTarget) {
         this.cTarget.$el.removeClass(KLASS_FOCUSED);
@@ -280,7 +285,7 @@
       return this.$container.hasClass(KLASS_VISIBLE);
     },
 
-    dismiss: function(optContextId) {
+    dismiss: function(optTourId) {
       this.$.triggerHandler('dismiss');
     },
 
@@ -298,7 +303,7 @@
     },
 
     hasNext: function() {
-      var ln = this.context.targets.length;
+      var ln = this.tour.targets.length;
 
       return ln != 1 && this.cursor < ln-1;
     },
@@ -312,7 +317,7 @@
     },
 
     hasPrev: function() {
-      var ln = this.context.targets.length;
+      var ln = this.tour.targets.length;
 
       return ln != 1 && this.cursor > 0;
     },
@@ -322,7 +327,7 @@
     },
 
     last: function() {
-      return this.focus(this.context.targets.length-1);
+      return this.focus(this.tour.targets.length-1);
     },
 
     /**
@@ -344,6 +349,10 @@
 
       if (target == this.cTarget) {
         return false;
+      }
+
+      if (target.tour != this.tour) {
+        this.runTour(target.tour);
       }
 
       this.pTarget = this.cTarget;
@@ -380,42 +389,18 @@
      * @private
      * @nodoc
      */
-    __mkContext: function(id, label) {
-      var context;
+    __getTour: function(id) {
 
-      if ((context = this.__getContext(id))) {
-        console.log('guide.js: existing context: ', context.id)
-        return context;
-      }
-
-      context = {
-        id:       id,
-        label:    label,
-        guide:    this,
-        options:  {},
-        targets:  []
-      };
-
-      this.contexts.push(context);
-
-      console.log('guide.js: context defined: ', context.id);
-
-      return context;
-    },
-
-    /**
-     * @private
-     * @nodoc
-     */
-    __getContext: function(id) {
-      return _.find(this.contexts || [], { id: id });
+      return _.isString(id)
+        ? _.find(this.tours || [], { id: id })
+        : id;
     },
 
     __getTarget: function(index_or_el) {
       var index = index_or_el;
 
       if (typeof(index) == 'number') {
-        return this.context.targets[index];
+        return this.tour.targets[index];
       }
       else if (!index) {
         return null;
@@ -423,17 +408,92 @@
 
       console.log('looking up target:', arguments)
 
-      return _.find(this.context.targets || [], index);
+      // return _.find(this.tour.targets || [], index);
+      return index;
     },
 
     __idxTarget: function(target) {
-      return _.indexOf(this.context.targets, target);
+      return _.indexOf(this.tour.targets, target);
     }
   }); // guide.prototype
 
+  _.extend(Tour.prototype, {
+    constructor: function(label) {
+      _.extend(this, {
+        id:       label,
+        options:  {},
+        targets:  []
+      });
+
+      console.log('guide.js: tour defined: ', this.id);
+
+      return this;
+    },
+
+    addStep: function($el, options) {
+      var index,
+          target  = {},
+          tour    = this;
+
+      // has the target been already defined? we can not handle duplicates
+      if ($el.data('guideling')) {
+        console.log('guide.js: [error] duplicate target:');
+        console.log($el);
+
+        if (GRACEFUL) {
+          return false;
+        }
+
+        throw "guide.js: duplicate target, see console for more information";
+      }
+
+      target = new Target({
+        $el: $el,
+
+        // the element that will be used as an indicator of the target's position
+        // when scrolling the element into view, could be modified by extensions
+        $scrollAnchor: $el,
+
+        tour: tour,
+
+        options: _.defaults(options || {}, TARGET_DEFAULTS)
+      });
+
+      index = tour.targets.push(target) - 1;
+
+      $el.
+        addClass(KLASS_ENTITY).
+        data('guideling', target);
+
+      if (guide.isShown()) {
+        target.highlight();
+      }
+
+      guide.$.triggerHandler('add', [ target ]);
+
+      return true;
+    },
+
+    activate: function() {
+      _.each(this.targets, function(target) {
+        target.highlight();
+      });
+    },
+
+    isActive: function() {
+      return this == guide.tour;
+    },
+
+    deactivate: function() {
+      _.each(this.targets, function(target) {
+        target.dehighlight();
+      });
+    }
+  });
+
   _.extend(Target.prototype, {
     cursor: function() {
-      return _.indexOf(this.context.targets, this);
+      return _.indexOf(this.tour.targets, this);
     },
 
     getCursor: function() {
@@ -520,5 +580,5 @@
     return $(this);
   };
 
-  window.guide = new guide();
+  window.guide = guide = new guide();
 })(_, jQuery);

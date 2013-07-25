@@ -25,6 +25,19 @@
     }
   }
 
+  _.consume = function(e) {
+    if (!e) { return false; }
+
+    e.preventDefault && e.preventDefault();
+    e.stopPropagation && e.stopPropagation();
+    e.stopImmediatePropagation && e.stopImmediatePropagation();
+
+    e.cancelBubble = true;
+    e.returnValue = false;
+
+    return false;
+  };
+
   var $window = $(window);
 
   $.extend($.expr[":"], {

@@ -93,6 +93,7 @@
       $caption.toggle(!$caption.is(":empty"));
 
       $number
+      .stop(true, true)
       .animate({ 'text-indent': (left ? '' : '-') + '50px' }, 'fast', function() {
           $number.html(guide.cursor+1);
           $number
