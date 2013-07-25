@@ -20,6 +20,12 @@
     withAnimations: true
   },
 
+  TARGET_DEFAULTS = {
+    withMarker: true,
+    highlight: true,
+    autoScroll: true
+  },
+
   KLASS_VISIBLE     = 'with-guide',
   KLASS_OVERLAYED   = 'with-overlayed-guide',
   KLASS_ENTITY      = 'guide-entity',
@@ -124,9 +130,15 @@
       }
 
       target = new Target({
-        $el:     $el,
+        $el: $el,
+
+        // the element that will be used as an indicator of the target's position
+        // when scrolling the element into view, could be modified by extensions
+        $scrollAnchor: $el,
+
         context: context,
-        options: options
+
+        options: _.defaults(options || {}, TARGET_DEFAULTS)
       });
 
       index = context.targets.push(target) - 1;
@@ -136,7 +148,7 @@
         data('guideling', target);
 
       if (this.isShown()) {
-        $el.addClass(KLASS_TARGET);
+        target.highlight();
       }
 
       this.$.triggerHandler('add', [ target, this ]);
@@ -175,6 +187,9 @@
           var pair  = tokens[i].split(':'),
               k     = pair[0],
               v     = pair[1];
+
+          if (v == 'false') { v = false; }
+          else if (v == 'true') { v = true; }
 
           _.assign(k, v, options);
         }
@@ -218,7 +233,7 @@
       this.$.triggerHandler('show');
 
       _.each(this.context.targets, function(target) {
-        target.$el.addClass(KLASS_TARGET);
+        target.highlight();
       });
 
       this.$el.appendTo(this.$container);
@@ -243,7 +258,7 @@
       ].join(' '));
 
       _.each(this.context.targets, function(target) {
-        target.$el.removeClass(KLASS_TARGET);
+        target.dehighlight();
       });
 
       if (this.cTarget) {
@@ -321,10 +336,7 @@
      * @return whether the target has been focused
      */
     focus: function(index) {
-      var that    = this,
-          target  = this.__getTarget(index),
-          // target  =  this.context.targets[index],
-          $el     = target && target.$el;
+      var target  = this.__getTarget(index);
 
       if (!target) {
         throw "guide.js: bad target @ " + index + " to focus";
@@ -341,23 +353,27 @@
 
       // de-focus the last target
       if (this.pTarget) {
-        this.pTarget.$el.
-          removeClass(KLASS_FOCUSED).
-          triggerHandler('guide:defocus', this.cTarget.$el);
-
-        // this.onDefocus(this.pTarget.$el);
+        this.pTarget.defocus(target);
         this.$.triggerHandler('defocus', [ this.pTarget, this.cTarget, this ]);
       }
 
-      _.defer(function() {
-        $el.
-          addClass(KLASS_FOCUSED).
-          triggerHandler('guide:focus', (that.pTarget||{}).$el);
-
-        that.$.triggerHandler('focus', [ target, that ]);
-      });
+      target.focus(this.pTarget);
+      this.$.triggerHandler('focus', [ target, this ]);
 
       return true;
+    },
+
+
+    addExtension: function(ext) {
+      if (!ext.id) {
+        throw 'guide.js: bad extension, no #id attribute defined';
+      }
+
+      this.extensions.push(ext);
+    },
+
+    getExtension: function(id) {
+      return _.find(this.extensions, { id: id });
     },
 
     /**
@@ -385,18 +401,6 @@
       console.log('guide.js: context defined: ', context.id);
 
       return context;
-    },
-
-    addExtension: function(ext) {
-      if (!ext.id) {
-        throw 'guide.js: bad extension, no #id attribute defined';
-      }
-
-      this.extensions.push(ext);
-    },
-
-    getExtension: function(id) {
-      return _.find(this.extensions, { id: id });
     },
 
     /**
@@ -457,6 +461,38 @@
     /** Whether the target has either a caption or text content. */
     hasContent: function() {
       return this.hasText() || this.hasCaption();
+    },
+
+    highlight: function() {
+      this.$el.toggleClass('no-highlight', !this.options.highlight);
+      this.$el.addClass(KLASS_TARGET);
+    },
+
+    dehighlight: function() {
+      this.$el.removeClass(KLASS_TARGET);
+    },
+
+    focus: function(prev_target) {
+      var $scroller = this.$scrollAnchor;
+
+      this.$el
+      .addClass(KLASS_FOCUSED)
+      .triggerHandler('guide:focus', prev_target);
+
+      if (this.options.autoScroll && !$scroller.is(":viewport_visible")) {
+
+        _.defer(function() {
+          $('body').animate({
+            scrollTop: $scroller.offset().top * 0.9
+          }, 250);
+        })
+      }
+    },
+
+    defocus: function(next_target) {
+      this.$el
+      .removeClass(KLASS_FOCUSED)
+      .triggerHandler('guide:defocus', next_target);
     }
   });
 

@@ -1,4 +1,4 @@
-(function(_) {
+(function(_, $) {
   if (!_.assign) {
     _.assign = function(k, v, o) {
       var path_tokens = k.split('.'),
@@ -24,4 +24,18 @@
       }
     }
   }
-})(_);
+
+  var $window = $(window);
+
+  $.extend($.expr[":"], {
+    viewport_visible: function (el, index, meta, stack) {
+      var
+      vp_top    = $window.scrollTop(),
+      vp_bottom = vp_top + $window.height(),
+      el_top    = $(el).offset().top,
+      el_bottom = el_top + $(el).height();
+
+      return ((vp_top < el_top) && (vp_bottom > el_bottom));
+    }
+  });
+})(_, $);

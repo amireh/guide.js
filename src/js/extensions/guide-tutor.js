@@ -39,8 +39,9 @@
         'id': 'guide_tutor',
         'class': guide.entityKlass()
       }).css({
-        'z-index': guide.entityZIndex() + 2
+        'z-index': guide.entityZIndex() + 3
       });
+
       this.$content   = this.$el.find('> .content');
       this.$nav       = this.$el.find('> .navigation');
       this.$close_btn = this.$el.find('#guide_close_tutor');

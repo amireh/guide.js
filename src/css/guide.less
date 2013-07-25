@@ -92,7 +92,11 @@
   }
 }
 
-#guide_spotlight {
+.guide-target.no-highlight {
+  &:after {
+    display: none;
+    content: normal;
+  }
 }
 
 #guide_tutor {
@@ -101,6 +105,7 @@
   left: 100px;
   right: 100px;
   bottom: 0;
+  z-index: 103;
 
   padding: @guide-padding;
   min-height: 2 * @guide-padding;
@@ -230,6 +235,10 @@ button.guide-entity {
   .caption,
   .text {
     display: none;
+  }
+
+  .text {
+    text-align: center;
   }
 
   &:hover,

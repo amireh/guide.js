@@ -196,22 +196,28 @@
         .on('add', _.bind(this.addMarker, this))
         .on('show', _.bind(this.refresh, this))
         .on('hide', function() {
-          _.each(guide.context.targets, function(t) {
-            t.marker.hide();
+          _.each(guide.context.targets, function(target) {
+            target.marker && target.marker.hide();
           });
         })
         .on('focus', function(e, target) {
-          target.marker.highlight();
+          target.marker && target.marker.highlight();
         })
         .on('defocus', function(e, target) {
-          target.marker.dehighlight();
+          target.marker && target.marker.dehighlight();
         });
 
       return this;
     },
 
     addMarker: function(e, target, guide) {
-      var marker = new Marker(target, this);
+      var marker;
+
+      if (!target.options.withMarker) {
+        return null;
+      }
+
+      marker = new Marker(target, this);
 
       marker.$el
         .addClass(guide.entityKlass())
@@ -233,7 +239,7 @@
 
       _.defer(function() {
         _.each(guide.context.targets, function(t) {
-          t.marker.show();
+          t.marker && t.marker.show();
         });
       });
     }
@@ -247,7 +253,7 @@
       this.target   = target;
       this.options  = _.defaults((target.options || {}).marker || {}, DEFAULTS);
 
-      $el = $(this.build(target));
+      $el       = $(this.build(target));
       $el.place = $.proxy(this.place, this);
 
       // expose the placement and position modes as classes for some CSS control
@@ -282,6 +288,7 @@
       }
 
       target.marker = this;
+      target.$scrollAnchor = this.$el;
 
       return this;
     },
@@ -354,10 +361,6 @@
         this.$cursor.hide();
         this.$el.place();
       }
-
-      // $('body').animate({
-      //   scrollTop: this.$el.offset().top * 0.9
-      // }, 250);
     },
 
     dehighlight: function(target) {
