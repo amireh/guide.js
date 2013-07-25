@@ -27,24 +27,59 @@
         </p>
 
         <div>
-          <button
-            data-guide="A top positioned guideling in inline placement"
-            data-guide-options="marker.position:top, marker.placement:inline">TOP
-          </button>
-
-          <button
-            data-guide="A right positioned guideling in inline placement"
-            data-guide-options="marker.position:right, marker.placement:inline">RIGHT
-          </button>
-          <button
-            data-guide="A bottom positioned guideling in inline placement"
-            data-guide-options="marker.position:bottom, marker.placement:inline">BOTTOM
-          </button>
-
-          <button
-            data-guide="A left positioned guideling in inline placement"
-            data-guide-options="marker.position:left, marker.placement:inline">LEFT
-          </button>
+          <div class="grid">
+            <ul>
+              <li>
+                <button
+                  data-guide="A top-left positioned guideling in inline placement"
+                  data-guide-options="marker.position:topleft, marker.placement:inline">TOP LEFT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A top positioned guideling in inline placement"
+                  data-guide-options="marker.position:top, marker.placement:inline">TOP
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A top-right positioned guideling in inline placement"
+                  data-guide-options="marker.position:topright, marker.placement:inline">TOP RIGHT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A left positioned guideling in inline placement"
+                  data-guide-options="marker.position:left, marker.placement:inline">LEFT
+                </button>
+              </li>
+              <li></li>
+              <li>
+                <button
+                  data-guide="A right positioned guideling in inline placement"
+                  data-guide-options="marker.position:right, marker.placement:inline">RIGHT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom-left positioned guideling in inline placement"
+                  data-guide-options="marker.position:bottomleft, marker.placement:inline">BOTTOM LEFT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom positioned guideling in inline placement"
+                  data-guide-options="marker.position:bottom, marker.placement:inline">BOTTOM
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom-right positioned guideling in inline placement"
+                  data-guide-options="marker.position:bottomright, marker.placement:inline">BOTTOM RIGHT
+                </button>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
@@ -64,36 +99,157 @@
         </p>
 
         <div>
-          <button
-            data-guide="A top positioned guideling in sibling placement"
-            data-guide-options="marker.position:top, marker.placement:sibling">TOP
-          </button>
+          <div class="grid">
+            <ul>
+              <li>
+                <button
+                  data-guide="A top-left positioned guideling in sibling placement"
+                  data-guide-options="marker.position:topleft, marker.placement:sibling">TOP LEFT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A top positioned guideling in sibling placement"
+                  data-guide-options="marker.position:top, marker.placement:sibling">TOP
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A top-right positioned guideling in sibling placement"
+                  data-guide-options="marker.position:topright, marker.placement:sibling">TOP RIGHT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A left positioned guideling in sibling placement"
+                  data-guide-options="marker.position:left, marker.placement:sibling">LEFT
+                </button>
+              </li>
+              <li></li>
+              <li>
+                <button
+                  data-guide="A right positioned guideling in sibling placement"
+                  data-guide-options="marker.position:right, marker.placement:sibling">RIGHT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom-left positioned guideling in sibling placement"
+                  data-guide-options="marker.position:bottomleft, marker.placement:sibling">BOTTOM LEFT
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom positioned guideling in sibling placement"
+                  data-guide-options="marker.position:bottom, marker.placement:sibling">BOTTOM
+                </button>
+              </li>
+              <li>
+                <button
+                  data-guide="A bottom-right positioned guideling in sibling placement"
+                  data-guide-options="marker.position:bottomright, marker.placement:sibling">BOTTOM RIGHT
+                </button>
+              </li>
+            </ul>
+          </div>
 
-          <button
-            data-guide="A right positioned guideling in sibling placement"
-            data-guide-options="marker.position:right, marker.placement:sibling">RIGHT
-          </button>
-          <button
-            data-guide="A right positioned guideling in sibling placement"
-            data-guide-options="marker.position:right, marker.placement:sibling"
-            style="margin-right: 0;">RIGHT ml
-          </button>
+          <hr />
+          <p><strong>Elements with margins</strong></p>
+          <p>These elements have custom <code>margin-left</code> and <code>margin-right</code>
+            that will be appropriately ignored by the step marker.</p>
 
-          <button
-            data-guide="A bottom positioned guideling in sibling placement"
-            data-guide-options="marker.position:bottom, marker.placement:sibling">BOTTOM
-          </button>
-
+          <div class="freespace"></div>
           <button
             data-guide="A left positioned guideling in sibling placement"
             data-guide-options="marker.position:left, marker.placement:sibling">LEFT
           </button>
-
           <button
-            data-guide="A left positioned guideling in sibling placement"
-            data-guide-options="marker.position:left, marker.placement:sibling"
-            style="margin-left: 0;">LEFT ml
+            data-guide="A right positioned guideling in sibling placement"
+            data-guide-options="marker.position:right, marker.placement:sibling">RIGHT
           </button>
+          <div class="freespace"></div>
+
+
+          <p><strong>Blocky elements</strong></p>
+
+          <div class="freespace"></div>
+          <p><strong>Top Left</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:topleft, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+
+          <p><strong>Top</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:top, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+
+          <p><strong>Top Right</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:topright, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+
+          <p><strong>Right</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:right, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+
+          <p><strong>Bottom Right</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:bottomright, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+
+          <p><strong>Bottom</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:bottom, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+          <p><strong>Bottom Left</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:bottomleft, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
+          <p><strong>Left</strong></p>
+          <p
+            data-guide="A bottom positioned guideling in Overlay placement"
+            data-guide-options="marker.position:left, marker.placement:sibling">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+            tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+            quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+            consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+            cillum dolore eu fugiat nulla pariatur.
+          </p>
 
         </div>
       </section>
@@ -111,29 +267,74 @@
           <li>design isn't responsive, or all devices support fixed positioning</li>
         </ol>
 
-        <p>The marker uses <strong>fixed</strong> positioning in overlay
+        <p>The marker uses <strong>absolute</strong> positioning in overlay
           placement.</p>
 
-        <div>
-          <button
-            data-guide="A top positioned guideling in Overlay placement"
-            data-guide-options="marker.position:top, marker.placement:overlay">TOP
-          </button>
-
-          <button
-            data-guide="A right positioned guideling in Overlay placement"
-            data-guide-options="marker.position:right, marker.placement:overlay">RIGHT
-          </button>
-          <button
-            data-guide="A bottom positioned guideling in Overlay placement"
-            data-guide-options="marker.position:bottom, marker.placement:overlay">BOTTOM
-          </button>
-
-          <button
-            data-guide="A left positioned guideling in Overlay placement"
-            data-guide-options="marker.position:left, marker.placement:overlay">LEFT
-          </button>
+        <div class="grid">
+          <ul>
+            <li>
+              <button
+                data-guide="A top positioned guideling in Overlay placement"
+                data-guide-options="marker.position:topleft, marker.placement:overlay">TOP LEFT
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A top positioned guideling in Overlay placement"
+                data-guide-options="marker.position:top, marker.placement:overlay">TOP
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A top positioned guideling in Overlay placement"
+                data-guide-options="marker.position:topright, marker.placement:overlay">TOP RIGHT
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A left positioned guideling in Overlay placement"
+                data-guide-options="marker.position:left, marker.placement:overlay">LEFT
+              </button>
+            </li>
+            <li></li>
+            <li>
+              <button
+                data-guide="A right positioned guideling in Overlay placement"
+                data-guide-options="marker.position:right, marker.placement:overlay">RIGHT
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A bottom positioned guideling in Overlay placement"
+                data-guide-options="marker.position:bottomleft, marker.placement:overlay">BOTTOM LEFT
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A bottom positioned guideling in Overlay placement"
+                data-guide-options="marker.position:bottom, marker.placement:overlay">BOTTOM
+              </button>
+            </li>
+            <li>
+              <button
+                data-guide="A right positioned guideling in Overlay placement"
+                data-guide-options="marker.position:bottomright, marker.placement:overlay">BOTTOM RIGHT
+              </button>
+            </li>
+          </ul>
         </div>
+
+        <hr />
+
+        <p
+          data-guide="A bottom positioned guideling in Overlay placement"
+          data-guide-options="marker.position:right, marker.placement:overlay">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+          tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+          quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+          consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+          cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+          proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+        </p>
       </section>
     </div>
 

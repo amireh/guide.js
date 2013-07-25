@@ -61,7 +61,124 @@
   POS_BR  = 5,
   POS_B   = 6,
   POS_BL  = 7,
-  POS_L   = 8;
+  POS_L   = 8,
+
+  /**
+   * Center node horizontally or vertically by applying negative margins.
+   *
+   * @param <jQuery object> $node the element to modify
+   * @param <int> pos the position key
+   *
+   * Positions POS_T and POS_B will cause horizontal centering, while
+   * positions POS_L and POS_R will cause vertical centering.
+   *
+   * @return null
+   */
+  hvCenter = function($node, pos) {
+    var margin = 0, dir;
+
+    switch(pos) {
+      case POS_T:
+      case POS_B:
+        dir = 'left';
+        margin = -1 * ($node.outerWidth() / 2);
+      break;
+
+      case POS_R:
+      case POS_L:
+        dir = 'top';
+        margin = -1 * ($node.outerHeight() / 2);
+      break;
+    }
+
+    $node.css('margin-' + dir, margin);
+  },
+
+  place_sibling = function($node, $anchor, pos, ml, mr) {
+    // we must account for the target node's margin-[right,left] values;
+    // ie, in any of the right positions, if the target has any margin-right
+    // we must deduct enough of it to place the marker next to it, we do so
+    // by applying negative margin-left by the computed amount
+    //
+    // same applies for left positions but in the opposite direction (margin-left)
+    var delta = 0, dir;
+
+    switch(pos) {
+      case POS_TR:
+      case POS_R:
+      case POS_BR:
+        var t_m = parseInt($anchor.css('margin-right'));
+
+        if (t_m > 0) {
+          // offset is the target margin without the marker margin
+          delta = -1 * t_m + ml;
+          dir = 'left';
+        }
+      break;
+
+      case POS_TL:
+      case POS_L:
+      case POS_BL:
+        var t_m = parseInt($anchor.css('margin-left'));
+
+        if (t_m > 0) {
+          // offset is target margin without marker margin (arrow dimension)
+          delta = -1 * (t_m - mr);
+          dir = 'right';
+        }
+      break;
+    }
+
+    if (delta != 0) {
+      $node.css('margin-' + dir, delta);
+    }
+
+    return hvCenter($node, pos);
+  },
+
+  place_overlay = function($node, $anchor, pos) {
+    var offset  = $anchor.offset(),
+        t_w     = $anchor.outerWidth(),
+        t_h     = $anchor.outerHeight(),
+        h       = $node.outerHeight(),
+        w       = $node.outerWidth(),
+        arrow_d = 14;
+
+    switch(pos) {
+      case POS_TL:
+        offset.top  -= h + arrow_d;
+      break;
+      case POS_T:
+        offset.top  -= h + arrow_d;
+        offset.left += t_w / 2 - ( (w - arrow_d) /2);
+      break;
+      case POS_TR:
+        offset.top  -= h + arrow_d;
+        offset.left += t_w - w;
+      break;
+      case POS_R:
+        offset.top  += t_h / 2 - (h/2);
+        offset.left += t_w + arrow_d;
+      break;
+      case POS_BR:
+        offset.top  += t_h + arrow_d;
+        offset.left += t_w - w;
+      break;
+      case POS_B:
+        offset.top  += t_h + arrow_d;
+        offset.left += t_w / 2 - ( (w - arrow_d) /2);
+      break;
+      case POS_BL:
+        offset.top  += t_h + arrow_d;
+      break;
+      case POS_L:
+        offset.top  += (t_h / 2) - (h/2);
+        offset.left -= w + arrow_d;
+      break;
+    }
+
+    $node.offset(offset);
+  };
 
   /**
    * Marker implementation.
@@ -79,15 +196,15 @@
         .on('add', _.bind(this.addMarker, this))
         .on('show', _.bind(this.refresh, this))
         .on('hide', function() {
-          _.each(guide.context.targets, that.hideMarker, that);
+          _.each(guide.context.targets, function(t) {
+            t.marker.hide();
+          });
         })
         .on('focus', function(e, target) {
           target.marker.highlight();
-          // return that.highlightTarget(target);
         })
         .on('defocus', function(e, target) {
           target.marker.dehighlight();
-          // return that.dehighlightTarget(target);
         });
 
       return this;
@@ -237,6 +354,10 @@
         this.$cursor.hide();
         this.$el.place();
       }
+
+      // $('body').animate({
+      //   scrollTop: this.$el.offset().top * 0.9
+      // }, 250);
     },
 
     dehighlight: function(target) {
@@ -251,42 +372,14 @@
     },
 
     place: function() {
-      var $this   = this.$el,
-          t       = this.target,
-          $t      = this.target.$el,
-          guide   = window.guide,
-          options = this.options,
-          // used for testing some placement / position combinations
-          mode    = [ this.placement, this.position ];
+      var $t      = this.target.$el,
+          options = this.options;
 
-      if (!$t.is(":visible")) {
+      if (!$t || !$t.length || !$t.is(":visible")) {
         return this.hide();
       }
 
-      // insert our DOM node at the appropriate position
-      {
-        var $node, method, p = this.position;
-
-        switch(this.placement) {
-          case PMT_INLINE:
-            $node = $t;
-            method = 'append';
-          break;
-          case PMT_SIBLING:
-            method = (p >= POS_TR && p <= POS_BR)
-            ? 'after'
-            : 'before';
-
-            $node = $t;
-          break;
-          case PMT_OVERLAY:
-            $node = guide.$el;
-            method = 'append';
-          break;
-        }
-
-        $node[method]($this);
-      }
+      this.__attach();
 
       // mark the target as being highlighted by a marker
       $t.addClass([
@@ -294,84 +387,44 @@
         'guide-target-' + options.position
       ].join(' '));
 
-      if (_.isEqual([ PMT_INLINE, POS_T ], mode)) {
-        // $this.offset({
-        //   left: $t.outerWidth() / 2 - $this.outerWidth() / 2
-        // });
+      if (this.placement == PMT_INLINE) {
+        hvCenter(this.$el, this.position);
       }
       else if (this.placement == PMT_SIBLING) {
-        // we must account for the target node's margin-[right,left] values;
-        // ie, in any of the right positions, if the target has any margin-right
-        // we must deduct enough of it to place the marker next to it, we do so
-        // by applying negative margin-left by the computed amount
-        //
-        // same applies for left positions but in the opposite direction (margin-left)
-        var delta = 0, dir;
-
-        switch(this.position) {
-          case POS_TR:
-          case POS_R:
-          case POS_BR:
-            var t_m = parseInt($t.css('margin-right'));
-
-            if (t_m > 0) {
-              // offset is the target margin without the marker margin
-              delta = -1 * t_m + this.margin_left;
-              dir = 'left';
-            }
-          break;
-
-          case POS_TL:
-          case POS_L:
-          case POS_BL:
-            var t_m = parseInt($t.css('margin-left'));
-
-            if (t_m > 0) {
-              // offset is target margin without marker margin (arrow dimension)
-              delta = -1 * (t_m - this.margin_right);
-              dir = 'right';
-            }
-          break;
-        }
-
-        if (delta != 0) {
-          $this.css('margin-' + dir, delta);
-        }
+        place_sibling(this.$el,
+                      this.target.$el,
+                      this.position,
+                      this.margin_left,
+                      this.margin_right);
       }
 
-      if (options.placement == 'overlay') {
-        var offset  = $t.offset(),
-            h       = $this.outerHeight(),
-            arrow_d = 14,
-            w       = $this.outerWidth();
+      else if (this.placement == PMT_OVERLAY) {
+        place_overlay(this.$el, this.target.$el, this.position);
+      }
+    },
 
-        switch(options.position) {
-          case 'top':
-            offset.top  -= h + arrow_d;
-            // offset.top  -= $t.outerHeight();
-            // offset.left += $t.outerWidth() / 2 - (w/2);
-            break;
-          case 'bottom':
-            offset.top  += $t.outerHeight() + arrow_d;
-            // offset.left += $t.outerWidth() / 2 - (w/2);
-            break;
-          case 'left':
-            // offset.top  += $t.outerHeight() / 2 - (h/2);
-            offset.left -= w + arrow_d;
-            break;
-          case 'right':
-            // offset.top  += $t.outerHeight() / 2 - (h/2);
-            offset.left += $t.outerWidth() + arrow_d;
-            break;
-        }
+    // insert our DOM node at the appropriate position
+    __attach: function() {
+      switch(this.placement) {
+        case PMT_INLINE:
+          this.target.$el.append(this.$el);
+        break;
+        case PMT_SIBLING:
+          var
+          p       = this.position,
+          method  = (p >= POS_TR && p <= POS_BR)
+            ? 'after'
+            : 'before';
 
-        console.log('overlay marker: ', offset, ', target offset: ', $t.offset())
-        $this.offset(offset);
+          this.target.$el[method](this.$el);
+        break;
+        case PMT_OVERLAY:
+          guide.$el.append(this.$el);
+        break;
       }
 
-      return $this;
-      // console.log('marker placement options:' , options)
-    }
+      return this;
+    },
   });
 
   Extension = new Extension();

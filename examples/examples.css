@@ -16,3 +16,38 @@ body {
 
 .example button.guide-target-right { margin-right: 80px; }
 .example button.guide-target-left { margin-left: 80px; }
+
+.example .freespace {
+  height: 80px;
+}
+
+.example .grid {
+  margin: 40px 80px;
+}
+
+.example .grid ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+.example .grid li {
+  display: inline-block;
+  width: 32%;
+  min-width:  100px;
+  min-height: 100px;
+}
+.example .grid li:nth-of-type(3n+1) {
+  text-align: left;
+}
+.example .grid li:nth-of-type(3n+2) {
+  text-align: center;
+}
+.example .grid li:nth-of-type(3n+3) {
+  text-align: right;
+  margin-top: 40px;
+}
+.example .grid button.guide-target-left,
+.example .grid button.guide-target-right {
+  margin-left: 0;
+  margin-right: 0;
+}
