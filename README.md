@@ -1,14 +1,19 @@
 guide.js - Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.
 
+This library started out as a fork of [pageguide.js](https://github.com/tracelytics/pageguide), but ended up being its own package as the code
+diverged too much from the original codebase.
+
+If `guide.js` doesn't fit your needs, take a look at [pageguide.js](https://github.com/tracelytics/pageguide), or see the Related appendix below for more options.
+
 ## What makes it different
 
 * Deeply customizable and flexible in order to support most DOM structures
 * Responsive design support
 * i18n and RTL language support
-* Multiple tours: each with its own and sequence of steps
+* Multiple Tours: each with its own sequence of steps
 * Single-page-apps support through [tours](#tours)
 * Multiple content sources; create tours and their steps using JavaScript and JSON, inline markup (using `data-guide` attributes), or by using explicit HTML elements to hold the content
-* Dynamically update and modify the tour sequence
+* Dynamic; add and remove tour steps at run-time
 * Modular, extensible: pick and use what you want
 
 ## Dependencies
@@ -37,7 +42,12 @@ tours.
 
 ## Browser compatibility
 
-TODO
+The library has been tested on Linux and Windows variants of the following browsers:
+
+* IE 9 (Windows)
+* Chrome 28
+* Firefox 22
+* Opera 12
 
 ## Extensions
 
@@ -61,7 +71,25 @@ Attach 'guidelets' to DOM elements to display tour entries in-place. Each guidel
 
 **JS**
 
-TODO
+guide.js can be built using the require.js optimizer and minifies code using `uglifyjs`,
+which you can install using the node package manager:
+
+```bash
+npm install r.js
+npm install uglify-js
+```
+
+Once you have `r.js` installed, launch a terminal and do the following:
+
+```bash
+cd /path/to/guide.js/src/js
+r.js -o build.js
+```
+
+You will now find the minified JavaScript in `dist/guide.js`.
+
+You can customize the build profile, in `src/js/build.js`, to your liking to
+include or exclude some guide.js extras.
 
 **CSS**
 
@@ -78,6 +106,17 @@ If you're using Linux (or you have `inotify-tools` available), you can use a com
 cd /path/to/guide.js/src/css
 ./compiler.sh
 ```
+
+## Related
+
+Here's a list of related libraries I've used before writing `guide.js`. They are
+all about providing a 'tour' or 'guide' for users, but they differ in how they
+implement markers, content feeding, and other things.
+
+* [pageguide.js](http://tracelytics.github.io/pageguide/)
+* [intro.js](http://usablica.github.io/intro.js/)
+* [Trip.js](http://eragonj.github.io/Trip.js/)
+* [aSimpleTour](http://alvaroveliz.github.io/aSimpleTour/)
 
 ## License
 

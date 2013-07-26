@@ -1,0 +1,260 @@
+@import "../guide-common";
+
+/**
+ * guide.js markers
+ */
+.guide-marker {
+  color: white;
+  background-color: @guide-highlight-bg;
+  background: fade(@guide-highlight-bg, 30%);
+  text-decoration: none;
+  font-size: 12px;
+
+  /*.guide-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
+  .guide-transition(background-color; 0.25s; ease-in);
+
+  cursor: pointer;
+  padding: 10px;
+  display: inline-block;
+  z-index: @guide-layer-entities;
+
+  .index {
+    font-size: 32px;
+  }
+
+  .caption,
+  .text {
+    display: none;
+    color: @guide-highlight-fg;
+  }
+
+  &:hover,
+  &.focused {
+    z-index: @guide-layer-forefront;
+    background: fade(@guide-highlight-bg, 95%);
+  }
+
+  &.inline-marker {
+    position: absolute;
+
+    &.topleft {
+      bottom: 100%;
+      margin-bottom: @guide-arrowsz;
+      left: 0;
+    }
+
+    &.top {
+      bottom: 100%;
+      margin-bottom: @guide-arrowsz;
+      left: 50%;
+    }
+
+    &.topright {
+      bottom: 100%;
+      margin-bottom: @guide-arrowsz;
+      right: 0;
+    }
+
+    &.right {
+      left: 100%;
+      margin-left: @guide-arrowsz;
+      top: 50%;
+    }
+
+    &.bottomright {
+      top: 100%;
+      margin-top: @guide-arrowsz;
+      right: 0;
+    }
+
+    &.bottom {
+      top: 100%;
+      margin-top: @guide-arrowsz;
+      left: 50%;
+    }
+
+    &.bottomleft {
+      top: 100%;
+      margin-top: @guide-arrowsz;
+      left: 0;
+    }
+
+    &.left {
+      right: 100%;
+      margin-right: @guide-arrowsz;
+      top: 50%;
+    }
+  }
+
+  /**
+   * Sibling placement mode achieves positioning using (negative) margins that
+   * are applied via JavaScript against the non-negative margins applied here.
+   */
+  &.sibling-marker {
+    position: absolute;
+
+    &.topleft {
+      bottom: 100%;
+      left: 0;
+      margin-bottom: @guide-arrowsz;
+    }
+
+    &.top {
+      bottom: 100%;
+      left: 50%;
+      margin-bottom: @guide-arrowsz;
+    }
+
+    &.topright {
+      right: 0;
+      bottom: 100%;
+      margin-bottom: @guide-arrowsz;
+    }
+    &.right {
+      left: 100%;
+      top: 50%;
+      margin-left: @guide-arrowsz;
+    }
+
+    &.bottom {
+      top: 100%;
+      left: 50%;
+      margin-top: @guide-arrowsz;
+    }
+    &.bottomleft {
+      top: 100%;
+      left: 0;
+      margin-top: @guide-arrowsz;
+    }
+    &.bottomright {
+      top: 100%;
+      right: 0;
+      margin-top: @guide-arrowsz;
+    }
+
+    &.left {
+      right: 100%;
+      top: 50%;
+      margin-right: @guide-arrowsz;
+    }
+  }
+
+  /**
+   * Overlay placement mode achieves positioning using explicit pixel coords
+   * via JavaScript, nothing for us to do here.
+   */
+  &.overlay-marker {
+    position: absolute;
+  }
+}
+
+/** marker arrows */
+.guide-marker {
+  /* some shortcuts */
+  @d: @guide-arrowsz;
+  @c: fade(@guide-highlight-bg, 30%);
+
+  /*
+   * TOP, RIGHT, BOTTOM, and LEFT arrow positioning has to be treated differently:
+   *
+   * 1. @TRBL_offset:
+   *    controls the pixel offset that puts the arrow right at the edge of the
+   *    marker box, and that is 1.5 times the arrow dimension off the edge
+   *
+   * 2. @TRBL_center:
+   *    to center them, we need to first position at 50% in the appropriate direction
+   *    and then apply an offset of half the dimension in the opposite direction.
+  */
+  @TRBL_offset: -1 * ceil(@d*1.5);
+  @TRBL_center: -1 * (@d/2);
+
+  &:after {
+    content: " ";
+    position: absolute;
+    display: block;
+    height: 0;
+    width:  0;
+    opacity: 0.5;
+  }
+
+  &:hover,
+  &.focused {
+    &:after {
+      opacity: 1;
+    }
+  }
+
+  &.topleft:after {
+    border-top:   @d solid @c;
+    border-right: @d solid transparent;
+    bottom: -1 * @d;
+    left: 0;
+  }
+
+  &.top:after {
+    border: @d/2+1 solid transparent;
+    border-top: @d solid @c;
+
+    bottom: @TRBL_offset;
+    left: 50%;
+    margin-left: @TRBL_center;
+  }
+
+  &.topright {
+    &:after {
+      border-top:   @d solid @c;
+      border-right: @d solid transparent;
+      bottom: -1 * @d;
+      right: 0;
+    }
+  }
+
+  &.right {
+    &:after {
+      border: @d/2+1 solid transparent;
+      border-right: @d solid @c;
+
+      left: @TRBL_offset;
+      top: 50%;
+      margin-top: @TRBL_center;
+    }
+  }
+
+  &.bottomright {
+    &:after {
+      border-bottom:  @d solid @c;
+      border-right:   @d solid transparent;
+      right: 0;
+      top: -1 * @d;
+    }
+  }
+
+  &.bottom {
+    &:after {
+      border: @d/2+1 solid transparent;
+      border-bottom: @d solid @c;
+
+      left: 50%;
+      top: @TRBL_offset;
+      margin-left: @TRBL_center;
+    }
+  }
+
+  &.bottomleft {
+    &:after {
+      border-bottom: @d solid @c;
+      border-right: @d solid transparent;
+      left: 0;
+      top: -1 * @d;
+    }
+  }
+
+  &.left:after {
+    border: @d/2+1 solid transparent;
+    border-left: @d solid @c;
+
+    right: @TRBL_offset;
+    top: 50%;
+    margin-top: @TRBL_center;
+  }
+}

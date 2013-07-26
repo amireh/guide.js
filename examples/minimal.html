@@ -7,10 +7,8 @@
     <link href="./examples.css" rel="stylesheet" />
 
     <!-- guide.js dependencies -->
-    <script src="../vendor/jquery-1.10.2.js"></script>
-    <script src="../vendor/lodash.js"></script>
-    <script src="../ext/lodash.js"></script>
-
+    <script src="../dist/vendor/jquery-1.10.2.js"></script>
+    <script src="../dist/vendor/lodash.js"></script>
   </head>
 
   <body>
@@ -51,18 +49,23 @@
       <button onclick="guide.next();">&gt;</button>
       <button onclick="guide.last();">Last</button>
       <button onclick="guide.toggle();">Toggle</button>
+      <button onclick="guide.toggleOverlayMode(true);">Toggle Overlay</button>
     </div>
 
 
     <!-- guide.js scripts -->
-    <script src="../src/js/guide.js"></script>
-    <!-- some extensions -->
-    <script src="../src/js/extensions/guide-tutor.js"></script>
-    <script src="../src/js/extensions/guide-marker.js"></script>
+    <script src="../dist/guide.js"></script>
+    <!--
+      <script src="../src/js/guide.js"></script>
+      <script src="../src/js/extensions/guide-tutor.js"></script>
+      <script src="../src/js/extensions/guide-marker.js"></script>
+    -->
     <script>
 
       $(function() {
-        guide.fromDOM($('.example')).show().focus(0);
+        guide.setOptions({
+          withOverlay: true
+        }).fromDOM($('.example')).show().focus(0);
       });
 
     </script>

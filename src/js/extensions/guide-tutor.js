@@ -38,8 +38,6 @@
       this.$el.attr({
         'id': 'guide_tutor',
         'class': guide.entityKlass()
-      }).css({
-        'z-index': guide.entityZIndex() + 3
       });
 
       this.$content   = this.$el.find('> .content');

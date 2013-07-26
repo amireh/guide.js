@@ -33,12 +33,12 @@
     autoScroll: true
   },
 
-  KLASS_VISIBLE     = 'with-guide',
-  KLASS_OVERLAYED   = 'guide-with-overlay',
-  KLASS_ENTITY      = 'guide-entity',
-  KLASS_TARGET      = 'guide-target',
-  KLASS_FOCUSED     = 'guide-target-focused',
-  ENTITY_ZINDEX     = 100;
+  KLASS_ENABLED         = 'with-guide',
+  KLASS_OVERLAYED       = 'guide-with-overlay',
+  KLASS_NOT_OVERLAYED   = 'guide-without-overlay',
+  KLASS_ENTITY          = 'guide-entity',
+  KLASS_TARGET          = 'guide-target',
+  KLASS_FOCUSED         = 'guide-target-focused';
 
   _.extend(guide.prototype, {
     $container: $('body'),
@@ -228,15 +228,13 @@
     show: function(options) {
       var that    = this,
           options = this.getOptions(options),
-          klasses = [ KLASS_VISIBLE ];
+          klasses = [ KLASS_ENABLED ];
 
       if (!this.tour) {
         this.runTour(this.tours[0]);
       }
 
-      if (options.withOverlay) {
-        klasses.push(KLASS_OVERLAYED);
-      }
+      this.toggleOverlayMode();
 
       this.$container.addClass(klasses.join(' '));
       this.$.triggerHandler('show');
@@ -260,7 +258,7 @@
       this.$el.detach();
 
       this.$container.removeClass([
-        KLASS_VISIBLE,
+        KLASS_ENABLED,
         KLASS_OVERLAYED
       ].join(' '));
 
@@ -281,8 +279,40 @@
         this.show.apply(this, arguments);
     },
 
+    /**
+     * Attaches a darkening overlay to the window as per the withOverlay option.
+     *
+     * @param <Boolean> do_toggle if true, the withOverlay option will be toggled
+     *
+     * @note
+     * We need to track two states: 'with-overlay' and 'without-overlay'
+     * because in overlayed mode, the foreground of highlighted elements needs
+     * a different level of contrast than in non-overlayed mode (they're lighter),
+     * thus the CSS is able to do the following:
+     *
+     *   .guide-with-overlay #my_element { color: white }
+     *   .guide-without-overlay #my_element { color: black }
+     *
+     */
+    toggleOverlayMode: function(do_toggle) {
+      if (do_toggle) {
+        this.options.withOverlay = !this.options.withOverlay;
+      }
+
+      if (this.options.withOverlay) {
+        this.$container
+          .addClass(KLASS_OVERLAYED)
+          .removeClass(KLASS_NOT_OVERLAYED);
+      }
+      else {
+        this.$container
+          .removeClass(KLASS_OVERLAYED)
+          .addClass(KLASS_NOT_OVERLAYED);
+      }
+    },
+
     isShown: function() {
-      return this.$container.hasClass(KLASS_VISIBLE);
+      return this.$container.hasClass(KLASS_ENABLED);
     },
 
     dismiss: function(optTourId) {
@@ -525,7 +555,7 @@
 
     highlight: function() {
       this.$el.toggleClass('no-highlight', !this.options.highlight);
-      this.$el.addClass(KLASS_TARGET);
+      // this.$el.addClass(KLASS_TARGET);
     },
 
     dehighlight: function() {
@@ -536,6 +566,7 @@
       var $scroller = this.$scrollAnchor;
 
       this.$el
+      .addClass(KLASS_TARGET)
       .addClass(KLASS_FOCUSED)
       .triggerHandler('guide:focus', prev_target);
 
@@ -551,6 +582,7 @@
 
     defocus: function(next_target) {
       this.$el
+      .removeClass(KLASS_TARGET)
       .removeClass(KLASS_FOCUSED)
       .triggerHandler('guide:defocus', next_target);
     }

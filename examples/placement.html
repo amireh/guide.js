@@ -23,7 +23,7 @@
           <p>This is best used when:</p>
           <ol>
             <li>the target is <strong>relative</strong> positioned</li>
-            <li>the target can safely contain children nodes</li>
+            <li>the target can safely contain children nodes, ie: <code>button</code> doesn't</li>
             <li>the target might move around</li>
           </ol>
           <p>This placement mode uses <strong>absolute</strong> positioning and
@@ -434,14 +434,12 @@
 
       <button onclick="guide.toggle();">Toggle</button>
       <button onclick="guide.refresh();">Refresh</button>
+      <button onclick="guide.toggleOverlayMode(true);">Toggle Overlay</button>
     </div>
 
-    <script src="../vendor/jquery-1.10.2.js"></script>
-    <script src="../vendor/lodash.js"></script>
-    <script src="../ext/lodash.js"></script>
-    <script src="../src/js/guide.js"></script>
-    <script src="../src/js/extensions/guide-tutor.js"></script>
-    <script src="../src/js/extensions/guide-marker.js"></script>
+    <script src="../dist/vendor/jquery-1.10.2.js"></script>
+    <script src="../dist/vendor/lodash.js"></script>
+    <script src="../dist/guide.js"></script>
     <script src="./examples.js"></script>
 
     <script>

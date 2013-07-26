@@ -142,7 +142,7 @@
         t_h     = $anchor.outerHeight(),
         h       = $node.outerHeight(),
         w       = $node.outerWidth(),
-        arrow_d = 14;
+        arrow_d = 15;
 
     switch(pos) {
       case POS_TL:
@@ -230,7 +230,7 @@
       .on('click', function(e) {
         guide.focus(target);
 
-        return _.consume(e);
+        return $.consume(e);
       });
 
       if (guide.isShown() && target.tour.isActive()) {
