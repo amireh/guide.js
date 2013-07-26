@@ -8,48 +8,59 @@
     return this;
   },
 
-  Tour = function() {
-    return this.constructor.apply(this, arguments);
-  },
-
-  Target = function(options) {
-    _.extend(this, options);
-    return this;
-  },
-
   GRACEFUL = false,
   DEBUG    = true,
-  DEFAULTS = {
-    withOverlay: false,
-    withAnimations: true
-  },
-
-  TOUR_DEFAULTS = {
-  },
-
-  TARGET_DEFAULTS = {
-    withMarker: true,
-    highlight:  true,
-    autoScroll: true
-  },
 
   KLASS_ENABLED         = 'with-guide',
   KLASS_OVERLAYED       = 'guide-with-overlay',
   KLASS_NOT_OVERLAYED   = 'guide-without-overlay',
-  KLASS_ENTITY          = 'guide-entity',
-  KLASS_TARGET          = 'guide-target',
-  KLASS_FOCUSED         = 'guide-target-focused';
+  KLASS_ENTITY          = 'guide-entity';
 
-  _.extend(guide.prototype, {
+  var Optionable = {
+    defaults: {},
+
+    addOption: function(key, default_value) {
+      this.defaults[key] = default_value;
+
+      if (this.options) {
+        if (void 0 === this.options[key]) {
+          this.options[key] = default_value;
+        }
+      }
+    },
+
+    setOptions: function(options) {
+      _.merge(this.options, options);
+
+      if (this.refresh) {
+        this.refresh();
+      }
+
+      if (this.$) {
+        console.log('guide.js: [Optionable] options changed, triggering refresh');
+
+        this.$.triggerHandler('refresh', [ this.options, this ]);
+      }
+
+      return this;
+    },
+
+    getOptions: function(overrides) {
+      return _.extend(_.clone(this.options), overrides || {});
+    }
+  };
+
+  _.extend(guide.prototype, Optionable, {
     $container: $('body'),
     $el:        $('<div class="guide-js" />'),
 
-    entityKlass: function() {
-      return KLASS_ENTITY;
+    defaults: {
+      withOverlay:    false,
+      withAnimations: true
     },
 
-    entityZIndex: function() {
-      return ENTITY_ZINDEX;
+    entityKlass: function() {
+      return KLASS_ENTITY;
     },
 
     constructor: function() {
@@ -57,7 +68,7 @@
       this.$ = $(this);
 
       _.extend(this, {
-        options: _.clone(DEFAULTS),
+        options: _.clone(this.defaults),
         tours:   [],
         extensions: [],
         tour: null,
@@ -66,8 +77,9 @@
         cursor:  -1
       });
 
-      // A default tour
-      this.tour = this.defineTour('Default Tour');
+      this.$.on('refresh', function(e, options, el) {
+        el.toggleOverlayMode();
+      });
     },
 
     inactiveTours: function() {
@@ -77,8 +89,8 @@
     defineTour: function(label, optTargets) {
       var tour;
 
-      if (!(tour = this.__getTour(label))) {
-        tour = new Tour(label);
+      if (!(tour = this.getTour(label))) {
+        tour = new guide.Tour(label);
         this.tours.push(tour);
       }
 
@@ -99,7 +111,7 @@
     runTour: function(id) {
       var tour;
 
-      if (!(tour = this.__getTour(id))) {
+      if (!(tour = this.getTour(id))) {
         throw [
           "guide.js: undefined tour '",
           id,
@@ -215,16 +227,6 @@
       return this;
     },
 
-    setOptions: function(options) {
-      _.merge(this.options, options);
-
-      return this;
-    },
-
-    getOptions: function(overrides) {
-      return _.extend(_.clone(this.options), overrides || {});
-    },
-
     show: function(options) {
       var that    = this,
           options = this.getOptions(options),
@@ -263,10 +265,6 @@
       ].join(' '));
 
       this.tour.deactivate();
-
-      if (this.cTarget) {
-        this.cTarget.$el.removeClass(KLASS_FOCUSED);
-      }
 
       this.$.triggerHandler('hide');
 
@@ -362,10 +360,10 @@
 
     /**
      *
-     * @emit guide:defocus on the current (now previous) target, guide.pTarget.$el
+     * @emit defocus.gjs on the current (now previous) target, guide.pTarget.$el
      * @emit defocus [ prevTarget, currTarget, guide ] on guide.$
      *
-     * @emit guide:focus on the next (now current) target, guide.cTarget.$el
+     * @emit focus.gjs on the next (now current) target, guide.cTarget.$el
      * @emit focus [ currTarget, guide ] on guide.$
      *
      * @return whether the target has been focused
@@ -419,7 +417,7 @@
      * @private
      * @nodoc
      */
-    __getTour: function(id) {
+    getTour: function(id) {
 
       return _.isString(id)
         ? _.find(this.tours || [], { id: id })
@@ -447,170 +445,11 @@
     }
   }); // guide.prototype
 
-  _.extend(Tour.prototype, {
-    constructor: function(label) {
-      _.extend(this, {
-        id:       label,
-        options:  {},
-        targets:  []
-      });
+  guide = new guide();
 
-      console.log('guide.js: tour defined: ', this.id);
+  // expose the Optionable interface for other components to re-use
+  guide.Optionable = Optionable;
 
-      return this;
-    },
-
-    addStep: function($el, options) {
-      var index,
-          target  = {},
-          tour    = this;
-
-      // has the target been already defined? we can not handle duplicates
-      if ($el.data('guideling')) {
-        console.log('guide.js: [error] duplicate target:');
-        console.log($el);
-
-        if (GRACEFUL) {
-          return false;
-        }
-
-        throw "guide.js: duplicate target, see console for more information";
-      }
-
-      target = new Target({
-        $el: $el,
-
-        // the element that will be used as an indicator of the target's position
-        // when scrolling the element into view, could be modified by extensions
-        $scrollAnchor: $el,
-
-        tour: tour,
-
-        options: _.defaults(options || {}, TARGET_DEFAULTS)
-      });
-
-      index = tour.targets.push(target) - 1;
-
-      $el.
-        addClass(KLASS_ENTITY).
-        data('guideling', target);
-
-      if (guide.isShown()) {
-        target.highlight();
-      }
-
-      guide.$.triggerHandler('add', [ target ]);
-
-      return true;
-    },
-
-    activate: function() {
-      _.each(this.targets, function(target) {
-        target.highlight();
-      });
-    },
-
-    isActive: function() {
-      return this == guide.tour;
-    },
-
-    deactivate: function() {
-      _.each(this.targets, function(target) {
-        target.dehighlight();
-      });
-    }
-  });
-
-  _.extend(Target.prototype, {
-    cursor: function() {
-      return _.indexOf(this.tour.targets, this);
-    },
-
-    getCursor: function() {
-      return this.cursor();
-    },
-
-    getText: function() {
-      return this.options.text;
-    },
-
-    /** Whether the target has any text defined. */
-    hasText: function() {
-      return !!((this.getText()||'').length);
-    },
-
-    getCaption: function() {
-      return this.options.caption;
-    },
-
-    /** Whether the target has a caption defined. */
-    hasCaption: function() {
-      return !!(this.getCaption()||'').length;
-    },
-
-    /** Whether the target has either a caption or text content. */
-    hasContent: function() {
-      return this.hasText() || this.hasCaption();
-    },
-
-    highlight: function() {
-      this.$el.toggleClass('no-highlight', !this.options.highlight);
-      // this.$el.addClass(KLASS_TARGET);
-    },
-
-    dehighlight: function() {
-      this.$el.removeClass(KLASS_TARGET);
-    },
-
-    focus: function(prev_target) {
-      var $scroller = this.$scrollAnchor;
-
-      this.$el
-      .addClass(KLASS_TARGET)
-      .addClass(KLASS_FOCUSED)
-      .triggerHandler('guide:focus', prev_target);
-
-      if (this.options.autoScroll && !$scroller.is(":viewport_visible")) {
-
-        _.defer(function() {
-          $('html,body').animate({
-            scrollTop: $scroller.offset().top * 0.9
-          }, 250);
-        })
-      }
-    },
-
-    defocus: function(next_target) {
-      this.$el
-      .removeClass(KLASS_TARGET)
-      .removeClass(KLASS_FOCUSED)
-      .triggerHandler('guide:defocus', next_target);
-    }
-  });
-
-  /**
-   * Convenience method for adding a jQuery selector element as a guide target.
-   *
-   * @example
-   *   $('#my_button').guide({
-   *     text: "Click me to build your own nuclear reactor in just a minute. FREE."
-   *   })
-   *
-   * @see guide#addTarget for more info on options.
-   */
-  $.fn.guide = function(options) {
-    var options   = options || {},
-        instance  = window.guide;
-
-    if (!instance) {
-      throw "guide.js: bad $.fn.guide call, global guide has not been setup, " +
-            "have you forgotten to initialize guide.js?";
-    }
-
-    instance.addTarget($(this), options);
-
-    return $(this);
-  };
-
-  window.guide = guide = new guide();
+  // expose the instance to everybody
+  window.guide = guide;
 })(_, jQuery);

@@ -11,9 +11,13 @@
  *
  * function: blocks an event from propagating or bubbling further
  * usage: $.consume(evt)
+ *
+ * $.fn.guide({}):
+ *
+ * See method doc below.
  */
 (function($) {
-  var EXTENSIONS = [ 'consume' ];
+  var EXTENSIONS = [ 'consume', 'guide' ];
 
   // Break if there's a conflicting implementation
   for (var i = 0; i < EXTENSIONS.length; ++i) {
@@ -50,4 +54,30 @@
 
     return false;
   };
+
+
+  /**
+   * Convenience method for adding a jQuery selector element as a guide target.
+   *
+   * @example
+   *   $('#my_button').guide({
+   *     text: "Click me to build your own nuclear reactor in just a minute. FREE."
+   *   })
+   *
+   * @see guide#addTarget for more info on options.
+   */
+  $.fn.guide = function(options) {
+    var options   = options || {},
+        instance  = window.guide;
+
+    if (!instance) {
+      throw "guide.js: bad $.fn.guide call, global guide has not been setup, " +
+            "have you forgotten to initialize guide.js?";
+    }
+
+    instance.addTarget($(this), options);
+
+    return $(this);
+  };
+
 })($);

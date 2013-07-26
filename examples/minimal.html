@@ -54,18 +54,26 @@
 
 
     <!-- guide.js scripts -->
-    <script src="../dist/guide.js"></script>
     <!--
-      <script src="../src/js/guide.js"></script>
-      <script src="../src/js/extensions/guide-tutor.js"></script>
-      <script src="../src/js/extensions/guide-marker.js"></script>
+    <script src="../dist/guide.js"></script>
     -->
+    <script src="../src/js/ext/lodash.js"></script>
+    <script src="../src/js/ext/jQuery.js"></script>
+    <script src="../src/js/guide.js"></script>
+    <script src="../src/js/guide-tour.js"></script>
+    <script src="../src/js/guide-target.js"></script>
+    <script src="../src/js/extensions/guide-tutor.js"></script>
+    <script src="../src/js/extensions/guide-markers.js"></script>
     <script>
 
       $(function() {
         guide.setOptions({
           withOverlay: true
         }).fromDOM($('.example')).show().focus(0);
+
+        guide.getTour('Default Tour').setOptions({
+          // alwaysHighlight: false
+        });
       });
 
     </script>

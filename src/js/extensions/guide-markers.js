@@ -190,21 +190,30 @@
       var that = this;
 
       guide.extensions.push(this);
+
+      guide.Tour.prototype.addOption('alwaysMark', true);
+
+      // we must manually assign the options to the default tour as it has already
+      // been created
+      if (guide.tour) {
+        guide.tour.addOption('alwaysMark', true);
+      }
+
       this.$container = guide.$el;
 
       guide.$
         .on('add', _.bind(this.addMarker, this))
-        .on('show', function() {
-          that.showTourMarkers(guide.tour);
-        })
-        .on('hide', function() {
-          that.hideTourMarkers(guide.tour);
-        })
-        .on('activate.tours', function(e, tour) {
+        .on('show activate.tours', function(e, tour) {
+          var tour = tour || guide.tour;
+
           that.showTourMarkers(tour);
+          that.installTourHandlers(tour);
         })
-        .on('deactivate.tours', function(e, tour) {
+        .on('hide deactivate.tours', function(e, tour) {
+          var tour = tour || guide.tour;
+
           that.hideTourMarkers(tour);
+          that.uninstallTourHandlers(tour);
         })
         .on('focus', function(e, target) {
           target.marker && target.marker.highlight();
@@ -251,6 +260,33 @@
       }
 
       this.showTourMarkers(guide.tour);
+    },
+
+    installTourHandlers: function(tour) {
+
+      console.log('guide-markers: listening for tour ' + tour.id + ' options refresh ');
+
+      tour.$
+      .on('refresh', function() {
+        console.log('hiding non-active markers');
+
+      })
+      .on('refresh.gjs_markers', function(e, options) {
+        console.log('hiding non-active markers');
+        _.each(tour.targets, function(t) {
+          if (t.marker) {
+            if (tour.options.alwaysMark) {
+              t.marker.show();
+            } else {
+              !t.isCurrent() && t.marker.hide();
+            }
+          }
+        });
+      })
+    },
+
+    uninstallTourHandlers: function(tour) {
+      tour.$.off('refresh.gjs_markers');
     },
 
     showTourMarkers: function(tour) {
@@ -395,6 +431,10 @@
         this.$caption.hide();
         this.$cursor.show();
         this.$el.place();
+      }
+
+      if (!this.target.tour.options.alwaysMark) {
+        this.hide();
       }
     },
 

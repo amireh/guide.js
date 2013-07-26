@@ -2,7 +2,7 @@
   appDir:         './',
   baseUrl:        './',
   dir:            '../../dist',
-  optimize:       'uglify2',
+  optimize:       'none',
 
   removeCombined: true,
   keepBuildDir: true,
@@ -14,10 +14,10 @@
 
   uglify2: {
     warnings: true,
-    mangle:   true,
+    mangle:   false,
 
     output: {
-      beautify: false
+      beautify: true
     },
 
     compress: {
@@ -51,6 +51,8 @@
       dependencies: [ 'jQuery', 'lodash', 'ext/lodash', 'ext/jQuery' ]
     },
 
+    'guide-tour': [ 'guide' ],
+    'guide-target': [ 'guide' ],
     'extensions/guide-tutor': [ 'guide' ],
     'extensions/guide-markers': [ 'guide' ]
   },
@@ -64,6 +66,8 @@
         'ext/jQuery',
 
         'guide',
+        'guide-tour',
+        'guide-target',
         'extensions/guide-tutor',
         'extensions/guide-markers'
       ],
