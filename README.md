@@ -1,4 +1,7 @@
-guide.js - Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.
+guide.js
+========
+
+Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.
 
 This library started out as a fork of [pageguide.js](https://github.com/tracelytics/pageguide), but ended up being its own package as the code
 diverged too much from the original codebase.
