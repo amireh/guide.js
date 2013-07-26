@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>guide.js by amireh</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>guide.js</h1>
+        <p>Elegant, interactive, and flexible JavaScript user tutorial library.</p>
+
+        <p class="view"><a href="https://github.com/amireh/guide.js">View the Project on GitHub <small>amireh/guide.js</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/amireh/guide.js/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/amireh/guide.js/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/amireh/guide.js">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h1>
+<a name="guidejs" class="anchor" href="#guidejs"><span class="octicon octicon-link"></span></a>guide.js</h1>
+
+<p>Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.</p>
+
+<p>This library started out as a fork of <a href="https://github.com/tracelytics/pageguide">pageguide.js</a>, but ended up being its own package as the code
+diverged too much from the original codebase.</p>
+
+<p>If <code>guide.js</code> doesn't fit your needs, take a look at <a href="https://github.com/tracelytics/pageguide">pageguide.js</a>, or see the Related appendix below for more options.</p>
+
+<h2>
+<a name="what-makes-it-different" class="anchor" href="#what-makes-it-different"><span class="octicon octicon-link"></span></a>What makes it different</h2>
+
+<ul>
+<li>Deeply customizable and flexible in order to support most DOM structures</li>
+<li>Responsive design support</li>
+<li>i18n and RTL language support</li>
+<li>Multiple Tours: each with its own sequence of steps</li>
+<li>Single-page-apps support through <a href="#tours">tours</a>
+</li>
+<li>Multiple content sources; create tours and their steps using JavaScript and JSON, inline markup (using <code>data-guide</code> attributes), or by using explicit HTML elements to hold the content</li>
+<li>Dynamic; add and remove tour steps at run-time</li>
+<li>Modular, extensible: pick and use what you want</li>
+</ul><h2>
+<a name="dependencies" class="anchor" href="#dependencies"><span class="octicon octicon-link"></span></a>Dependencies</h2>
+
+<ul>
+<li>
+<a href="http://jquery.com">jQuery</a> (1.10.2+ or 2.0.2+)</li>
+<li>
+<a href="http://underscorejs.org">underscore.js</a> (or <a href="http://lodash.com">lodash</a>)</li>
+</ul><h2>
+<a name="getting-started" class="anchor" href="#getting-started"><span class="octicon octicon-link"></span></a>Getting started</h2>
+
+<p>Include the minified guide.js JavaScript file:</p>
+
+<div class="highlight"><pre><span class="nt">&lt;script </span><span class="na">src=</span><span class="s">"https://github.com/amireh/guide.js/dist/guide.js"</span><span class="nt">&gt;&lt;/script&gt;</span>
+</pre></div>
+
+<p>Now you can start defining tours. See the bundled examples for getting started.</p>
+
+<h2>
+<a name="browser-compatibility" class="anchor" href="#browser-compatibility"><span class="octicon octicon-link"></span></a>Browser compatibility</h2>
+
+<p>The library has been tested on Linux and Windows variants of the following browsers:</p>
+
+<ul>
+<li>IE 9 (Windows)</li>
+<li>Chrome 28</li>
+<li>Firefox 22</li>
+<li>Opera 12</li>
+</ul><h2>
+<a name="extensions" class="anchor" href="#extensions"><span class="octicon octicon-link"></span></a>Extensions</h2>
+
+<p>guide.js can support extra functionality via extensions, allowing you to pick and load only the features that you need.</p>
+
+<p>Enabling an extension is as simple as including its JS script. Some extensions may require configuration, others simply add themselves as functionality layers.</p>
+
+<p>See <code>src/extensions/</code> for the available stock extensions guide.js ships with.</p>
+
+<h3>
+<a name="stock-extensions" class="anchor" href="#stock-extensions"><span class="octicon octicon-link"></span></a>Stock extensions</h3>
+
+<p><strong>The Tutor</strong></p>
+
+<p>Display tour entries in a single static element. The tutor will update its content as the user takes the tour and allows the user to navigate around it.</p>
+
+<p><strong>Markers</strong></p>
+
+<p>Attach 'guidelets' to DOM elements to display tour entries in-place. Each guidelet will display the tour entry position, and when clicked will (optionally) expand with the content of the entry.</p>
+
+<h2>
+<a name="building" class="anchor" href="#building"><span class="octicon octicon-link"></span></a>Building</h2>
+
+<p><strong>JS</strong></p>
+
+<p>guide.js can be built using the require.js optimizer and minifies code using <code>uglifyjs</code>,
+which you can install using the node package manager:</p>
+
+<div class="highlight"><pre>npm install r.js
+npm install uglify-js
+</pre></div>
+
+<p>Once you have <code>r.js</code> installed, launch a terminal and do the following:</p>
+
+<div class="highlight"><pre><span class="nb">cd</span> /path/to/guide.js/src/js
+r.js -o build.js
+</pre></div>
+
+<p>You will now find the minified JavaScript in <code>dist/guide.js</code>.</p>
+
+<p>You can customize the build profile, in <code>src/js/build.js</code>, to your liking to
+include or exclude some guide.js extras.</p>
+
+<p><strong>CSS</strong></p>
+
+<p>To build the stylesheet, you need the <a href="http://lesscss.org/">LESS</a> compiler:</p>
+
+<div class="highlight"><pre><span class="nb">cd</span> /path/to/guide.js
+lessc --strict-imports --compress src/guide.less dist/guide.css
+</pre></div>
+
+<p>If you're using Linux (or you have <code>inotify-tools</code> available), you can use a compiler script which will automatically listen to changes made to the source LESS file <code>guide.less</code> and produce a built version in <code>dist/guide.css</code>.</p>
+
+<div class="highlight"><pre><span class="nb">cd</span> /path/to/guide.js/src/css
+./compiler.sh
+</pre></div>
+
+<h2>
+<a name="related" class="anchor" href="#related"><span class="octicon octicon-link"></span></a>Related</h2>
+
+<p>Here's a list of related libraries I've used before writing <code>guide.js</code>. They are
+all about providing a 'tour' or 'guide' for users, but they differ in how they
+implement markers, content feeding, and other things.</p>
+
+<ul>
+<li><a href="http://tracelytics.github.io/pageguide/">pageguide.js</a></li>
+<li><a href="http://usablica.github.io/intro.js/">intro.js</a></li>
+<li><a href="http://eragonj.github.io/Trip.js/">Trip.js</a></li>
+<li><a href="http://alvaroveliz.github.io/aSimpleTour/">aSimpleTour</a></li>
+</ul><h2>
+<a name="license" class="anchor" href="#license"><span class="octicon octicon-link"></span></a>License</h2>
+
+<p>guide.js is developed by <a href="www.algollabs.com">Algol Labs</a> and is licensed under
+the MIT terms. See <code>LICENSE</code>.</p>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/amireh">amireh</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
