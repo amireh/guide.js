@@ -5,7 +5,7 @@
  *
  * function: checks whether an element is visible in the current window's
  *           scroll boundaries
- * usage: $('#element').is(":viewport_visible")
+ * usage: $('#element').is(":in_viewport")
  *
  * $.consume(evt):
  *
@@ -31,7 +31,7 @@
   var $window = $(window);
 
   $.extend($.expr[":"], {
-    viewport_visible: function (el, index, meta, stack) {
+    in_viewport: function (el, index, meta, stack) {
       var
       vp_top    = $window.scrollTop(),
       vp_bottom = vp_top + $window.height(),

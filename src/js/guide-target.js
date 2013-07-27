@@ -2,34 +2,33 @@
   'use strict';
   var
 
-  Target = function(attrs) {
-    _.extend(this, attrs);
-
-    this.options = _.defaults(attrs.options || {}, TARGET_DEFAULTS);
-
-    return this;
+  Target = function() {
+    return this.constructor.apply(this, arguments);
   },
 
   KLASS_TARGET  = 'guide-target',
-  KLASS_FOCUSED = 'guide-target-focused',
+  KLASS_FOCUSED = 'guide-target-focused';
 
-  TARGET_DEFAULTS = {
-    withMarker: true,
-    highlight:  true,
-    autoScroll: true
-  };
+  _.extend(Target.prototype, guide.Optionable, {
+    defaults: {
+      withMarker: true,
+      highlight:  true,
+      autoScroll: true
+    },
 
-  _.extend(Target.prototype, {
+    constructor: function(attributes) {
+      _.extend(this, {
+        index: -1
+      }, attributes);
+
+      this.options = _.defaults(attributes.options || {}, this.defaults);
+
+      return this;
+    },
+
     isCurrent: function() {
-      return guide.cTarget == this;
-    },
-
-    cursor: function() {
-      return _.indexOf(this.tour.targets, this);
-    },
-
-    getCursor: function() {
-      return this.cursor();
+      // return guide.cTarget == this;
+      return this.tour.current == this;
     },
 
     getText: function() {
@@ -56,20 +55,36 @@
     },
 
     highlight: function() {
-      this.$el.toggleClass('no-highlight', !this.options.highlight);
+      var applicable = this.tour.options.alwaysHighlight;
 
-      if (this.tour.options.alwaysHighlight) {
-        this.$el.addClass(KLASS_TARGET);
+      // the target-scoped option takes precedence over the tour one
+      if (!this.options.highlight) {
+        applicable = false;
       }
+
+      this.$el.toggleClass('no-highlight', !applicable);
+      this.$el.toggleClass(KLASS_TARGET, applicable);
 
       return this;
     },
 
-    dehighlight: function() {
-      this.$el.removeClass([
-        this.tour.options.alwaysHighlight ? '' : KLASS_TARGET,
-        KLASS_FOCUSED
-      ].join(' '));
+    /**
+     * Remove the highlight CSS classes on the target $element.
+     *
+     * If the Tour option 'alwaysHighlight' is enabled, the target will only
+     * be de-focused, but will stay highlighted.
+     *
+     * Available options:
+     *
+     *   force: will dehighlight regardless of any options that might be respected
+     *
+     */
+    dehighlight: function(options) {
+      var applicable = (options||{}).force || !this.tour.options.alwaysHighlight;
+
+      if (applicable) {
+        this.$el.removeClass(KLASS_TARGET);
+      }
 
       return this;
     },
@@ -77,11 +92,13 @@
     focus: function(prev_target) {
       var $scroller = this.$scrollAnchor;
 
+      this.highlight();
+
       this.$el
-        .addClass([ KLASS_TARGET, KLASS_FOCUSED ].join(' '))
+        .addClass(KLASS_FOCUSED)
         .triggerHandler('focus.gjs', prev_target);
 
-      if (this.options.autoScroll && !$scroller.is(":viewport_visible")) {
+      if (this.options.autoScroll && !$scroller.is(":in_viewport")) {
 
         _.defer(function() {
           $('html,body').animate({
@@ -94,7 +111,18 @@
     defocus: function(next_target) {
       this.dehighlight();
 
+      this.$el.removeClass(KLASS_FOCUSED);
       this.$el.triggerHandler('defocus.gjs', next_target);
+    },
+
+    refresh: function() {
+      this.dehighlight();
+      this.highlight();
+
+      if (this.isCurrent()) {
+        this.defocus();
+        this.focus();
+      }
     }
   });
 

@@ -1,6 +1,9 @@
 @import "../guide-common";
 
 #guide_tutor {
+  @nav-w: 120px;
+  @nav-h: 60px;
+
   position: fixed;
 
   left:   30%;
@@ -8,31 +11,27 @@
   bottom: 0;
   z-index: @guide-layer-forefront;
 
-
-  padding: @guide-padding;
-  min-height: 2 * @guide-padding;
+  padding:    @guide-padding;
+  min-height: @nav-h - @guide-padding;
   line-height: 20px;
-  background: white;
 
   background: rgba(0, 0, 0, 0.85);
   color: white;
-  /*background: @guide-highlight-bg;*/
-  /*color: @guide-highlight-fg;*/
   font-size: 16px;
-  overflow-y: auto;
+  overflow: hidden;
 
+  .guide-box-sizing(content-box);
   .guide-rounded-corners(3px 3px 0 0);
   .guide-box-shadow(0, 0, 9px, 4px, rgba(0, 0, 0, 0.4));
-  .guide-transition();
 
   .navigation {
-    display: inline-block;
-    vertical-align: top;
+    position: absolute;
+    width: @nav-w;
   }
 
   .content {
     display: inline-block;
-    margin-left: 20px;
+    margin-left: @nav-w + @guide-padding;
     vertical-align: top;
   }
 
@@ -44,6 +43,13 @@
     display: inline-block;
     vertical-align: middle;
     cursor: pointer;
+    .guide-transition(opacity; 0.25s);
+
+    &.disabled {
+      opacity: 0;
+      z-index: -1;
+      pointer-events: none;
+    }
   }
 
   .bwd {

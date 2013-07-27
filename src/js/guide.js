@@ -72,9 +72,9 @@
         tours:   [],
         extensions: [],
         tour: null,
-        cTarget: null,
-        pTarget: null,
-        cursor:  -1
+        // cTarget: null,
+        // pTarget: null,
+        // cursor:  -1
       });
 
       this.$.on('refresh', function(e, options, el) {
@@ -317,89 +317,9 @@
       this.$.triggerHandler('dismiss');
     },
 
-    /**
-     * Focuses the next target, if any.
-     *
-     * @see guide#focus
-     */
-    next: function() {
-      if (!this.hasNext()) {
-        return false;
-      }
-
-      return this.focus(this.cursor + 1);
+    focus: function() {
+      return this.tour.focus.apply(this.tour, arguments);
     },
-
-    hasNext: function() {
-      var ln = this.tour.targets.length;
-
-      return ln != 1 && this.cursor < ln-1;
-    },
-
-    prev: function() {
-      if (!this.hasPrev()) {
-        return false;
-      }
-
-      return this.focus(this.cursor - 1);
-    },
-
-    hasPrev: function() {
-      var ln = this.tour.targets.length;
-
-      return ln != 1 && this.cursor > 0;
-    },
-
-    first: function() {
-      return this.focus(0);
-    },
-
-    last: function() {
-      return this.focus(this.tour.targets.length-1);
-    },
-
-    /**
-     *
-     * @emit defocus.gjs on the current (now previous) target, guide.pTarget.$el
-     * @emit defocus [ prevTarget, currTarget, guide ] on guide.$
-     *
-     * @emit focus.gjs on the next (now current) target, guide.cTarget.$el
-     * @emit focus [ currTarget, guide ] on guide.$
-     *
-     * @return whether the target has been focused
-     */
-    focus: function(index) {
-      var target  = this.__getTarget(index);
-
-      if (!target) {
-        throw "guide.js: bad target @ " + index + " to focus";
-      }
-
-      if (target == this.cTarget) {
-        return false;
-      }
-
-      if (target.tour != this.tour) {
-        this.runTour(target.tour);
-      }
-
-      this.pTarget = this.cTarget;
-      this.cTarget = target;
-      this.pCursor = this.cursor;
-      this.cursor  = this.__idxTarget(target);
-
-      // de-focus the last target
-      if (this.pTarget) {
-        this.pTarget.defocus(target);
-        this.$.triggerHandler('defocus', [ this.pTarget, this.cTarget, this ]);
-      }
-
-      target.focus(this.pTarget);
-      this.$.triggerHandler('focus', [ target, this ]);
-
-      return true;
-    },
-
 
     addExtension: function(ext) {
       if (!ext.id) {
@@ -422,26 +342,6 @@
       return _.isString(id)
         ? _.find(this.tours || [], { id: id })
         : id;
-    },
-
-    __getTarget: function(index_or_el) {
-      var index = index_or_el;
-
-      if (typeof(index) == 'number') {
-        return this.tour.targets[index];
-      }
-      else if (!index) {
-        return null;
-      }
-
-      console.log('looking up target:', arguments)
-
-      // return _.find(this.tour.targets || [], index);
-      return index;
-    },
-
-    __idxTarget: function(target) {
-      return _.indexOf(this.tour.targets, target);
     }
   }); // guide.prototype
 

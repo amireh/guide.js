@@ -89,3 +89,14 @@ body {
   border: 7px solid transparent;
   border-bottom: 14px solid #555;
 }
+
+#controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  border-top: 1px solid #ddd;
+  padding: 10px;
+  z-index: 103;
+}

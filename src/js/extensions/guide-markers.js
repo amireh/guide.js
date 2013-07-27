@@ -11,31 +11,31 @@
   },
 
   /**
-   * Plain markers that contain only the step cursor, no text, and no caption.
+   * Plain markers that contain only the step index, no text, and no caption.
    */
   JST_PLAIN = _.template([
     '<div class="guide-marker">',
-    '<span class="index"><%= cursor +1 %></span>',
+    '<span class="index"><%= index +1 %></span>',
     '</div>'
   ].join('')),
 
   /**
-   * Markers that contain the step cursor when not focused, and text otherwise.
+   * Markers that contain the step index when not focused, and text otherwise.
    */
   JST_WITH_CONTENT = _.template([
     '<div class="guide-marker">',
-    '<span class="index"><%= cursor +1 %></span>',
+    '<span class="index"><%= index +1 %></span>',
     '<div class="text"><%= text %></div>',
     '</div>'
   ].join('')),
 
   /**
-   * Markers that contain the step cursor when not focused, and both caption
+   * Markers that contain the step index when not focused, and both caption
    * and text otherwise.
    */
   JST_WITH_CAPTION = _.template([
     '<div class="guide-marker">',
-    '<span class="index"><%= cursor +1 %></span>',
+    '<span class="index"><%= index +1 %></span>',
     '<h6 class="caption"><%= caption %></h6>',
     '<div class="text"><%= text %></div>',
     '</div>'
@@ -62,6 +62,29 @@
   POS_B   = 6,
   POS_BL  = 7,
   POS_L   = 8,
+
+  // insert our DOM node at the appropriate position
+  attach = function(m) {
+    switch(m.placement) {
+      case PMT_INLINE:
+        m.target.$el.append(m.$el);
+      break;
+      case PMT_SIBLING:
+        var
+        p       = m.position,
+        method  = (p >= POS_TR && p <= POS_BR)
+          ? 'after'
+          : 'before';
+
+        m.target.$el[method](m.$el);
+      break;
+      case PMT_OVERLAY:
+        guide.$el.append(m.$el);
+      break;
+    }
+
+    return m;
+  },
 
   /**
    * Center node horizontally or vertically by applying negative margins.
@@ -236,8 +259,8 @@
 
       marker.$el
       .addClass(guide.entityKlass())
-      .on('click', function(e) {
-        guide.focus(target);
+      .on('click.gjs-markers', function(e) {
+        target.tour.focus(target);
 
         return $.consume(e);
       });
@@ -267,12 +290,7 @@
       console.log('guide-markers: listening for tour ' + tour.id + ' options refresh ');
 
       tour.$
-      .on('refresh', function() {
-        console.log('hiding non-active markers');
-
-      })
       .on('refresh.gjs_markers', function(e, options) {
-        console.log('hiding non-active markers');
         _.each(tour.targets, function(t) {
           if (t.marker) {
             if (tour.options.alwaysMark) {
@@ -307,7 +325,7 @@
 
   _.extend(Marker.prototype, {
     constructor: function(target) {
-      var index = target.cursor(),
+      var index = target.index,
           $el;
 
       this.target   = target;
@@ -324,7 +342,7 @@
 
       _.extend(this, {
         $el:      $el,
-        $cursor:  $el.find('.index'),
+        $index:  $el.find('.index'),
         $caption: $el.find('.caption'),
         $text:    $el.find('.text')
       });
@@ -398,7 +416,7 @@
       }
 
       return template({
-        cursor:   target.getCursor(),
+        index:   target.index,
         text:     target.getText(),
         caption:  target.getCaption()
       });
@@ -418,7 +436,7 @@
       if (this.withText) {
         this.$text.show();
         this.$caption.show();
-        this.$cursor.hide();
+        this.$index.hide();
         this.$el.place();
       }
     },
@@ -429,7 +447,7 @@
       if (this.withText) {
         this.$text.hide();
         this.$caption.hide();
-        this.$cursor.show();
+        this.$index.show();
         this.$el.place();
       }
 
@@ -446,7 +464,7 @@
         return this.hide();
       }
 
-      this.__attach();
+      attach(this);
 
       // mark the target as being highlighted by a marker
       $t.addClass([
@@ -470,28 +488,7 @@
       }
     },
 
-    // insert our DOM node at the appropriate position
-    __attach: function() {
-      switch(this.placement) {
-        case PMT_INLINE:
-          this.target.$el.append(this.$el);
-        break;
-        case PMT_SIBLING:
-          var
-          p       = this.position,
-          method  = (p >= POS_TR && p <= POS_BR)
-            ? 'after'
-            : 'before';
 
-          this.target.$el[method](this.$el);
-        break;
-        case PMT_OVERLAY:
-          guide.$el.append(this.$el);
-        break;
-      }
-
-      return this;
-    },
   });
 
   Extension = new Extension();

@@ -40,6 +40,12 @@
   box-shadow: @arguments;
 }
 
+.guide-box-sizing(@s: content-box) {
+  -webkit-box-sizing: @s;
+     -moz-box-sizing: @s;
+          box-sizing: @s;
+}
+
 .guide-fullscreen(@offset: 0; @position: absolute) {
   position: @position;
   top:    @offset;

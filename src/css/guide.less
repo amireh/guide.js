@@ -20,10 +20,17 @@
     background-color: fade(@guide-highlight-bg, 20%);
   }
 }
-
+/*
 .guide-with-overlay p.guide-target-focused,
 .guide-with-overlay span.guide-target-focused {
   color: @guide-highlight-contrast;
+}*/
+.guide-with-overlay {
+  p, span, pre {
+    &.guide-target-focused:not(.no-highlight) {
+      color: @guide-highlight-contrast;
+    }
+  }
 }
 
 .guide-target.no-highlight {
