@@ -3,7 +3,7 @@
 @gjs-toggler-padding: 4px;
 @gjs-emblem-d: 16px;
 
-#guide_toggler {
+#gjs_toggler {
   position: fixed;
   top: 50%;
   right: 0;
@@ -17,14 +17,14 @@
   height: @gjs-toggler-h;
   line-height: @gjs-toggler-h / 2;
 
-  .guide-transition(width; 0.2s; ease-in);
+  .gjs-transition(width; 0.2s; ease-in);
 
   button {
-    .guide-appearance(none);
-    .guide-fullscreen(0);
-    .guide-transition(all; 0.2s; ease-in);
-    .guide-box-sizing(border-box);
-    .guide-rounded-corners(3px 0 0 3px);
+    .gjs-appearance(none);
+    .gjs-fullscreen(0);
+    .gjs-transition(all; 0.2s; ease-in);
+    .gjs-box-sizing(border-box);
+    .gjs-rounded-corners(3px 0 0 3px);
 
     pointer-events: inherit;
     cursor: pointer;
@@ -48,15 +48,15 @@
 
     &.hide,
     &.show:hover {
-      background: @guide-highlight-bg;
-      color: @guide-highlight-fg;
+      background: @gjs-highlight-bg;
+      color: @gjs-highlight-fg;
       right: 0;
     }
   }
 }
 
-#guide_toggler.collapsed,
-.gjs-hiding #guide_toggler {
+#gjs_toggler.collapsed,
+.gjs-hiding #gjs_toggler {
   /*right: -20px;*/
   width: @gjs-toggler-w / 2;
 }

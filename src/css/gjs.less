@@ -1,47 +1,47 @@
-@import "guide-common";
-@import "extensions/guide-tutor";
-@import "extensions/guide-markers";
-@import "extensions/guide-controls";
-@import "extensions/guide-toggler";
+@import "gjs-common";
+@import "extensions/gjs-tutor";
+@import "extensions/gjs-markers";
+@import "extensions/gjs-controls";
+@import "extensions/gjs-toggler";
 
 /**
- * guide.js Skin
+ * gjs.js Skin
  */
-.guide-spot {
+.gjs-spot {
   position: relative;
 
   &:after {
-    .guide-fullscreen(-5px);
-    /*.guide-box-shadow(0, 0, 1px, 1px, lighten(@guide-highlight-bg, 10%));*/
-    background-color: fade(@guide-highlight-bg, 10%);
+    .gjs-fullscreen(-5px);
+    /*.gjs-box-shadow(0, 0, 1px, 1px, lighten(@gjs-highlight-bg, 10%));*/
+    background-color: fade(@gjs-highlight-bg, 10%);
   }
 }
 
-.guide-spot-focused {
+.gjs-spot-focused {
   &:after {
-    background-color: fade(@guide-highlight-bg, 20%);
+    background-color: fade(@gjs-highlight-bg, 20%);
   }
 }
 
-.guide-with-overlay {
+.gjs-with-overlay {
   p, span, pre {
-    &.guide-spot-focused:not(.no-highlight) {
-      color: @guide-highlight-contrast;
+    &.gjs-spot-focused:not(.no-highlight) {
+      color: @gjs-highlight-contrast;
     }
   }
 }
 
-.guide-spot.no-highlight {
+.gjs-spot.no-highlight {
   &:after {
     display: none;
     content: normal;
   }
 }
 
-.guide-with-overlay .guide-js {
+.gjs-with-overlay .gjs {
 
   &:after {
-    .guide-fullscreen(0; fixed);
+    .gjs-fullscreen(0; fixed);
     background-color: #000;
     background: -moz-radial-gradient(center,ellipse cover,rgba(0,0,0,0.4) 0,rgba(0,0,0,0.9) 100%);
     background: -webkit-gradient(radial,center center,0px,center center,100%,color-stop(0%,rgba(0,0,0,0.4)),color-stop(100%,rgba(0,0,0,0.9)));
@@ -52,26 +52,26 @@
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#66000000',endColorstr='#e6000000',GradientType=1);
     -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=50)";
     filter: alpha(opacity=50);
-    z-index: @guide-layer-background;
+    z-index: @gjs-layer-background;
   }
 }
 
-.guide-with-overlay .guide-entity {
-  z-index: @guide-layer-entities;
+.gjs-with-overlay .gjs-entity {
+  z-index: @gjs-layer-entities;
 }
-.guide-with-overlay .guide-marker,
-.guide-with-overlay .guide-spot:after {
-  .guide-box-shadow(0; 2px; 15px; 0; rgba(0,0,0,.4));
+.gjs-with-overlay .gjs-marker,
+.gjs-with-overlay .gjs-spot:after {
+  .gjs-box-shadow(0; 2px; 15px; 0; rgba(0,0,0,.4));
 }
 
-.guide-spot-inline {
+.gjs-spot-inline {
   position: relative;
 }
 
-.guide-entity .caption {
+.gjs-entity .caption {
   margin: 0 0 10px 0;
   font-size: 16px;
   padding: 0 0 10px 0;
-  /*border-bottom: 1px solid @guide-highlight-contrast;*/
-  .guide-border-bottom();
+  /*border-bottom: 1px solid @gjs-highlight-contrast;*/
+  .gjs-border-bottom();
 }

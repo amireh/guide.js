@@ -6,8 +6,8 @@
     return this.constructor.apply(this, arguments);
   },
 
-  KLASS_TARGET  = 'guide-spot',
-  KLASS_FOCUSED = 'guide-spot-focused';
+  KLASS_TARGET  = 'gjs-spot',
+  KLASS_FOCUSED = 'gjs-spot-focused';
 
   _.extend(Spot.prototype, guide.Optionable, {
     defaults: {

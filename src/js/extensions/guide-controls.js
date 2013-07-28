@@ -7,7 +7,7 @@
   },
 
   JST_CONTROLS = _.template([
-    '<div id="guide_controls">',
+    '<div id="gjs_controls">',
       '<button data-action="tour.first">First</button>',
       '<button data-action="tour.prev">&lt;</button>',
       '<button data-action="tour.next">&gt;</button>',

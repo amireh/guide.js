@@ -14,7 +14,7 @@
    * Plain markers that contain only the step index, no text, and no caption.
    */
   JST_PLAIN = _.template([
-    '<div class="guide-marker">',
+    '<div class="gjs-marker">',
     '<span class="index"><%= index +1 %></span>',
     '</div>'
   ].join('')),
@@ -23,7 +23,7 @@
    * Markers that contain the step index when not focused, and text otherwise.
    */
   JST_WITH_CONTENT = _.template([
-    '<div class="guide-marker">',
+    '<div class="gjs-marker">',
     '<span class="index"><%= index +1 %></span>',
     '<div class="text"><%= text %></div>',
     '</div>'
@@ -34,7 +34,7 @@
    * and text otherwise.
    */
   JST_WITH_CAPTION = _.template([
-    '<div class="guide-marker">',
+    '<div class="gjs-marker">',
     '<span class="index"><%= index +1 %></span>',
     '<h6 class="caption"><%= caption %></h6>',
     '<div class="text"><%= text %></div>',
@@ -485,8 +485,8 @@
 
       // mark the spot as being highlighted by a marker
       $t.addClass([
-        'guide-spot-' + options.placement,
-        'guide-spot-' + options.position
+        'gjs-spot-' + options.placement,
+        'gjs-spot-' + options.position
       ].join(' '));
 
       if (this.placement == PMT_INLINE) {

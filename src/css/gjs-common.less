@@ -3,60 +3,60 @@
  */
 
 /* color schemes */
-@guide-gray-bg: #FFF;
-@guide-gray-fg: #555;
-@guide-gray-contrast: #FFF;
+@gjs-gray-bg: #FFF;
+@gjs-gray-fg: #555;
+@gjs-gray-contrast: #FFF;
 
-@guide-pink-bg: #F70077;
-@guide-pink-fg: #FFF;
-@guide-pink-contrast: #FFF;
+@gjs-pink-bg: #F70077;
+@gjs-pink-fg: #FFF;
+@gjs-pink-contrast: #FFF;
 
-@guide-blue-bg: #33B5E5;
-@guide-blue-fg: #FFF;
-@guide-blue-contrast: #FFF;
+@gjs-blue-bg: #33B5E5;
+@gjs-blue-fg: #FFF;
+@gjs-blue-contrast: #FFF;
 
-@guide-green-bg: #98BF0D;
-@guide-green-fg: #FFF;
-@guide-green-contrast: #555;
+@gjs-green-bg: #98BF0D;
+@gjs-green-fg: #FFF;
+@gjs-green-contrast: #555;
 
-/* set this to any of the colors defined above to skin guide.js */
-@guide-highlight-bg:        @guide-blue-bg;
-@guide-highlight-fg:        @guide-blue-fg;
-@guide-highlight-contrast:  @guide-blue-contrast;
+/* set this to any of the colors defined above to skin gjs.js */
+@gjs-highlight-bg:        @gjs-blue-bg;
+@gjs-highlight-fg:        @gjs-blue-fg;
+@gjs-highlight-contrast:  @gjs-blue-contrast;
 
-@guide-padding: 10px;
-@guide-arrowsz: 15px;
+@gjs-padding: 10px;
+@gjs-arrowsz: 15px;
 
 /** All the Z-index layers we'll be needing */
-@guide-layer-background:  100;
-@guide-layer-spots:     101; /* spots and source elements */
-@guide-layer-entities:    102; /* markers and guide.js generated elements */
-@guide-layer-forefront:   103; /* tutor and stuff that should always be on top */
+@gjs-layer-background:  100;
+@gjs-layer-spots:     101; /* spots and source elements */
+@gjs-layer-entities:    102; /* markers and gjs.js generated elements */
+@gjs-layer-forefront:   103; /* tutor and stuff that should always be on top */
 
 /**
  * Helpers
  */
-.guide-box-shadow(@x: 0, @y: 0, @blur: 5px, @spread: 0, @color: rgba(0, 0, 0, 0.5)) {
+.gjs-box-shadow(@x: 0, @y: 0, @blur: 5px, @spread: 0, @color: rgba(0, 0, 0, 0.5)) {
   -webkit-box-shadow: @arguments;
   -moz-box-shadow: @arguments;
   -o-box-shadow: @arguments;
   box-shadow: @arguments;
 }
 
-.guide-box-shadow(@str) {
+.gjs-box-shadow(@str) {
   -webkit-box-shadow: @arguments;
   -moz-box-shadow: @arguments;
   -o-box-shadow: @arguments;
   box-shadow: @arguments;
 }
 
-.guide-box-sizing(@s: content-box) {
+.gjs-box-sizing(@s: content-box) {
   -webkit-box-sizing: @s;
      -moz-box-sizing: @s;
           box-sizing: @s;
 }
 
-.guide-fullscreen(@offset: 0; @position: absolute) {
+.gjs-fullscreen(@offset: 0; @position: absolute) {
   position: @position;
   top:    @offset;
   bottom: @offset;
@@ -67,21 +67,21 @@
   pointer-events: none;
 }
 
-.guide-rounded-corners (@radius: 5px) {
+.gjs-rounded-corners (@radius: 5px) {
   -webkit-border-radius: @radius;
   -moz-border-radius: @radius;
   -o-border-radius: @radius;
   border-radius: @radius;
 }
 
-.guide-appearance(@value: none) {
+.gjs-appearance(@value: none) {
   -webkit-appearance: @value;
   -moz-appearance: @value;
   -o-appearance: @value;
   appearance: @value;
 }
 
-.guide-transform (@rotate: 0deg, @scale: 1, @skewX: 0deg, @skewY: 0deg, @translate: 0px) {
+.gjs-transform (@rotate: 0deg, @scale: 1, @skewX: 0deg, @skewY: 0deg, @translate: 0px) {
   -webkit-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
   -moz-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
   -o-transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
@@ -89,7 +89,7 @@
   transform: rotate(@rotate) scale(@scale) skewX(@skewX) skewY(@skewY) translate(@translate);
 }
 
-.guide-icon-replacement (@imgtouse: "guide.png", @height: 20px, @width: 20px, @bgposition: 0 0) {
+.gjs-icon-replacement (@imgtouse: "gjs.png", @height: 20px, @width: 20px, @bgposition: 0 0) {
   background: transparent url(@imgtouse) @bgposition no-repeat;
   height: @height;
   overflow: hidden;
@@ -97,7 +97,7 @@
   width: @width;
 }
 
-.guide-transition(@prop: all, @time: 1s, @ease: linear) {
+.gjs-transition(@prop: all, @time: 1s, @ease: linear) {
   -webkit-transition: @prop @time @ease;
   -moz-transition: @prop @time @ease;
   -o-transition: @prop @time @ease;
@@ -105,13 +105,13 @@
   transition: @prop @time @ease;
 }
 
-.guide-border-top() {
-  border-top: 1px solid darken(@guide-highlight-bg, 1%);
+.gjs-border-top() {
+  border-top: 1px solid darken(@gjs-highlight-bg, 1%);
   box-shadow: 0 -1px 0 rgba(255,255,255,0.15);
 }
-.guide-border-bottom() {
-  /*border-bottom: 1px solid darken(@guide-highlight-bg, 1%);*/
+.gjs-border-bottom() {
+  /*border-bottom: 1px solid darken(@gjs-highlight-bg, 1%);*/
   /*box-shadow: 0 1px 0 rgba(255,255,255,0.15);*/
   border-bottom: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 1px 0 darken(@guide-highlight-bg, 1%);
+  box-shadow: 0 1px 0 darken(@gjs-highlight-bg, 1%);
 }

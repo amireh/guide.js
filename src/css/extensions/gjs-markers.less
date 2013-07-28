@@ -1,22 +1,22 @@
-@import "../guide-common";
+@import "../gjs-common";
 
 /**
- * guide.js markers
+ * gjs.js markers
  */
-.guide-marker {
+.gjs-marker {
   color: white;
-  background-color: @guide-highlight-bg;
-  background: fade(@guide-highlight-bg, 30%);
+  background-color: @gjs-highlight-bg;
+  background: fade(@gjs-highlight-bg, 30%);
   text-decoration: none;
   font-size: 12px;
 
-  /*.guide-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
-  .guide-transition(background-color; 0.25s; ease-in);
+  /*.gjs-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
+  .gjs-transition(background-color; 0.25s; ease-in);
 
   cursor: pointer;
   padding: 10px;
   display: inline-block;
-  z-index: @guide-layer-entities;
+  z-index: @gjs-layer-entities;
 
   .index {
     font-size: 32px;
@@ -25,13 +25,13 @@
   .caption,
   .text {
     display: none;
-    color: @guide-highlight-fg;
+    color: @gjs-highlight-fg;
   }
 
   &:hover,
   &.focused {
-    z-index: @guide-layer-forefront;
-    background: fade(@guide-highlight-bg, 95%);
+    z-index: @gjs-layer-forefront;
+    background: fade(@gjs-highlight-bg, 95%);
   }
 
   &.focused {
@@ -43,49 +43,49 @@
 
     &.topleft {
       bottom: 100%;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
       left: 0;
     }
 
     &.top {
       bottom: 100%;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
       left: 50%;
     }
 
     &.topright {
       bottom: 100%;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
       right: 0;
     }
 
     &.right {
       left: 100%;
-      margin-left: @guide-arrowsz;
+      margin-left: @gjs-arrowsz;
       top: 50%;
     }
 
     &.bottomright {
       top: 100%;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
       right: 0;
     }
 
     &.bottom {
       top: 100%;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
       left: 50%;
     }
 
     &.bottomleft {
       top: 100%;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
       left: 0;
     }
 
     &.left {
       right: 100%;
-      margin-right: @guide-arrowsz;
+      margin-right: @gjs-arrowsz;
       top: 50%;
     }
   }
@@ -100,46 +100,46 @@
     &.topleft {
       bottom: 100%;
       left: 0;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
     }
 
     &.top {
       bottom: 100%;
       left: 50%;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
     }
 
     &.topright {
       right: 0;
       bottom: 100%;
-      margin-bottom: @guide-arrowsz;
+      margin-bottom: @gjs-arrowsz;
     }
     &.right {
       left: 100%;
       top: 50%;
-      margin-left: @guide-arrowsz;
+      margin-left: @gjs-arrowsz;
     }
 
     &.bottom {
       top: 100%;
       left: 50%;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
     }
     &.bottomleft {
       top: 100%;
       left: 0;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
     }
     &.bottomright {
       top: 100%;
       right: 0;
-      margin-top: @guide-arrowsz;
+      margin-top: @gjs-arrowsz;
     }
 
     &.left {
       right: 100%;
       top: 50%;
-      margin-right: @guide-arrowsz;
+      margin-right: @gjs-arrowsz;
     }
   }
 
@@ -153,10 +153,10 @@
 }
 
 /** marker arrows */
-.guide-marker {
+.gjs-marker {
   /* some shortcuts */
-  @d: @guide-arrowsz;
-  @c: fade(@guide-highlight-bg, 30%);
+  @d: @gjs-arrowsz;
+  @c: fade(@gjs-highlight-bg, 30%);
 
   /*
    * TOP, RIGHT, BOTTOM, and LEFT arrow positioning has to be treated differently:

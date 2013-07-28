@@ -15,11 +15,11 @@
   GRACEFUL = false,
   DEBUG    = true,
 
-  KLASS_ENABLED         = 'with-guide',
+  KLASS_ENABLED         = 'with-gjs',
   KLASS_OVERLAYED       = 'gjs-with-overlay',
   KLASS_NOT_OVERLAYED   = 'gjs-without-overlay',
   KLASS_HIDING          = 'gjs-hiding',
-  KLASS_ENTITY          = 'guide-entity';
+  KLASS_ENTITY          = 'gjs-entity';
 
   var Optionable = {
     defaults: {},
@@ -74,7 +74,7 @@
 
       _.extend(this, {
         $container: $('body'),
-        $el:        $('<div class="guide-js" />'),
+        $el:        $('<div class="gjs" />'),
         options: _.clone(this.defaults),
         tours:   [],
         extensions: [],
@@ -323,8 +323,8 @@
      * a different level of contrast than in non-overlayed mode (they're lighter),
      * thus the CSS is able to do the following:
      *
-     *   .guide-with-overlay #my_element { color: white }
-     *   .guide-without-overlay #my_element { color: black }
+     *   .gjs-with-overlay #my_element { color: white }
+     *   .gjs-without-overlay #my_element { color: black }
      *
      */
     toggleOverlayMode: function(do_toggle) {

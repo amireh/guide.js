@@ -8,7 +8,7 @@
 
   JST_TUTOR = _.template([
     '<div>',
-    // '<button id="guide_close_tutor">&times;</button>',
+    // '<button id="gjs_close_tutor">&times;</button>',
 
     '<div class="navigation">',
       '<button class="bwd"></button>',
@@ -44,14 +44,14 @@
       this.$el = $(JST_TUTOR({}));
 
       this.$el.attr({
-        'id': 'guide_tutor',
+        'id': 'gjs_tutor',
         'class': guide.entityKlass()
       });
 
       _.extend(this, {
         $content: this.$el.find('> .content'),
         $nav: this.$el.find('> .navigation'),
-        $close_btn: this.$el.find('#guide_close_tutor'),
+        $close_btn: this.$el.find('#gjs_close_tutor'),
         $bwd: this.$el.find('.bwd'),
         $fwd: this.$el.find('.fwd')
       });

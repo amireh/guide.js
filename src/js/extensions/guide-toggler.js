@@ -7,7 +7,7 @@
   },
 
   JST = _.template([
-    '<div id="guide_toggler">',
+    '<div id="gjs_toggler">',
       '<button></button>',
     '</div>'
   ].join(''));
