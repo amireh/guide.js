@@ -8,7 +8,7 @@
  *
  */
 (function(_) {
-  var EXTENSIONS = [ 'assign' ];
+  var EXTENSIONS = [ 'assign', 'parseOptions' ];
 
   // Break if there's a conflicting implementation
   for (var i = 0; i < EXTENSIONS.length; ++i) {
@@ -42,4 +42,57 @@
       o[k] = v;
     }
   }
+
+  // var strOptionsSeparator = new RegExp('[:|,]'),
+  var strOptionsSeparator = /[:|,]/,
+      strOptionsSanitizer = new RegExp(':\\s+', 'g');
+
+  /**
+   * Extracts key-value pairs specified in a string, delimited by a certain
+   * separator. The pairs are returned in an object.
+   *
+   * The default tokenizer/separator delimits by commas, ie:
+   * 'key:value, key2:value2, ..., keyN:[\s*]valueN'. See the @options parameter
+   * for specifying your own tokenizer.
+   *
+   * @example
+   *   _.parseOptions('foo:bar') => { foo: 'bar' }
+   *   _.parseOptions('foo:bar, xyz:123') => { foo: 'bar', xyz: 123 }
+   *   _.parseOptions('x.y.z: true') => { x: { y: { z: true }}}
+   *
+   * @param <String> str the options string to parse
+   * @param <Object> options: {
+   *   separator: <RegExp> that will be used for tokenizing
+   *   sanitizer: <RegExp> that will optionally be used to pre-process the string
+   *   convert: <Boolean> whether to query and convert string values to other types
+   * }
+   *
+   * @return <Object> the extracted key-value pairs
+   */
+  _.parseOptions = function(str, options) {
+    var
+    options   = options || {},
+    separator = options.separator || strOptionsSeparator,
+    sanitizer = options.sanitizer || strOptionsSanitizer,
+    tokens    = (str || '').replace(sanitizer, ':').split(separator),
+    tokenssz  = tokens.length,
+    out       = {};
+
+    for (var i = 0; i < tokenssz; ++i) {
+      var k = (tokens[i]||'').trim(),
+          v = (tokens[++i]||'').trim();
+
+      if (!k) continue;
+
+      if (v == 'false') { v = false; }
+      else if (v == 'true') { v = true; }
+      else if (Number(v).toString() == v) {
+        v = Number(v);
+      }
+
+      _.assign(k, v, out);
+    }
+
+    return out;
+  };
 })(_);

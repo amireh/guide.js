@@ -9,24 +9,27 @@
 
 @guide-pink-bg: #F70077;
 @guide-pink-fg: #FFF;
+@guide-pink-contrast: #FFF;
 
 @guide-blue-bg: #33B5E5;
 @guide-blue-fg: #FFF;
+@guide-blue-contrast: #FFF;
 
 @guide-green-bg: #98BF0D;
 @guide-green-fg: #FFF;
+@guide-green-contrast: #555;
 
 /* set this to any of the colors defined above to skin guide.js */
 @guide-highlight-bg:        @guide-blue-bg;
 @guide-highlight-fg:        @guide-blue-fg;
-@guide-highlight-contrast:  @guide-blue-fg;
+@guide-highlight-contrast:  @guide-blue-contrast;
 
 @guide-padding: 10px;
 @guide-arrowsz: 15px;
 
 /** All the Z-index layers we'll be needing */
 @guide-layer-background:  100;
-@guide-layer-targets:     101; /* targets and source elements */
+@guide-layer-spots:     101; /* spots and source elements */
 @guide-layer-entities:    102; /* markers and guide.js generated elements */
 @guide-layer-forefront:   103; /* tutor and stuff that should always be on top */
 
@@ -34,6 +37,13 @@
  * Helpers
  */
 .guide-box-shadow(@x: 0, @y: 0, @blur: 5px, @spread: 0, @color: rgba(0, 0, 0, 0.5)) {
+  -webkit-box-shadow: @arguments;
+  -moz-box-shadow: @arguments;
+  -o-box-shadow: @arguments;
+  box-shadow: @arguments;
+}
+
+.guide-box-shadow(@str) {
   -webkit-box-shadow: @arguments;
   -moz-box-shadow: @arguments;
   -o-box-shadow: @arguments;
@@ -93,4 +103,15 @@
   -o-transition: @prop @time @ease;
   -ms-transition: @prop @time @ease;
   transition: @prop @time @ease;
+}
+
+.guide-border-top() {
+  border-top: 1px solid darken(@guide-highlight-bg, 1%);
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.15);
+}
+.guide-border-bottom() {
+  /*border-bottom: 1px solid darken(@guide-highlight-bg, 1%);*/
+  /*box-shadow: 0 1px 0 rgba(255,255,255,0.15);*/
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 1px 0 darken(@guide-highlight-bg, 1%);
 }

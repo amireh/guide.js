@@ -1,39 +1,37 @@
 @import "guide-common";
 @import "extensions/guide-tutor";
 @import "extensions/guide-markers";
+@import "extensions/guide-controls";
+@import "extensions/guide-toggler";
 
 /**
  * guide.js Skin
  */
-.guide-target {
+.guide-spot {
   position: relative;
 
   &:after {
     .guide-fullscreen(-5px);
-    /*.guide-box-shadow(0, 0, 1px, 1px, darken(@guide-highlight-bg, 10%));*/
+    /*.guide-box-shadow(0, 0, 1px, 1px, lighten(@guide-highlight-bg, 10%));*/
     background-color: fade(@guide-highlight-bg, 10%);
   }
 }
 
-.guide-target-focused {
+.guide-spot-focused {
   &:after {
     background-color: fade(@guide-highlight-bg, 20%);
   }
 }
-/*
-.guide-with-overlay p.guide-target-focused,
-.guide-with-overlay span.guide-target-focused {
-  color: @guide-highlight-contrast;
-}*/
+
 .guide-with-overlay {
   p, span, pre {
-    &.guide-target-focused:not(.no-highlight) {
+    &.guide-spot-focused:not(.no-highlight) {
       color: @guide-highlight-contrast;
     }
   }
 }
 
-.guide-target.no-highlight {
+.guide-spot.no-highlight {
   &:after {
     display: none;
     content: normal;
@@ -41,6 +39,7 @@
 }
 
 .guide-with-overlay .guide-js {
+
   &:after {
     .guide-fullscreen(0; fixed);
     background-color: #000;
@@ -61,11 +60,11 @@
   z-index: @guide-layer-entities;
 }
 .guide-with-overlay .guide-marker,
-.guide-with-overlay .guide-target:after {
+.guide-with-overlay .guide-spot:after {
   .guide-box-shadow(0; 2px; 15px; 0; rgba(0,0,0,.4));
 }
 
-.guide-target-inline {
+.guide-spot-inline {
   position: relative;
 }
 
@@ -73,5 +72,6 @@
   margin: 0 0 10px 0;
   font-size: 16px;
   padding: 0 0 10px 0;
-  border-bottom: 1px solid rgba(0,0,0,0.1);
+  /*border-bottom: 1px solid @guide-highlight-contrast;*/
+  .guide-border-bottom();
 }

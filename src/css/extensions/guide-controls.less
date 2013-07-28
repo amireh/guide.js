@@ -1,0 +1,123 @@
+@gjs-controls-h: 32px;
+
+#guide_controls {
+  position: fixed;
+  height: @gjs-controls-h;
+  line-height: @gjs-controls-h;
+  bottom: 0;
+  left:  0;
+  right: 0;
+  text-align: center;
+
+  padding: @guide-padding/2 @guide-padding;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+
+  background: rgba(0, 0, 0, 0.85);
+
+  * { line-height: 18px; }
+
+  div {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  button {
+    .guide-appearance(none);
+    .guide-box-shadow(0; 0; 1px; 0; #121212);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: #2a2a2a;
+    color: white;
+    padding: 0px 10px;
+    font-size: 10px;
+    font-weight: bold;
+    margin: 0 (@guide-padding/2) 0 0;
+    cursor: pointer;
+
+    &:hover {
+      background: #333;
+    }
+
+    &:active,
+    &:focus {
+      background: #222;
+      border-color: rgba(255,255,255, 0.25);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: inherit;
+    }
+  }
+
+  .developer-controls {
+    text-align: right;
+  }
+}
+
+.guide-marker.with-controls {
+  &.focused {
+    min-width: 170px;
+  }
+
+  #guide_controls {
+    @step: 10%;
+    text-align: center;
+
+    background: none;
+    position: static;
+    bottom: -1 * (@gjs-controls-h + @guide-padding);
+    top: auto;
+    padding: @guide-padding 0 0 0;
+    margin-top: @guide-padding;
+    margin-right: -1 * (@guide-padding/2);
+
+    height: auto;
+    line-height: 1;
+
+    .guide-border-top();
+
+    .developer-controls {
+      display: none;
+    }
+
+    button {
+      .guide-box-shadow(0; 0; 1px; 0; rgba(0,0,0,0.1));
+
+      background: lighten(@guide-highlight-bg, @step);
+      color: @guide-highlight-contrast;
+
+      &:hover {
+        background: lighten(@guide-highlight-bg, @step * 0.5);
+      }
+
+      &:active,
+      &:focus {
+        background: @guide-highlight-bg;
+      }
+    }
+
+  }
+}
+
+#guide_tutor.without-controls {
+  bottom: @gjs-controls-h + 1 * @guide-padding;
+  .guide-box-shadow(none);
+}
+
+#guide_tutor.with-controls {
+  padding-bottom: @gjs-controls-h + 2*@guide-padding;
+  bottom: 0;
+
+  #guide_controls {
+    position: absolute;
+
+    bottom: 0;
+    left:  0;
+    right: 0;
+    top: auto;
+
+    background: rgba(0, 0, 0, 0.125);
+  }
+}

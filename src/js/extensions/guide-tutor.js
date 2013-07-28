@@ -2,40 +2,46 @@
   'use strict';
 
   var
-  tutor = function() {
+  Extension = function() {
     return this.constructor();
   },
 
-  JST = _.template([
+  JST_TUTOR = _.template([
     '<div>',
-    '<h6 class="caption"><%= data.options.caption %></h6>',
-    '<div><%= data.options.text %></div>',
-    '</div>'
-  ].join(''), null, { variable: 'data' });
+    // '<button id="guide_close_tutor">&times;</button>',
 
-  _.extend(tutor.prototype, {
+    '<div class="navigation">',
+      '<button class="bwd"></button>',
+      '<span></span>',
+      '<button class="fwd"></button>',
+    '</div>',
+
+    '<div class="content"></div>',
+    '</div>'
+  ].join('')),
+
+  JST_SPOT = _.template([
+    '<div>',
+    '<% if (spot.hasCaption()) { %>',
+      '<h6 class="caption"><%= spot.getCaption() %></h6>',
+    '<% } %>',
+    '<div><%= spot.getText() %></div>',
+    '</div>'
+  ].join(''), null, { variable: 'spot' });
+
+  _.extend(Extension.prototype, guide.Extension, {
     id: 'tutor',
+
+    defaults: {
+      spanner: false
+    },
 
     constructor: function() {
       var that = this;
 
-      guide.addExtension(this);
+      this.$container = guide.$el;
 
-      this.$container = guide.$container;
-
-      this.$el = $([
-        '<div>',
-        '<button id="guide_close_tutor">close</button>',
-
-        '<div class="navigation">',
-          '<button class="bwd"></button>',
-          '<span></span>',
-          '<button class="fwd"></button>',
-        '</div>',
-
-        '<div class="content"></div>',
-        '</div>'
-      ].join(''));
+      this.$el = $(JST_TUTOR({}));
 
       this.$el.attr({
         'id': 'guide_tutor',
@@ -55,11 +61,11 @@
       .on('hide', _.bind(this.hide, this))
       .on('dismiss', _.bind(this.remove, this))
       .on('focus', _.bind(this.focus, this))
-      .on('activate.tours', function(e, tour) {
+      .on('start.tours', function(e, tour) {
         if (tour.current) {
           that.focus(e, tour.current, tour);
         }
-      })
+      });
 
       this.$close_btn.on('click', _.bind(guide.hide, guide));
 
@@ -95,16 +101,17 @@
         this.show.apply(this, arguments);
     },
 
-    focus: function(e, target, tour) {
-      var left = (tour.pCursor || -1) > tour.cursor,
-          $caption,
+    refresh: function() {
+      this.$el.toggleClass('spanner', this.options.spanner);
+    },
+
+    focus: function(e, spot, tour) {
+      var left = tour.previous && tour.previous.index > tour.cursor,
           $number;
 
-      this.$content.html(JST(target));
+      this.$content.html(JST_SPOT(spot));
 
-      $caption = this.$content.find('.caption');
       $number  = this.$nav.find('span');
-      $caption.toggle(!$caption.is(":empty"));
 
       $number
       .stop(true, true)
@@ -122,5 +129,5 @@
     },
   }); // tutor.prototype
 
-  tutor = new tutor();
+  guide.addExtension(new Extension());
 })(_, jQuery, window.guide);

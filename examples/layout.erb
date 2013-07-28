@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Marker placement | guide.js</title>
+
+    <link href="/dist/guide.css" rel="stylesheet" />
+    <link href="/examples.css" rel="stylesheet" />
+
+    <!-- guide.js dependencies -->
+    <script src="/dist/vendor/jquery-1.10.2.js"></script>
+    <script src="/dist/vendor/lodash.js"></script>
+
+  </head>
+
+  <body>
+    <h1><a href="/">guide.js</a></h1>
+    <div class="example">
+      <%= yield %>
+    </div>
+<!--
+    <hr />
+    <div id="controls">
+      <button onclick="guide.tour.first();">First</button>
+      <button onclick="guide.tour.prev();">&lt;</button>
+      <button onclick="guide.tour.next();">&gt;</button>
+      <button onclick="guide.tour.last();">Last</button>
+      <button onclick="guide.toggle();">Toggle</button>
+      <button onclick="guide.setOptions({ withOverlay: !guide.options.withOverlay });">Toggle Overlay</button>
+    </div> -->
+
+    <!-- guide.js core -->
+    <script src="/src/js/ext/lodash.js"></script>
+    <script src="/src/js/ext/jQuery.js"></script>
+    <script src="/src/js/guide.js"></script>
+    <script src="/src/js/guide-tour.js"></script>
+    <script src="/src/js/guide-spot.js"></script>
+
+    <!-- guide.js extensions -->
+    <script src="/src/js/guide-extension.js"></script>
+    <script src="/src/js/extensions/guide-tutor.js"></script>
+    <script src="/src/js/extensions/guide-markers.js"></script>
+    <script src="/src/js/extensions/guide-controls.js"></script>
+    <script src="/src/js/extensions/guide-toggler.js"></script>
+
+    <!-- guide.js examples helpers -->
+    <script src="/examples.js"></script>
+  </body>
+
+</html>

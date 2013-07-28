@@ -1,10 +1,11 @@
 body {
   font-family: "Arial";
+  max-width: 720px;
+  margin: 0 auto;
+}
+.example {
 }
 .example > section {
-  display: inline-block;
-  margin-right: 5%;
-  max-width: 40%;
   vertical-align: top;
 }
 .example > section.single {
@@ -100,3 +101,5 @@ body {
   padding: 10px;
   z-index: 103;
 }
+
+.example .text-left { text-align: left; }

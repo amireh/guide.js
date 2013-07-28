@@ -52,7 +52,7 @@
     },
 
     'guide-tour': [ 'guide' ],
-    'guide-target': [ 'guide' ],
+    'guide-spot': [ 'guide' ],
     'extensions/guide-tutor': [ 'guide' ],
     'extensions/guide-markers': [ 'guide' ]
   },
@@ -67,7 +67,7 @@
 
         'guide',
         'guide-tour',
-        'guide-target',
+        'guide-spot',
         'extensions/guide-tutor',
         'extensions/guide-markers'
       ],

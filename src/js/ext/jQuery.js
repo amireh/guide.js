@@ -57,14 +57,14 @@
 
 
   /**
-   * Convenience method for adding a jQuery selector element as a guide target.
+   * Convenience method for adding a jQuery selector element as a guide spot.
    *
    * @example
    *   $('#my_button').guide({
    *     text: "Click me to build your own nuclear reactor in just a minute. FREE."
    *   })
    *
-   * @see guide#addTarget for more info on options.
+   * @see guide#addSpot for more info on options.
    */
   $.fn.guide = function(options) {
     var options   = options || {},
@@ -75,7 +75,7 @@
             "have you forgotten to initialize guide.js?";
     }
 
-    instance.addTarget($(this), options);
+    instance.addSpot($(this), options);
 
     return $(this);
   };

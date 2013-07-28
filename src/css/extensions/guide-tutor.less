@@ -18,7 +18,6 @@
   background: rgba(0, 0, 0, 0.85);
   color: white;
   font-size: 16px;
-  overflow: hidden;
 
   .guide-box-sizing(content-box);
   .guide-rounded-corners(3px 3px 0 0);
@@ -29,10 +28,14 @@
     width: @nav-w;
   }
 
+  .caption {
+    .guide-box-shadow(none);
+  }
   .content {
     display: inline-block;
     margin-left: @nav-w + @guide-padding;
     vertical-align: top;
+    min-height: 62px;
   }
 
   .fwd,
@@ -68,21 +71,35 @@
     text-align: center;
     width: 50px;
   }
-}
 
+  &.spanner {
+    left: 0;
+    right: 0;
+    .guide-rounded-corners(0);
+
+    #guide_close_tutor {
+      top: auto;
+      bottom: @guide-padding;
+      right: @guide-padding;
+    }
+  }
+}
+/*
 #guide_close_tutor {
   position: absolute;
-  top:  0;
-  right: @guide-padding;
+  top: -1 * @guide-padding;
+  right: -1 * @guide-padding;
 
   background: darken(@guide-highlight-bg, 10%);
   color: @guide-highlight-fg;
   border: none;
   .guide-appearance(none);
   .guide-rounded-corners(0 0 3px 3px);
+  .guide-rounded-corners(3px);
 
   display: inline-block;
-  font-size: 11px;
+  font-size: 16px;
+  font-weight: bold;
   height: 24px;
   line-height: 26px;
   text-align: center;
@@ -90,3 +107,4 @@
 
   cursor: pointer
 }
+*/

@@ -1,0 +1,67 @@
+<section class="single">
+  <h3>Options</h3>
+  <div>
+    <button id="via_js">Via JavaScript</button>
+
+    <div class="freespace"></div>
+
+    <button
+      data-guide="I was made into a Tour Step using data- attributes"
+      data-guide-options="marker.width: 120">
+      Via Markup
+    </button>
+
+    <div class="freespace"></div>
+
+    <button id="via_node"
+      data-guide-caption="Referenced Content"
+      data-guide-options="marker.width: 240">Via another HTML element</button>
+
+  </div>
+</section>
+
+<div data-guide-spot="#via_node" class="text-left">
+  This is content taken from a separate HTML <code>div</code> element.
+
+  <p>As you can see, you can use any kind of markup to embed inside
+    a guide.js marker.
+  </p>
+
+  <p>Here's a list for illustration:</p>
+  <ul>
+    <li>Flexible</li>
+    <li>Responsive</li>
+    <li>Pink</li>
+  </ul>
+</div>
+
+
+<script>
+  $(function() {
+    // assign some tour options which will apply to all the tour's spots
+    guide.getTour('Default Tour').setOptions({
+      marker: {
+        placement: 'sibling',
+        position:  'right'
+      }
+    });
+
+    guide.addSpots([
+      {
+        $el: $('#via_js'),
+        text: "I'm a Tour Step built from JavaScript!",
+        // these options override the tour spot options defined above
+        marker: {
+          placement: 'sibling',
+          position: 'right'
+        }
+      }
+    ]);
+
+    // parse tour spots from the DOM/markup
+    guide.fromDOM('body');
+
+    guide.show();
+  });
+
+</script>

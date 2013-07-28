@@ -2,14 +2,14 @@
   'use strict';
   var
 
-  Target = function() {
+  Spot = function() {
     return this.constructor.apply(this, arguments);
   },
 
-  KLASS_TARGET  = 'guide-target',
-  KLASS_FOCUSED = 'guide-target-focused';
+  KLASS_TARGET  = 'guide-spot',
+  KLASS_FOCUSED = 'guide-spot-focused';
 
-  _.extend(Target.prototype, guide.Optionable, {
+  _.extend(Spot.prototype, guide.Optionable, {
     defaults: {
       withMarker: true,
       highlight:  true,
@@ -17,39 +17,42 @@
     },
 
     constructor: function(attributes) {
+      this.options = _.defaults(attributes.options || {}, this.defaults);
+
       _.extend(this, {
         index: -1
-      }, attributes);
-
-      this.options = _.defaults(attributes.options || {}, this.defaults);
+      }, attributes, _.pick(this.options, [
+        'text',
+        'caption'
+      ]));
 
       return this;
     },
 
     isCurrent: function() {
-      // return guide.cTarget == this;
+      // return guide.cSpot == this;
       return this.tour.current == this;
     },
 
     getText: function() {
-      return this.options.text;
+      return this.text;
     },
 
-    /** Whether the target has any text defined. */
+    /** Whether the spot has any text defined. */
     hasText: function() {
       return !!((this.getText()||'').length);
     },
 
     getCaption: function() {
-      return this.options.caption;
+      return this.caption;
     },
 
-    /** Whether the target has a caption defined. */
+    /** Whether the spot has a caption defined. */
     hasCaption: function() {
       return !!(this.getCaption()||'').length;
     },
 
-    /** Whether the target has either a caption or text content. */
+    /** Whether the spot has either a caption or text content. */
     hasContent: function() {
       return this.hasText() || this.hasCaption();
     },
@@ -57,7 +60,7 @@
     highlight: function() {
       var applicable = this.tour.options.alwaysHighlight;
 
-      // the target-scoped option takes precedence over the tour one
+      // the spot-scoped option takes precedence over the tour one
       if (!this.options.highlight) {
         applicable = false;
       }
@@ -69,9 +72,9 @@
     },
 
     /**
-     * Remove the highlight CSS classes on the target $element.
+     * Remove the highlight CSS classes on the spot $element.
      *
-     * If the Tour option 'alwaysHighlight' is enabled, the target will only
+     * If the Tour option 'alwaysHighlight' is enabled, the spot will only
      * be de-focused, but will stay highlighted.
      *
      * Available options:
@@ -89,14 +92,14 @@
       return this;
     },
 
-    focus: function(prev_target) {
+    focus: function(prev_spot) {
       var $scroller = this.$scrollAnchor;
 
       this.highlight();
 
       this.$el
         .addClass(KLASS_FOCUSED)
-        .triggerHandler('focus.gjs', prev_target);
+        .triggerHandler('focus.gjs', prev_spot);
 
       if (this.options.autoScroll && !$scroller.is(":in_viewport")) {
 
@@ -108,11 +111,11 @@
       }
     },
 
-    defocus: function(next_target) {
+    defocus: function(next_spot) {
       this.dehighlight();
 
       this.$el.removeClass(KLASS_FOCUSED);
-      this.$el.triggerHandler('defocus.gjs', next_target);
+      this.$el.triggerHandler('defocus.gjs', next_spot);
     },
 
     refresh: function() {
@@ -126,5 +129,5 @@
     }
   });
 
-  guide.Target = Target;
+  guide.Spot = Spot;
 })(_, jQuery, window.guide);

@@ -1,0 +1,53 @@
+<section>
+  <div>
+    <div class="freespace"></div>
+
+    <button
+      data-guide="A top positioned guideling in inline placement"
+      data-guide-options="marker.position:top, marker.placement:sibling">An action
+    </button>
+
+    <p
+      data-guide="A right positioned guideling in inline placement"
+      data-guide-options="marker.position:right, marker.placement:inline">
+      Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
+      tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
+      quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
+      consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse
+      cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
+      proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
+    </p>
+
+    <button
+      data-guide="Hiring a Servant Monkey has never been easier,
+      simply push this button and one will pop right behind you."
+      data-guide-caption="Monkeys everywhere"
+      data-guide-options="">Hire
+    </button>
+  </div>
+</section>
+
+<script>
+  $(function() {
+    guide
+    .setOptions({
+      withOverlay: true
+    })
+    .fromDOM($('.example'))
+    .getTour('Default Tour')
+      .setOptions({
+        toggler: {
+          // enabled: false
+        },
+        tutor: {
+          spanner: true
+        },
+        controls: {
+          withDeveloperControls: false,
+          inMarkers: false,
+          inTutor: true
+        }
+      })
+      .start();
+  });
+</script>

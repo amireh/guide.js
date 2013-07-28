@@ -1,6 +1,10 @@
 (function(_, $) {
   'use strict';
 
+  if (!$) {
+    throw 'guide.js: jQuery is undefined, are you sure it has been loaded yet?'
+  }
+
   var
   guide = function() {
     this.constructor.apply(this, arguments);
@@ -12,8 +16,9 @@
   DEBUG    = true,
 
   KLASS_ENABLED         = 'with-guide',
-  KLASS_OVERLAYED       = 'guide-with-overlay',
-  KLASS_NOT_OVERLAYED   = 'guide-without-overlay',
+  KLASS_OVERLAYED       = 'gjs-with-overlay',
+  KLASS_NOT_OVERLAYED   = 'gjs-without-overlay',
+  KLASS_HIDING          = 'gjs-hiding',
   KLASS_ENTITY          = 'guide-entity';
 
   var Optionable = {
@@ -30,14 +35,14 @@
     },
 
     setOptions: function(options) {
-      _.merge(this.options, options);
+      this.options = _.merge(this.options || {}, options);
 
       if (this.refresh) {
-        this.refresh();
+        this.refresh(this.options);
       }
 
       if (this.$) {
-        console.log('guide.js: [Optionable] options changed, triggering refresh');
+        console.log('guide.js:', this.id, 'options changed, triggering refresh');
 
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }
@@ -46,17 +51,17 @@
     },
 
     getOptions: function(overrides) {
-      return _.extend(_.clone(this.options), overrides || {});
+      return _.extend(_.clone(this.options || {}), overrides || {});
     }
   };
 
   _.extend(guide.prototype, Optionable, {
-    $container: $('body'),
-    $el:        $('<div class="guide-js" />'),
+    id: 'guide',
 
     defaults: {
       withOverlay:    false,
-      withAnimations: true
+      withAnimations: true,
+      toggleDuration: 500
     },
 
     entityKlass: function() {
@@ -68,25 +73,29 @@
       this.$ = $(this);
 
       _.extend(this, {
+        $container: $('body'),
+        $el:        $('<div class="guide-js" />'),
         options: _.clone(this.defaults),
         tours:   [],
         extensions: [],
         tour: null,
-        // cTarget: null,
-        // pTarget: null,
+        // cSpot: null,
+        // pSpot: null,
         // cursor:  -1
       });
 
       this.$.on('refresh', function(e, options, el) {
         el.toggleOverlayMode();
       });
+
+      console.log('guide.js: running');
     },
 
     inactiveTours: function() {
       return _.without(this.tours, this.tour);
     },
 
-    defineTour: function(label, optTargets) {
+    defineTour: function(label, optSpots) {
       var tour;
 
       if (!(tour = this.getTour(label))) {
@@ -94,15 +103,15 @@
         this.tours.push(tour);
       }
 
-      if (optTargets) {
+      if (optSpots) {
         var that = this;
 
-        if (!_.isArray(optTargets)) {
-          throw "guide.js#defineTour: bad targets, expected array, got: " +
-                typeof(optTargets);
+        if (!_.isArray(optSpots)) {
+          throw "guide.js#defineTour: bad spots, expected array, got: " +
+                typeof(optSpots);
         };
 
-        this.fromJSON(optTargets);
+        this.fromJSON(optSpots);
       }
 
       return tour;
@@ -110,6 +119,10 @@
 
     runTour: function(id) {
       var tour;
+
+      if (!this.isShown()) {
+        this.show();
+      }
 
       if (!(tour = this.getTour(id))) {
         throw [
@@ -120,14 +133,14 @@
       }
 
       if (this.tour) {
-        this.tour.deactivate();
-        this.$.triggerHandler('deactivate.tours', [ this.tour ]);
+        this.tour.stop();
+        this.$.triggerHandler('stop.tours', [ this.tour ]);
       }
 
       this.tour = tour;
 
-      this.$.triggerHandler('activate.tours', [ this.tour ]);
-      this.tour.activate();
+      this.$.triggerHandler('start.tours', [ this.tour ]);
+      this.tour.start();
 
       console.log('guide.js: touring "' + tour.id + '"');
 
@@ -143,11 +156,11 @@
      *   placement: [ 'inline', 'inline:before', 'inline:after', 'overlay' ]
      *   position: [ 'tl', 't', 'tr', 'r', 'br', 'b', 'bl', 'l' ]
      *
-     *   onFocus: function($prevTarget) {}
-     *   onDefocus: function($currentTarget) {}
+     *   onFocus: function($prevSpot) {}
+     *   onDefocus: function($currentSpot) {}
      * }
      */
-    addTarget: function($el, options) {
+    addSpot: function($el, options) {
       var tour    = this.tour,
           tour_id = options.tour;
 
@@ -161,15 +174,15 @@
       return tour.addStep($el, options);
     },
 
-    addTargets: function(targets) {
-      return this.fromJSON(targets);
+    addSpots: function(spots) {
+      return this.fromJSON(spots);
     },
 
-    fromJSON: function(targets) {
-      targets = _.isArray(targets) ? targets : [ targets ];
+    fromJSON: function(spots) {
+      spots = _.isArray(spots) ? spots : [ spots ];
 
-      _.each(targets, function(definition) {
-        this.addTarget(definition.$el, definition);
+      _.each(spots, function(definition) {
+        this.addSpot(definition.$el, definition);
       }, this);
 
       return this;
@@ -181,55 +194,59 @@
           $container = $(selector_or_container);
 
       $container.find('[data-guide]').each(function() {
-        var $this   = $(this),
-            $tour,
-            options = {
-              text:     $this.attr('data-guide'),
-              caption:  $this.attr('data-guide-caption'),
-              tour:     $this.attr('data-guide-tour')
-            },
-            tokens  = ($this.attr('data-guide-options') || '').split(/\,?\s+\,?/);
+        var $target = $(this);
 
-        // if no tour is specified, take a look at the ancestry tree, perhaps
-        // an element has a tour defined in [data-guide-tour]
-        if (!options.tour) {
-          $tour = $this.parents('[data-guide-tour]:first');
-
-          if ($tour.length) {
-            options.tour = $tour.attr('data-guide-tour');
-          }
-        }
-
-        for (var i = 0; i < tokens.length; ++i) {
-          var pair  = tokens[i].split(':'),
-              k     = pair[0],
-              v     = pair[1];
-
-          if (v == 'false') { v = false; }
-          else if (v == 'true') { v = true; }
-
-          _.assign(k, v, options);
-        }
-
-        that.addTarget($this, options);
+        that.fromNode($target, {
+          text: $target.attr('data-guide')
+        });
       });
 
-      $container.find('[data-guide-target]').each(function() {
-        var $target = $($(this).attr('data-guide-target'));
-        if ($target.length) {
-          $(this).hide();
-          that.addTarget($target, {
-            text: $(this).html()
-          });
-        }
+      // elements with [data-guide-spot] are "references" since they point
+      // to a target that will be used as a spot, while they act as the
+      // content of that spot
+      //
+      // @side-effect:
+      // the reference node will be detached and thus no longer
+      // available in the DOM
+      $container.find('[data-guide-spot]').each(function() {
+        var $ref    = $(this),
+            $target = $($ref.attr('data-guide-spot'));
+
+        that.fromNode($target, {
+          text: $ref.detach()[0].outerHTML
+        });
       })
 
       return this;
     },
 
-    show: function(options) {
+    fromNode: function($node, options) {
+      var
+      $this = $node,
+      $tour,
+      options = _.extend(
+        options || {},
+        _.parseOptions($this.attr('data-guide-options')), {
+          caption:  $this.attr('data-guide-caption'),
+          tour:     $this.attr('data-guide-tour')
+        });
+
+      // if no tour is specified, take a look at the ancestry tree, perhaps
+      // an element has a tour defined in [data-guide-tour]
+      if (!options.tour) {
+        $tour = $this.parents('[data-guide-tour]:first');
+
+        if ($tour.length) {
+          options.tour = $tour.attr('data-guide-tour');
+        }
+      }
+
+      this.addSpot($this, options);
+    },
+
+    show: function() {
       var that    = this,
-          options = this.getOptions(options),
+          options = this.getOptions(),
           klasses = [ KLASS_ENABLED ];
 
       if (!this.tour) {
@@ -241,9 +258,13 @@
       this.$container.addClass(klasses.join(' '));
       this.$.triggerHandler('show');
 
-      this.tour.activate();
+      this.tour.start();
 
       this.$el.appendTo(this.$container);
+
+      if (this.options.withAnimations) {
+        this.$el.show(this.options.toggleDuration);
+      }
 
       return this;
     },
@@ -257,16 +278,30 @@
     },
 
     hide: function() {
-      this.$el.detach();
+      var
+      that = this,
+      cleanup = function() {
+        that.$el.detach();
 
-      this.$container.removeClass([
-        KLASS_ENABLED,
-        KLASS_OVERLAYED
-      ].join(' '));
+        that.$container.removeClass([
+          KLASS_ENABLED,
+          KLASS_OVERLAYED,
+          KLASS_HIDING
+        ].join(' '));
 
-      this.tour.deactivate();
+        that.tour.stop();
 
-      this.$.triggerHandler('hide');
+        that.$.triggerHandler('hide');
+      }
+
+      this.$container.addClass(KLASS_HIDING);
+
+      if (this.options.withAnimations) {
+        that.$el.hide(this.options.toggleDuration, cleanup);
+      }
+      else {
+        cleanup();
+      }
 
       return this;
     },
@@ -327,6 +362,15 @@
       }
 
       this.extensions.push(ext);
+
+      if (void 0 === ext.__initExtension) {
+        throw 'guide.js: bad extension, does not seem to implement the ' +
+              'guide.Extension prototype';
+      }
+
+      ext.__initExtension();
+
+      console.log('guide.js: extension registered: ', ext.id);
     },
 
     getExtension: function(id) {
@@ -338,7 +382,6 @@
      * @nodoc
      */
     getTour: function(id) {
-
       return _.isString(id)
         ? _.find(this.tours || [], { id: id })
         : id;
