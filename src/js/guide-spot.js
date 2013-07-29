@@ -16,12 +16,12 @@
       autoScroll: true
     },
 
-    constructor: function(attributes) {
-      this.options = _.defaults(attributes.options || {}, this.defaults);
+    constructor: function(attributes, options) {
+      this.options = _.extend({}, this.defaults, options);
 
       _.extend(this, {
         index: -1
-      }, attributes, _.pick(this.options, [
+      }, attributes, _.pick(options, [
         'text',
         'caption'
       ]));
@@ -31,7 +31,7 @@
 
     isCurrent: function() {
       // return guide.cSpot == this;
-      return this.tour.current == this;
+      return this.tour.current === this;
     },
 
     getText: function() {
@@ -58,7 +58,9 @@
     },
 
     highlight: function() {
-      var applicable = this.tour.options.alwaysHighlight;
+      var applicable =
+        this.tour.getOptions().alwaysHighlight ||
+        this.isCurrent();
 
       // the spot-scoped option takes precedence over the tour one
       if (!this.options.highlight) {
@@ -77,13 +79,15 @@
      * If the Tour option 'alwaysHighlight' is enabled, the spot will only
      * be de-focused, but will stay highlighted.
      *
-     * Available options:
-     *
-     *   force: will dehighlight regardless of any options that might be respected
-     *
+     * @param <Object> options: {
+     *  "force": <Boolean> will dehighlight regardless of any options that might
+     *           be respected
+     * }
      */
     dehighlight: function(options) {
-      var applicable = (options||{}).force || !this.tour.options.alwaysHighlight;
+      var applicable =
+        (options||{}).force ||
+        !this.tour.getOptions().alwaysHighlight;
 
       if (applicable) {
         this.$el.removeClass(KLASS_TARGET);
@@ -101,13 +105,13 @@
         .addClass(KLASS_FOCUSED)
         .triggerHandler('focus.gjs', prev_spot);
 
-      if (this.options.autoScroll && !$scroller.is(":in_viewport")) {
+      if (this.options.autoScroll && !$scroller.is(':in_viewport')) {
 
         _.defer(function() {
           $('html,body').animate({
             scrollTop: $scroller.offset().top * 0.9
           }, 250);
-        })
+        });
       }
     },
 

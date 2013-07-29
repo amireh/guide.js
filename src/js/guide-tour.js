@@ -17,7 +17,7 @@
       _.extend(this, {
         id: label, // TODO: unique constraints on tour IDs
 
-        options: _.defaults({}, this.defaults),
+        options: _.extend({}, this.defaults),
 
         spots: [],
 
@@ -39,10 +39,10 @@
 
       // has the spot been already defined? we can not handle duplicates
       if ($el.data('guideling')) {
-        console.log('guide.js: [error] element is already bound to a tour spot:');
+        console.log('guide.js: element is already bound to a tour spot:');
         console.log($el);
 
-        throw "guide.js: duplicate spot, see console for more information";
+        throw 'guide.js: duplicate spot, see console for more information';
       }
 
       spot = new guide.Spot({
@@ -51,9 +51,8 @@
         // when scrolling the element into view, could be modified by extensions
         $scrollAnchor: $el,
         tour: this,
-        index: this.spots.length,
-        options: options
-      });
+        index: this.spots.length
+      }, options);
 
       this.spots.push(spot);
 
@@ -86,7 +85,7 @@
     hasNext: function() {
       var ln = this.spots.length;
 
-      return ln != 1 && this.cursor < ln-1;
+      return ln !== 1 && this.cursor < ln-1;
     },
 
     prev: function() {
@@ -100,7 +99,7 @@
     hasPrev: function() {
       var ln = this.spots.length;
 
-      return ln != 1 && this.cursor > 0;
+      return ln !== 1 && this.cursor > 0;
     },
 
     first: function() {
@@ -122,10 +121,29 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot  = this.getStep(index);
+      var spot  = this.getStep(index),
+          i; // spot iterator
 
       if (!spot) {
-        throw "guide.js: bad spot @ " + index + " to focus";
+        throw 'guide.js: bad spot @ ' + index + ' to focus';
+      }
+      else if (!spot.$el.is(':visible')) {
+        // look for any spot that's visible and focus it instead
+        for (i = 0; i < this.spots.length; ++i) {
+          spot = this.spots[i];
+
+          if (spot.$el.is(':visible')) {
+            this.cursor = i;
+            break;
+          }
+          else {
+            spot = null;
+          }
+        }
+
+        if (!spot) {
+          return false;
+        }
       }
 
       if (spot.isCurrent()) {
@@ -156,6 +174,10 @@
     },
 
     start: function() {
+      if (!this.spots.length) {
+        return this;
+      }
+
       _.each(this.spots, function(spot) {
         spot.highlight();
       });
@@ -174,7 +196,7 @@
     },
 
     isActive: function() {
-      return guide.isShown() && this == guide.tour;
+      return guide.isShown() && this === guide.tour;
     },
 
     refresh: function() {
@@ -186,7 +208,7 @@
     getStep: function(index_or_el) {
       var index = index_or_el;
 
-      if (typeof(index) == 'number') {
+      if (typeof(index) === 'number') {
         return this.spots[index];
       }
       else if (!index) {
