@@ -12,6 +12,7 @@
       '<button data-action="tour.prev">&lt;</button>',
       '<button data-action="tour.next">&gt;</button>',
       '<button data-action="tour.last">Last</button>',
+      '<button data-action="guide.hide">Close</button>',
     '</div>'
   ].join('')),
 
@@ -25,14 +26,14 @@
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
       withDeveloperControls: false,
-      // inMarkers:  true,
+      inMarkers:  true,
       inTutor:    true
     },
 
     id: 'controls',
 
     constructor: function() {
-      var that = this
+      var that = this;
 
       this.$container = guide.$el;
       this.guide = guide;
@@ -45,7 +46,7 @@
       .on('show', _.bind(this.show, this))
       .on('hide', _.bind(this.hide, this))
       .on('dismiss', _.bind(this.remove, this))
-      .on('focus', function(e, spot) {
+      .on('focus', function(/*e, spot*/) {
         that.refreshControls();
       });
 
@@ -57,7 +58,7 @@
       this.refreshControls();
     },
 
-    show: function(e) {
+    show: function() {
       this.$el.appendTo(this.$container);
       this.refreshControls();
 
@@ -87,7 +88,7 @@
       this.show();
     },
 
-    detachFromMarker: function(marker) {
+    detachFromMarker: function(/*marker*/) {
       this.$container.removeClass('with-controls');
       this.$container = $();
 
@@ -97,28 +98,20 @@
 
     refresh: function() {
       var
-      that        = this,
       tutor_ext   = guide.getExtension('tutor'),
       marker_ext  = guide.getExtension('markers'),
-      options     = this.options;
+      options     = this.getOptions();
 
       this.remove();
 
-      if (marker_ext && options.inMarkers) {
-        this.$container = $();
-
-        guide.$.on('marking.gjs_markers.embedded_controls', function(e, marker) {
-          that.attachToMarker(marker);
-        }).on('unmarking.gjs_markers.embedded_controls', function(e, marker) {
-          that.detachFromMarker(marker);
-        });
+      if (marker_ext && marker_ext.isEnabled() && options.inMarkers) {
+        this.markerMode(marker_ext);
       }
-      else if (tutor_ext && options.inTutor) {
-        this.$container = tutor_ext.$el;
-        tutor_ext.$el.addClass('with-controls');
+      else if (tutor_ext && tutor_ext.isEnabled() && options.inTutor) {
+        this.tutorMode(tutor_ext);
       }
-      else if (tutor_ext) {
-        tutor_ext.$el.addClass('without-controls');
+      else {
+        this.classicMode();
       }
 
       this.$el = $(JST_CONTROLS({}));
@@ -132,41 +125,86 @@
         .on('click', '[data-action]', _.bind(this.delegate, this));
 
       _.extend(this, {
-        $bwd: this.$el.find('[data-action*=prev]'),
-        $fwd: this.$el.find('[data-action*=next]'),
+        $bwd:   this.$el.find('[data-action*=prev]'),
+        $fwd:   this.$el.find('[data-action*=next]'),
         $first: this.$el.find('[data-action*=first]'),
-        $last: this.$el.find('[data-action*=last]')
-      })
-
-      // if we're embedding into markers and a spot is currently marked,
-      // attach ourselves to the marker
-      if (marker_ext && options.inMarkers &&
-          guide.tour &&
-          guide.tour.current &&
-          guide.tour.current.marker) {
-
-        var marker = guide.tour.current.marker;
-        marker.hide();
-        this.attachToMarker(marker);
-        marker.show();
-      }
+        $last:  this.$el.find('[data-action*=last]'),
+        $hide:  this.$el.find('[data-action*=hide]')
+      });
 
       this.show();
     },
 
+    classicMode: function() {
+      var tutor_ext = guide.getExtension('tutor'),
+          marker_ext  = guide.getExtension('markers');
+
+      this.$container = guide.$el;
+
+      if (tutor_ext) {
+        tutor_ext.$el
+          .addClass('without-controls')
+          .removeClass('with-controls');
+      }
+
+      if (marker_ext) {
+        guide.$
+        .off('marking.gjs_markers.gjs_controls')
+        .off('unmarking.gjs_markers.gjs_controls');
+      }
+    },
+
+    markerMode: function(/*ext*/) {
+      var that = this,
+          marker;
+
+      this.$container = $();
+
+      guide.$
+      .on('marking.gjs_markers.gjs_controls', function(e, marker) {
+        that.attachToMarker(marker);
+      })
+      .on('unmarking.gjs_markers.gjs_controls', function(e, marker) {
+        that.detachFromMarker(marker);
+      });
+
+      // if we're embedding into markers and a spot is currently marked,
+      // attach ourselves to the marker
+      if (guide.tour && guide.tour.current && guide.tour.current.marker) {
+        marker = guide.tour.current.marker;
+
+        _.defer(function() {
+          marker.hide();
+          that.attachToMarker(marker);
+          marker.show();
+        });
+      }
+    },
+
+    tutorMode: function(ext) {
+      this.$container = ext.$el;
+      ext.$el.addClass('with-controls');
+    },
+
     delegate: function(e) {
-      var action = $(e.target).attr('data-action');
+      var action = $(e.target).attr('data-action'),
+          pair,
+          target,
+          method;
 
       if (action.indexOf('.') > -1) {
-        var
-        pair    = action.split('.'),
-        target  = pair[0],
+        pair    = action.split('.');
+        target  = pair[0];
         method  = pair[1];
 
-        this[target] && this[target][method] && this[target][method]();
+        if (this[target] && this[target][method]) {
+          this[target][method]();
+        }
       }
       else {
-        this[action] && this[action]();
+        if (this[action]) {
+          this[action]();
+        }
       }
 
       return $.consume(e);
@@ -179,10 +217,15 @@
     },
 
     refreshControls: function() {
-      this.$bwd.prop('disabled', !guide.tour.hasPrev());
-      this.$fwd.prop('disabled', !guide.tour.hasNext());
-      this.$first.prop('disabled', !guide.tour.hasPrev());
-      this.$last.prop('disabled', !guide.tour.hasNext());
+      var that = this;
+
+      $(function() {
+        that.$bwd.prop('disabled', !guide.tour.hasPrev());
+        that.$fwd.prop('disabled', !guide.tour.hasNext());
+        that.$first.prop('disabled', !guide.tour.hasPrev());
+        that.$last.prop('disabled', !guide.tour.hasNext());
+        that.$hide.toggle(!guide.tour.hasNext());
+      });
     }
 
   }); // tutor.prototype

@@ -20,8 +20,8 @@
   },
   "devDependencies": {
     "grunt": "~0.4.0",
-    "grunt-contrib-jasmine": "~0.4.0",
-    "grunt-jsvalidate": "~0.2.1"
+    "grunt-contrib-jshint": "~0.6.1",
+    "grunt-contrib-jasmine": "~0.4.0"
   },
   "dependencies": {}
 }

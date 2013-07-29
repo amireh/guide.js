@@ -33,6 +33,7 @@
     id: 'tutor',
 
     defaults: {
+      enabled: true,
       spanner: false
     },
 
@@ -57,29 +58,34 @@
       });
 
       guide.$
-      .on('show', _.bind(this.show, this))
-      .on('hide', _.bind(this.hide, this))
-      .on('dismiss', _.bind(this.remove, this))
-      .on('focus', _.bind(this.focus, this))
-      .on('start.tours', function(e, tour) {
-        if (tour.current) {
-          that.focus(e, tour.current, tour);
-        }
-      });
+        .on('show', _.bind(this.show, this))
+        .on('hide', _.bind(this.hide, this))
+        .on('dismiss', _.bind(this.remove, this))
+        .on('focus', _.bind(this.focus, this))
+        .on('start.tours', function(e, tour) {
+          if (tour.current) {
+            that.focus(e, tour.current, tour);
+          }
+        });
 
       this.$close_btn.on('click', _.bind(guide.hide, guide));
 
-      this.$nav.on('click','.bwd', function() {
-        guide.tour.prev()
-      });
-      this.$nav.on('click','.fwd', function() {
-        guide.tour.next();
-      });
+      this.$nav
+        .on('click','.bwd', function() {
+          guide.tour.prev();
+        })
+        .on('click','.fwd', function() {
+          guide.tour.next();
+        });
 
       return this;
     },
 
-    show: function(e) {
+    show: function() {
+      if (!this.getOptions().enabled) {
+        return this;
+      }
+
       this.$el.appendTo(this.$container);
 
       return this;
@@ -102,28 +108,53 @@
     },
 
     refresh: function() {
-      this.$el.toggleClass('spanner', this.options.spanner);
+      var options = this.getOptions();
+
+      if (!options.enabled) {
+        return this.hide();
+      }
+
+      this.$el.toggleClass('spanner', options.spanner);
+      this.focus(null, guide.tour.current, guide.tour);
     },
 
     focus: function(e, spot, tour) {
       var left = tour.previous && tour.previous.index > tour.cursor,
+          anim_dur = 'fast', // animation duration
+          anim_offset = '50px',
           $number;
+
+      if (!spot || !spot.$el.is(':visible')) {
+        return this.hide();
+      }
+
+      this.show();
+
+      if (spot === this.spot) {
+        return;
+      }
 
       this.$content.html(JST_SPOT(spot));
 
       $number  = this.$nav.find('span');
 
       $number
-      .stop(true, true)
-      .animate({ 'text-indent': (left ? '' : '-') + '50px' }, 'fast', function() {
-          $number.html(tour.cursor+1);
-          $number
-            .css({ 'text-indent': (left ? '-' : '') + '50px' }, 'fast')
-            .animate({ 'text-indent': "0" }, 'fast');
-      });
+        .stop(true, true) // kill the current animation if user clicks too fast
+        .animate({
+            'text-indent': (left ? '' : '-') + anim_offset
+          },
+          anim_dur,
+          function() {
+            $number.html(tour.cursor+1);
+            $number
+              .css({ 'text-indent': (left ? '-' : '') + anim_offset }, anim_dur)
+              .animate({ 'text-indent': 0 }, anim_dur);
+          });
 
       this.$bwd.toggleClass('disabled', !tour.hasPrev());
       this.$fwd.toggleClass('disabled', !tour.hasNext());
+
+      this.spot = spot;
 
       return true;
     },

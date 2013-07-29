@@ -41,13 +41,6 @@
     '</div>'
   ].join('')),
 
-  DEFAULTS = {
-    position:   'right',
-    placement:  'inline',
-    withText:   true,
-    width:      'auto'
-  },
-
   /* placement modes */
   PMT_INLINE = 1,
   PMT_SIBLING = 2,
@@ -72,9 +65,9 @@
       case PMT_SIBLING:
         var
         p       = m.position,
-        method  = (p >= POS_TR && p <= POS_BR)
-          ? 'after'
-          : 'before';
+        method  = (p >= POS_TR && p <= POS_BR) ?
+          'after' :
+          'before';
 
         m.spot.$el[method](m.$el);
       break;
@@ -123,14 +116,14 @@
     // we must deduct enough of it to place the marker next to it, we do so
     // by applying negative margin-left by the computed amount
     //
-    // same applies for left positions but in the opposite direction (margin-left)
-    var delta = 0, dir;
+    // same applies to left positions but in the opposite direction (margin-left)
+    var delta = 0, dir, t_m;
 
     switch(pos) {
       case POS_TR:
       case POS_R:
       case POS_BR:
-        var t_m = parseInt($anchor.css('margin-right'));
+        t_m = parseInt($anchor.css('margin-right'), 10);
 
         if (t_m > 0) {
           // offset is the spot margin without the marker margin
@@ -142,7 +135,7 @@
       case POS_TL:
       case POS_L:
       case POS_BL:
-        var t_m = parseInt($anchor.css('margin-left'));
+        t_m = parseInt($anchor.css('margin-left'), 10);
 
         if (t_m > 0) {
           // offset is spot margin without marker margin (arrow dimension)
@@ -152,7 +145,7 @@
       break;
     }
 
-    if (delta != 0) {
+    if (delta !== 0) {
       $node.css('margin-' + dir, delta);
     }
 
@@ -174,7 +167,7 @@
       break;
       case POS_T:
         offset.top  -= n_h + m;
-        offset.left += a_w / 2 - ( (n_w - m) /2);
+        offset.left += a_w / 2 - n_w / 2;
       break;
       case POS_TR:
         offset.top  -= n_h + m;
@@ -190,7 +183,7 @@
       break;
       case POS_B:
         offset.top  += a_h + m;
-        offset.left += a_w / 2 - ( (n_w - m) /2);
+        offset.left += a_w / 2 - n_w / 2;
       break;
       case POS_BL:
         offset.top  += a_h + m;
@@ -210,13 +203,15 @@
   _.extend(Extension.prototype, guide.Extension, {
     id: 'markers',
 
-    constructor: function() {
-      var that = this;
+    defaults: {
+      refreshFrequency: 500
+    },
 
+    constructor: function() {
       guide.Tour.prototype.addOption('alwaysMark', true);
 
-      // we must manually assign the options to the default tour as it has already
-      // been created
+      // we must manually assign the options to the default tour as it has
+      // already been created
       if (guide.tour) {
         guide.tour.addOption('alwaysMark', true);
       }
@@ -226,23 +221,27 @@
       guide.$
         .on('add', _.bind(this.addMarker, this))
         .on('focus', function(e, spot) {
-          spot.marker && spot.marker.highlight();
+          if (spot.marker) {
+            spot.marker.highlight();
+          }
         })
         .on('defocus', function(e, spot) {
-          spot.marker && spot.marker.dehighlight();
+          if (spot.marker) {
+            spot.marker.dehighlight();
+          }
         });
 
       return this;
     },
 
-    addMarker: function(e, spot) {
+    addMarker: function(e, spot, attributes) {
       var marker;
 
       if (!spot.options.withMarker) {
         return null;
       }
 
-      marker = new Marker(spot, this);
+      marker = new Marker(spot, attributes || {});
 
       marker.$el
       .addClass(guide.entityKlass())
@@ -263,72 +262,145 @@
     },
 
     refresh: function() {
-      var that = this;
+      var tour = guide.tour;
 
       if (!guide.isShown()) {
         return;
       }
 
-      this.onTourStop(guide.tour);
-      this.onTourStart(guide.tour);
+      this.onGuideHide();
+
+      this.rebuildMarkers(tour);
+
+      _.each(tour.spots, function(spot) {
+        if (spot.marker) {
+          if (spot.tour.getOptions().alwaysMark) {
+            spot.marker.show();
+          } else {
+            if (!spot.isCurrent()) {
+              spot.marker.hide();
+            }
+          }
+        }
+      });
+
+      this.onGuideShow();
     },
 
+    /**
+     * Install the window resize handler and launch markers for the current tour.
+     *
+     * @see #onTourStart
+     * @see #repositionMarkers
+     */
     onGuideShow: function() {
+      $(window).on('resize.gjs_markers',
+        _.throttle(
+          _.bind(this.repositionMarkers, this),
+          this.options.refreshFrequency));
+
       return this.onTourStart(guide.tour);
     },
 
     onGuideHide: function() {
+      $(window).off('resize.gjs_markers');
+
       return this.onTourStop(guide.tour);
     },
 
     onTourStart: function(tour) {
+      var that = this;
+
       // show markers for this tour
+      //
+      // we need to defer in order to correctly calculate the offset of targets
+      // as they might still be populating their content at this stage
       _.defer(function() {
-        _.each(tour.spots, function(t) {
-          t.marker && t.marker.show();
+        _.each(tour.spots, function(spot) {
+          if (spot.marker) {
+            spot.marker.show();
+          }
         });
       });
 
       // listen to its option changes
       tour.$
-      .on('refresh.gjs_markers', function(e, options) {
-        _.each(tour.spots, function(t) {
-          if (t.marker) {
-            if (tour.options.alwaysMark) {
-              t.marker.show();
-            } else {
-              !t.isCurrent() && t.marker.hide();
-            }
-          }
-        });
-      })
+      .on('refresh.gjs_markers', function(/*e, options*/) {
+        that.refresh();
+      });
     },
 
     onTourStop: function(tour) {
       _.each(tour.spots, function(spot) {
-        spot.marker && spot.marker.hide();
+        if (spot.marker) {
+          spot.marker.hide();
+        }
       });
 
       tour.$.off('refresh.gjs_markers');
+    },
+
+    rebuildMarkers: function(tour) {
+      var that = this,
+          $container,
+          marker;
+
+      _.each(tour.spots, function(spot) {
+        if (spot.marker) {
+          $container = spot.marker.$container;
+          spot.marker.remove();
+          marker = that.addMarker(null, spot, { $container: $container });
+        }
+      });
+
+      if (tour.current && tour.current.marker) {
+        tour.current.marker.highlight();
+      }
+    },
+
+    repositionMarkers: function() {
+      var tour = guide.tour;
+
+      if (!tour) {
+        return true;
+      }
+
+      _.each(tour.spots, function(spot) {
+        if (spot.marker) {
+          spot.marker.$el.place();
+        }
+      });
+
+      return true;
     }
   }); // Extension.prototype
 
   _.extend(Marker.prototype, {
-    constructor: function(spot) {
-      var index = spot.index,
-          $el;
+    defaults: {
+      position:   'right',
+      placement:  'inline',
+      withText:   true,
+      width:      'auto'
+    },
 
+    constructor: function(spot, attributes) {
+      var $el,
+          $spot,
+          $container;
+
+      _.extend(this, attributes);
       this.spot   = spot;
 
       // build the marker options
-      this.options = _.defaults(
+      this.options = _.extend(
         {},
-        // accept the spot options
-        (spot.options || {}).marker,
+        this.options || this.defaults,
+        // global guide marker options,
+        guide.getOptions().marker,
         // the spot's tour options,
-        (spot.tour.options || {}).marker,
-        // and finally, the defaults
-        DEFAULTS);
+        spot.tour.getOptions().marker,
+        // accept the spot options
+        spot.getOptions().marker);
 
       $el       = $(this.build(spot));
       $el.place = $.proxy(this.place, this);
@@ -341,27 +413,47 @@
 
       _.extend(this, {
         $el:      $el,
-        $index:  $el.find('.index'),
+        $index:   $el.find('.index'),
         $caption: $el.find('.caption'),
         $text:    $el.find('.text')
       });
 
-      if (this.placement == PMT_SIBLING) {
-        var $t = spot.$el;
+      if (this.placement === PMT_SIBLING) {
+        $spot = spot.$el;
+        $container = this.$container;
 
         // the container must be relatively positioned
-        var $container = $('<div />').css({
-          display: $t.css('display'),
-          position: 'relative'
-        });
+        // var $container = $('<div />').css({
+        //   display:  $spot.css('display'),
+        //   position: 'relative'
+        // });
+        if (!$container) {
+          $container =
+            $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
+            .html('').attr({
+              'id': null,
+              'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+            });
 
-        $container.insertBefore($t);
-        $t.appendTo($container);
+          $container.css({
+            display:  $spot.css('display'),
+            position: 'relative'
+          });
+
+          $container.data('gjs-container', true);
+
+          // we'll keep a reference so we'll be able to use the same container
+          // if/when we refresh
+          this.$container = $container;
+        }
+
+        $container.insertBefore($spot);
+        $spot.appendTo($container);
         $el.appendTo($container);
 
         // we'll need these for positioning
-        this.margin_right = parseInt($el.css('margin-right'));
-        this.margin_left  = parseInt($el.css('margin-left'))
+        this.margin_right = parseInt($el.css('margin-right'), 10);
+        this.margin_left  = parseInt($el.css('margin-left'), 10);
       }
 
       spot.marker = this;
@@ -385,7 +477,7 @@
       // #highlight()-ed
       this.withText = this.options.withText && spot.hasContent();
 
-      this.min_width = this.options.width || DEFAULTS.width;
+      this.min_width = this.options.width || this.defaults.width;
 
       // parse placement and position
       switch(this.options.placement) {
@@ -393,7 +485,7 @@
         case 'sibling': this.placement = PMT_SIBLING; break;
         case 'overlay': this.placement = PMT_OVERLAY; break;
         default:
-          throw 'guide-marker.js: bad placement "' + this.options.placement + '"';
+          throw 'guide-marker.js: bad placement "'+this.options.placement+'"';
       }
 
       switch(this.options.position) {
@@ -428,7 +520,25 @@
     },
 
     hide: function() {
+      this.spot.$el.removeClass([
+        'gjs-spot-' + this.options.placement,
+        'gjs-spot-' + this.options.position
+      ].join(' '));
+
       this.$el.detach();
+    },
+
+    remove: function() {
+      this.hide();
+
+      // return the spot element back to its place by completely removing the
+      // sibling container we created
+      if (this.placement === PMT_SIBLING) {
+        this.$container.replaceWith(this.spot.$el);
+        this.$container.remove();
+      }
+
+      this.$el.remove();
     },
 
     highlight: function() {
@@ -443,14 +553,14 @@
         this.$el.css({
           width: this.min_width
         });
-
-        this.show();
       }
+
+      this.show();
 
       guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
-    dehighlight: function(spot) {
+    dehighlight: function(/*spot*/) {
       this.$el.removeClass('focused');
 
       guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
@@ -466,42 +576,56 @@
         this.$el.place();
       }
 
-      if (!this.spot.tour.options.alwaysMark) {
+      if (!this.spot.tour.getOptions().alwaysMark) {
         this.hide();
       }
 
       guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
     },
 
-    place: function() {
-      var $t      = this.spot.$el,
-          options = this.options;
+    canShow: function() {
+      var spot = this.spot;
 
-      if (!$t || !$t.length || !$t.is(":visible")) {
+      if (!spot.tour.getOptions().alwaysMark && !spot.isCurrent()) {
+        return false;
+      }
+
+      if (!spot.$el.length || !spot.$el.is(':visible')) {
+        return false;
+      }
+
+      return true;
+    },
+
+    place: function() {
+      var $spot = this.spot.$el,
+          $marker = this.$el;
+
+      if (!this.canShow()) {
         return this.hide();
       }
 
       attach(this);
 
       // mark the spot as being highlighted by a marker
-      $t.addClass([
-        'gjs-spot-' + options.placement,
-        'gjs-spot-' + options.position
+      $spot.addClass([
+        'gjs-spot-' + this.options.placement,
+        'gjs-spot-' + this.options.position
       ].join(' '));
 
-      if (this.placement == PMT_INLINE) {
-        hvCenter(this.$el, this.position);
+      if (this.placement === PMT_INLINE) {
+        hvCenter($marker, this.position);
       }
-      else if (this.placement == PMT_SIBLING) {
-        negateMargins(this.$el,
-                      this.spot.$el,
+      else if (this.placement === PMT_SIBLING) {
+        negateMargins($marker,
+                      $spot,
                       this.position,
                       this.margin_left,
                       this.margin_right);
       }
 
-      else if (this.placement == PMT_OVERLAY) {
-        snapTo(this.$el, this.spot.$el, this.position);
+      else if (this.placement === PMT_OVERLAY) {
+        snapTo($marker, $spot, this.position);
       }
     }
   });

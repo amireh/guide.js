@@ -20,9 +20,6 @@
     id: 'toggler',
 
     constructor: function() {
-      var that = this,
-          tutor_extension = guide.getExtension('tutor');
-
       this.options = _.defaults({}, this.defaults);
 
       this.$container = guide.$container;
@@ -43,7 +40,7 @@
       return this;
     },
 
-    show: function(e) {
+    show: function() {
       this.$el.appendTo(this.$container);
 
       return this;
@@ -76,8 +73,8 @@
       this.$el.toggleClass('collapsed', !guide.isShown());
     },
 
-    refresh: function(options) {
-      var options = options || this.options;
+    refresh: function(inOptions) {
+      var options = inOptions || this.options;
 
       if (!options.enabled) {
         this.hide();
