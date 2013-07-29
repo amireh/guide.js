@@ -17,21 +17,24 @@
  * See method doc below.
  */
 (function($) {
-  var EXTENSIONS = [ 'consume', 'guide' ];
+  'use strict';
+
+  var EXTENSIONS = [ 'consume', 'guide' ],
+      $window    = $(window),
+      i,
+      ext;
 
   // Break if there's a conflicting implementation
-  for (var i = 0; i < EXTENSIONS.length; ++i) {
-    var ext = EXTENSIONS[i];
+  for (i = 0; i < EXTENSIONS.length; ++i) {
+    ext = EXTENSIONS[i];
 
     if (void 0 !== $[ext] || void 0 !== $.fn[ext]) {
       throw 'guide.js: existing $.' + ext + ' implementation!';
     }
   }
 
-  var $window = $(window);
-
-  $.extend($.expr[":"], {
-    in_viewport: function (el, index, meta, stack) {
+  $.extend($.expr[':'], {
+    in_viewport: function (el) {
       var
       vp_top    = $window.scrollTop(),
       vp_bottom = vp_top + $window.height(),
@@ -45,9 +48,16 @@
   $.consume = function(e) {
     if (!e) { return false; }
 
-    e.preventDefault && e.preventDefault();
-    e.stopPropagation && e.stopPropagation();
-    e.stopImmediatePropagation && e.stopImmediatePropagation();
+    if (e.preventDefault) {
+      e.preventDefault();
+    }
+    if (e.stopPropagation) {
+      e.stopPropagation();
+    }
+
+    if (e.stopImmediatePropagation) {
+      e.stopImmediatePropagation();
+    }
 
     e.cancelBubble = true;
     e.returnValue = false;
@@ -61,18 +71,18 @@
    *
    * @example
    *   $('#my_button').guide({
-   *     text: "Click me to build your own nuclear reactor in just a minute. FREE."
+   *     text: "Click me to build your own nuclear reactor in just a minute."
    *   })
    *
    * @see guide#addSpot for more info on options.
    */
-  $.fn.guide = function(options) {
-    var options   = options || {},
+  $.fn.guide = function(in_options) {
+    var options   = in_options || {},
         instance  = window.guide;
 
     if (!instance) {
-      throw "guide.js: bad $.fn.guide call, global guide has not been setup, " +
-            "have you forgotten to initialize guide.js?";
+      throw 'guide.js: bad $.fn.guide call, global guide has not been setup,' +
+            'have you forgotten to initialize guide.js?';
     }
 
     instance.addSpot($(this), options);

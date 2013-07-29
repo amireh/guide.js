@@ -8,30 +8,39 @@
  *
  */
 (function(_) {
-  var EXTENSIONS = [ 'assign', 'parseOptions' ];
+  'use strict';
 
-  // Break if there's a conflicting implementation
-  for (var i = 0; i < EXTENSIONS.length; ++i) {
-    var ext = EXTENSIONS[i];
+  (function() {
+    var EXTENSIONS = [ 'assign', 'parseOptions' ],
+        ext,
+        ext_iter;
 
-    if (void 0 !== _[ext]) {
-      throw 'guide.js: existing _.' + ext + ' implementation!';
+    // Break if there's a conflicting implementation
+    for (ext_iter = 0; ext_iter < EXTENSIONS.length; ++ext_iter) {
+      ext = EXTENSIONS[ext_iter];
+
+      if (void 0 !== _[ext]) {
+        throw 'guide.js: existing _.' + ext + ' implementation!';
+      }
     }
-  }
+  }());
 
-  _.assign = function(k, v, o) {
-    var path_tokens = k.split('.'),
-        pathsz      = path_tokens.length;
+  _.assign = function(k, v, in_o) {
+    var path_tokens = k.toString().split('.'),
+        pathsz      = path_tokens.length,
+        o           = in_o || {},
+        token,
+        i;
 
     if (pathsz > 1) {
       k = o;
 
-      for (var x = 0; x < pathsz; ++x) {
-        var token = path_tokens[x];
+      for (i = 0; i < pathsz; ++i) {
+        token = path_tokens[i];
 
         k[ token ] = k[ token ] || {};
 
-        if (x == pathsz-1) {
+        if (i === pathsz-1) {
           k[token] = v;
           break;
         }
@@ -41,7 +50,9 @@
     } else {
       o[k] = v;
     }
-  }
+
+    return o;
+  };
 
   // var strOptionsSeparator = new RegExp('[:|,]'),
   var strOptionsSeparator = /[:|,]/,
@@ -63,30 +74,33 @@
    * @param <String> str the options string to parse
    * @param <Object> options: {
    *   separator: <RegExp> that will be used for tokenizing
-   *   sanitizer: <RegExp> that will optionally be used to pre-process the string
-   *   convert: <Boolean> whether to query and convert string values to other types
+   *   sanitizer: <RegExp> that will optionally be used to pre-process the str
+   *   convert: <Boolean> whether to query and cast string values to other types
    * }
    *
    * @return <Object> the extracted key-value pairs
    */
-  _.parseOptions = function(str, options) {
+  _.parseOptions = function(str, in_options) {
     var
-    options   = options || {},
+    options   = in_options || {},
     separator = options.separator || strOptionsSeparator,
     sanitizer = options.sanitizer || strOptionsSanitizer,
     tokens    = (str || '').replace(sanitizer, ':').split(separator),
     tokenssz  = tokens.length,
-    out       = {};
+    out       = {},
+    i, // token iterator
+    k,
+    v;
 
-    for (var i = 0; i < tokenssz; ++i) {
-      var k = (tokens[i]||'').trim(),
-          v = (tokens[++i]||'').trim();
+    for (i = 0; i < tokenssz; ++i) {
+      k = (tokens[i]||'').trim();
+      v = (tokens[++i]||'').trim();
 
-      if (!k) continue;
+      if (!k) { continue; }
 
-      if (v == 'false') { v = false; }
-      else if (v == 'true') { v = true; }
-      else if (Number(v).toString() == v) {
+      if (v === 'false') { v = false; }
+      else if (v === 'true') { v = true; }
+      else if (Number(v).toString() === v) {
         v = Number(v);
       }
 

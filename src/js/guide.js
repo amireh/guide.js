@@ -2,7 +2,7 @@
   'use strict';
 
   if (!$) {
-    throw 'guide.js: jQuery is undefined, are you sure it has been loaded yet?'
+    throw 'guide.js: jQuery is undefined, are you sure it has been loaded yet?';
   }
 
   var
@@ -12,16 +12,13 @@
     return this;
   },
 
-  GRACEFUL = false,
-  DEBUG    = true,
-
   KLASS_ENABLED         = 'with-gjs',
   KLASS_OVERLAYED       = 'gjs-with-overlay',
   KLASS_NOT_OVERLAYED   = 'gjs-without-overlay',
   KLASS_HIDING          = 'gjs-hiding',
-  KLASS_ENTITY          = 'gjs-entity';
+  KLASS_ENTITY          = 'gjs-entity',
 
-  var Optionable = {
+  Optionable = {
     defaults: {},
 
     addOption: function(key, default_value) {
@@ -35,14 +32,14 @@
     },
 
     setOptions: function(options) {
-      this.options = _.merge(this.options || {}, options);
+      this.options = this.getOptions(options);
 
       if (this.refresh) {
         this.refresh(this.options);
       }
 
       if (this.$) {
-        console.log('guide.js:', this.id, 'options changed, triggering refresh');
+        console.log('guide.js:', this.id,'options changed, triggering refresh');
 
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }
@@ -104,12 +101,10 @@
       }
 
       if (optSpots) {
-        var that = this;
-
         if (!_.isArray(optSpots)) {
-          throw "guide.js#defineTour: bad spots, expected array, got: " +
+          throw 'guide.js#defineTour: bad spots, expected array, got: ' +
                 typeof(optSpots);
-        };
+        }
 
         this.fromJSON(optSpots);
       }
@@ -126,9 +121,9 @@
 
       if (!(tour = this.getTour(id))) {
         throw [
-          "guide.js: undefined tour '",
+          'guide.js: undefined tour "',
           id,
-          "', did you forget to call #defineTour()?"
+          '", did you forget to call #defineTour()?'
         ].join('');
       }
 
@@ -215,17 +210,17 @@
         that.fromNode($target, {
           text: $ref.detach()[0].outerHTML
         });
-      })
+      });
 
       return this;
     },
 
-    fromNode: function($node, options) {
+    fromNode: function($node, inOptions) {
       var
       $this = $node,
       $tour,
       options = _.extend(
-        options || {},
+        inOptions || {},
         _.parseOptions($this.attr('data-guide-options')), {
           caption:  $this.attr('data-guide-caption'),
           tour:     $this.attr('data-guide-tour')
@@ -241,13 +236,17 @@
         }
       }
 
+      $this.attr({
+        'data-guide': null,
+        'data-guide-options': null,
+        'data-guide-caption': null
+      });
+
       this.addSpot($this, options);
     },
 
     show: function() {
-      var that    = this,
-          options = this.getOptions(),
-          klasses = [ KLASS_ENABLED ];
+      var klasses = [ KLASS_ENABLED ];
 
       if (!this.tour) {
         this.runTour(this.tours[0]);
@@ -271,39 +270,47 @@
 
     refresh: function() {
       _.each(this.extensions, function(e) {
-        e.refresh && e.refresh();
+        if (e.refresh) {
+          e.refresh();
+        }
       });
+
+      if (this.tour) {
+        this.tour.refresh();
+      }
 
       return this;
     },
 
     hide: function() {
-      var
-      that = this,
-      cleanup = function() {
-        that.$el.detach();
-
-        that.$container.removeClass([
-          KLASS_ENABLED,
-          KLASS_OVERLAYED,
-          KLASS_HIDING
-        ].join(' '));
-
-        that.tour.stop();
-
-        that.$.triggerHandler('hide');
-      }
+      var that = this;
 
       this.$container.addClass(KLASS_HIDING);
 
       if (this.options.withAnimations) {
-        that.$el.hide(this.options.toggleDuration, cleanup);
+        that.$el.hide(this.options.toggleDuration, function() {
+          that.__hide();
+        });
       }
       else {
-        cleanup();
+        that.__hide();
       }
 
       return this;
+    },
+
+    __hide: function() {
+      this.$el.detach();
+
+      this.$container.removeClass([
+        KLASS_ENABLED,
+        KLASS_OVERLAYED,
+        KLASS_HIDING
+      ].join(' '));
+
+      this.tour.stop();
+
+      this.$.triggerHandler('hide');
     },
 
     toggle: function() {
@@ -315,20 +322,20 @@
     /**
      * Attaches a darkening overlay to the window as per the withOverlay option.
      *
-     * @param <Boolean> do_toggle if true, the withOverlay option will be toggled
+     * @param <Boolean> doToggle if true, the withOverlay option will be toggled
      *
      * @note
      * We need to track two states: 'with-overlay' and 'without-overlay'
      * because in overlayed mode, the foreground of highlighted elements needs
-     * a different level of contrast than in non-overlayed mode (they're lighter),
+     * a higher level of contrast than in non-overlayed mode (they're lighter),
      * thus the CSS is able to do the following:
      *
      *   .gjs-with-overlay #my_element { color: white }
      *   .gjs-without-overlay #my_element { color: black }
      *
      */
-    toggleOverlayMode: function(do_toggle) {
-      if (do_toggle) {
+    toggleOverlayMode: function(doToggle) {
+      if (doToggle) {
         this.options.withOverlay = !this.options.withOverlay;
       }
 
@@ -348,7 +355,7 @@
       return this.$container.hasClass(KLASS_ENABLED);
     },
 
-    dismiss: function(optTourId) {
+    dismiss: function(/*optTourId*/) {
       this.$.triggerHandler('dismiss');
     },
 
@@ -382,9 +389,9 @@
      * @nodoc
      */
     getTour: function(id) {
-      return _.isString(id)
-        ? _.find(this.tours || [], { id: id })
-        : id;
+      return _.isString(id) ?
+      _.find(this.tours || [], { id: id }) :
+      id;
     }
   }); // guide.prototype
 

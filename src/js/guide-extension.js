@@ -3,8 +3,11 @@
 
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
-      var that = this,
-          id   = this.id;
+      var that = this;
+
+      if (!this.id) {
+        throw 'guide.js: bad extension, missing #id';
+      }
 
       this.options = _.clone(this.defaults);
 
@@ -18,9 +21,6 @@
         if (that.onGuideHide) {
           that.onGuideHide();
         }
-      })
-      .on('refresh', function() {
-        that.setOptions(that.getOptions());
       })
       .on('start.tours.gjs_extension', function(e, tour) {
         tour.$.on('refresh.gjs_extension', function() {
@@ -40,8 +40,8 @@
      * combined with global guide options and the current tour's overrides.
      *
      * The global options (guide's and tour's) are expected to be keyed by the
-     * extension id. So for an extension IDed as 'foo', its options in the global
-     * guide instance would be specified as:
+     * extension id. So for an extension IDed as 'foo', its options in the
+     * global guide instance would be specified as:
      *
      *  guide.setOptions({ foo: { option: value }})
      *
@@ -50,14 +50,19 @@
      *   2. the extensions' options specified in the guide.js global option set
      *   3. the extensions' options specified in the current tour's option set
      */
-    getOptions: function() {
+    getOptions: function(overrides) {
       var key = this.id;
 
       return _.extend({},
         this.options || this.defaults,
         key && guide.getOptions()[key],
-        key && guide.tour ? guide.tour.getOptions()[key] : null);
+        key && guide.tour ? guide.tour.getOptions()[key] : null,
+        overrides);
     },
+
+    isEnabled: function() {
+      return !!this.getOptions().enabled;
+    }
   });
 
   guide.Extension = Extension;
