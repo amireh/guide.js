@@ -29,15 +29,6 @@
 
 <script>
   $(function() {
-    guide
-    .setOptions({
-      // withOverlay: true
-    })
-    .fromDOM($('.example'))
-    .runTour('Default Tour');
-
-    guide.getExtension('controls').setOptions({
-      withDeveloperControls: true
-    });
+    guide.fromDOM($('.example')).show();
   });
 </script>

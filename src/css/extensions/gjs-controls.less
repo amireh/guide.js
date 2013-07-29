@@ -13,6 +13,7 @@
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
+  z-index: @gjs-layer-forefront;
 
   background: rgba(0, 0, 0, 0.85);
 
@@ -102,7 +103,6 @@
 }
 
 #gjs_tutor.without-controls {
-  bottom: @gjs-controls-h + 1 * @gjs-padding;
   .gjs-box-shadow(none);
 }
 

@@ -1,9 +1,24 @@
 <section class="single">
-  <h3>Options</h3>
   <div>
+    <h3>Via JavaScript</h3>
+
     <button id="via_js">Via JavaScript</button>
 
     <div class="freespace"></div>
+    <p><strong>Code</strong></p>
+    <pre>
+guide.addSpots([{
+  $el: $('#via_js'),
+  text: "I'm a Tour Step built from JavaScript!",
+  marker: {
+    position: 'right'
+  }
+}]);
+    </pre>
+  </div>
+
+  <div>
+    <h3>Via Markup</h3>
 
     <button
       data-guide="I was made into a Tour Step using data- attributes"
@@ -12,11 +27,20 @@
     </button>
 
     <div class="freespace"></div>
-
+    <p><strong>Code</strong></p>
+<pre>
+&lt;button
+  data-guide="I was made into a Tour Step using data- attributes"
+  data-guide-options="marker.width: 120"&gt;
+  Via Markup
+&lt;/button&gt;
+</pre>
+  </div>
+  <div>
+    <h3>Via another HTML element</h3>
     <button id="via_node"
       data-guide-caption="Referenced Content"
       data-guide-options="marker.width: 240">Via another HTML element</button>
-
   </div>
 </section>
 
@@ -38,6 +62,11 @@
 
 <script>
   $(function() {
+    guide.setOptions({
+      tutor: {
+        enabled: false
+      }
+    })
     // assign some tour options which will apply to all the tour's spots
     guide.getTour('Default Tour').setOptions({
       marker: {

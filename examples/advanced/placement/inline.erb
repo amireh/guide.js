@@ -1,0 +1,39 @@
+<section>
+  <h2>Inline placement (best behaviour but restrictive)</h2>
+  <p>Inline placement attaches the marker elements inside the target,
+    ie: using <code>$target.append()</code>. The marker will move
+    around with the target node, if its position changes.
+  </p>
+  <p>This is best used when:</p>
+  <ol>
+    <li>the target is <strong>relative</strong> positioned</li>
+    <li>the target can safely contain children nodes, ie: <code>button</code> doesn't</li>
+    <li>the target might move around</li>
+  </ol>
+  <p>This placement mode uses <strong>absolute</strong> positioning and
+  does not require any JavaScript manipulation to achieve the correct offset.
+  </p>
+
+  <%= erb :"advanced/samples/grid", locals: { placement: 'inline' } %>
+  <%= erb :"advanced/samples/nodes", locals: { placement: 'inline' } %>
+  <%= erb :"advanced/samples/blocks", locals: { placement: 'inline' } %>
+
+</section>
+
+<script>
+  $(function() {
+    guide.setOptions({
+      tutor: {
+        enabled: false
+      },
+      controls: {
+        inMarkers: false
+      },
+
+      marker: {
+        placement: 'inline'
+      }
+    }).fromDOM($('body')).show();
+  });
+
+</script>

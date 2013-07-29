@@ -11,7 +11,10 @@
   font-size: 12px;
 
   /*.gjs-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
-  .gjs-transition(background-color; 0.25s; ease-in);
+  /*.gjs-transition(background-color; 0.25s; ease-in);*/
+
+  @targs: "0.25s ease-in";
+  .gjs-multiple-transition(~"background-color @{targs}, top @{targs}, left @{targs}");
 
   cursor: pointer;
   padding: 10px;
@@ -30,7 +33,7 @@
 
   &:hover,
   &.focused {
-    z-index: @gjs-layer-forefront;
+    z-index: @gjs-layer-active;
     background: fade(@gjs-highlight-bg, 95%);
   }
 

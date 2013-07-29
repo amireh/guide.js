@@ -43,7 +43,11 @@
         $target['slide' + (is_collapsed ? 'Down' : 'Up')]();
       }
 
-      $both.toggleClass("collapsed").toggleClass('expanded', is_collapsed);
+      $both
+        .toggleClass("collapsed",!is_collapsed)
+        .toggleClass('expanded', is_collapsed);
+
+      $both.trigger(is_collapsed ? 'collapsed' : 'expanded', []);
     }
   }
 
@@ -85,10 +89,14 @@
   }
 }(window.jQuery);
 
-
-
 $(document.body).collapsible({
   selector: '[data-collapser]',
   animation: false,
   trigger:   'click'
 });
+
+$(function() {
+  $('[data-collapser]').on('collapsed expanded', function() {
+    guide.tour.refresh();
+  });
+})

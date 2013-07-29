@@ -1,0 +1,54 @@
+<section>
+  <h3>Form controls</h3>
+  <div>
+    <p>Most form controls can not be marked using <code>inline</code>
+      placement since they can not contain children, so we can use
+      either <code>sibling</code> or <code>overlay</code>
+      placement instead.
+    </p>
+
+    <ul class="node-mix">
+      <li><input type="text" data-guide="Placeholder"  /></li>
+      <li>
+        <textarea data-guide="Placeholder" ></textarea>
+        <p><small>Tip: resize the textarea to see how well the marker sticks.</small></p>
+      </li>
+
+      <li>
+        <div class="freespace"></div>
+        <input type="checkbox"
+          data-guide-options="marker.position:top"
+          data-guide="Checking this box will release 2 white monkeys" />A
+        <input type="checkbox"
+          data-guide-options="marker.position:bottom"
+          data-guide="While checking this one will turn you into one" />B
+        <label data-guide="Placeholder" >
+          <input type="radio" />X
+        </label>
+        <div class="freespace"></div>
+      </li>
+
+      <li>
+        <input type="submit" data-guide="Placeholder" value="Submit button" />
+      </li>
+      <li>
+        <input type="reset" data-guide="Placeholder" value="Reset button" />
+      </li>
+      <li>
+        <button data-guide="Placeholder" >Button</button>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<script>
+  $(function() {
+    guide.fromDOM($('body')).show().setOptions({
+      tutor: { enabled: false },
+      marker: {
+        placement: 'sibling'
+      }
+    });
+  });
+
+</script>

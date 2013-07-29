@@ -38,8 +38,8 @@
   },
 
   paths: {
-    'lodash': 'vendor/lodash',
-    'jQuery': 'vendor/jQuery-1.10.2'
+    'lodash': '../vendor/lodash',
+    'jQuery': '../vendor/jQuery-1.10.2'
   },
 
   shim: {

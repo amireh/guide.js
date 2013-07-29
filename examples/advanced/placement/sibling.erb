@@ -1,0 +1,58 @@
+<section>
+  <h2>Sibling placement (less restrictive, slower)</h2>
+  <div>
+    <p>Sibling placement attaches the marker elements right before or after
+      the target, ie: using <code>$target.before()</code> or
+      <code>$target.after()</code>.
+    </p>
+    <p>This is best used when:</p>
+    <ol>
+      <li>the target's container (first parent) is <strong>relative</strong> positioned</li>
+      <li>the elements position changes in responsive design</li>
+    </ol>
+    <p>This placement mode uses <strong>absolute</strong> positioning and
+    manipulates <code>margin</code> properties to achieve the correct offset.
+    </p>
+
+    <%= erb :"advanced/samples/grid", locals: { placement: 'sibling' } %>
+    <%= erb :"advanced/samples/nodes", locals: { placement: 'sibling' } %>
+    <%= erb :"advanced/samples/blocks", locals: { placement: 'sibling' } %>
+
+    <h3 data-collapser>Elements with margins</h3>
+    <div data-collapsible class="text-center">
+      <p>These elements have custom <code>margin-left</code> and <code>margin-right</code>
+        that will be appropriately ignored by the spot marker in sibling mode.
+      </p>
+
+      <div class="freespace"></div>
+      <button
+        data-guide="A left positioned guideling in sibling placement"
+        data-guide-options="marker.position:left, marker.placement:sibling">LEFT
+      </button>
+      <button
+        data-guide="A right positioned guideling in sibling placement"
+        data-guide-options="marker.position:right, marker.placement:sibling">RIGHT
+      </button>
+      <div class="freespace"></div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  $(function() {
+    guide.setOptions({
+      tutor: {
+        enabled: false
+      },
+      controls: {
+        inMarkers: false
+      },
+
+      marker: {
+        placement: 'sibling'
+      }
+    }).fromDOM($('body')).show();
+  });
+
+</script>

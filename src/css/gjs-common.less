@@ -29,9 +29,10 @@
 
 /** All the Z-index layers we'll be needing */
 @gjs-layer-background:  100;
-@gjs-layer-spots:     101; /* spots and source elements */
+@gjs-layer-spots:       101; /* spots and source elements */
 @gjs-layer-entities:    102; /* markers and gjs.js generated elements */
-@gjs-layer-forefront:   103; /* tutor and stuff that should always be on top */
+@gjs-layer-active:      103; /* active spots and their entities */
+@gjs-layer-forefront:   104; /* tutor and stuff that should always be on top */
 
 /**
  * Helpers
@@ -103,6 +104,14 @@
   -o-transition: @prop @time @ease;
   -ms-transition: @prop @time @ease;
   transition: @prop @time @ease;
+}
+
+.gjs-multiple-transition(@varargs) {
+  -webkit-transition: @arguments;
+  -moz-transition: @arguments;
+  -o-transition: @arguments;
+  -ms-transition: @arguments;
+  transition: @arguments;
 }
 
 .gjs-border-top() {

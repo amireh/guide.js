@@ -1,15 +1,13 @@
 <section>
-  <div>
-    <div class="freespace"></div>
-
-    <button
-      data-guide="A top positioned guideling in inline placement"
-      data-guide-options="marker.position:top, marker.placement:sibling">An action
-    </button>
-
+  <h2>On Monkeys With Love</h2>
+  <article>
+    <header data-collapser>
+      <h3>Why you should be doing nothing else than recruiting a monkey right now</h3>
+    </header>
     <p
+      data-collapsible
       data-guide="A right positioned guideling in inline placement"
-      data-guide-options="marker.position:right, marker.placement:inline">
+      data-guide-options="marker.position:right">
       Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod
       tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,
       quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
@@ -17,14 +15,33 @@
       cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non
       proident, sunt in culpa qui officia deserunt mollit anim id est laborum.
     </p>
+  </article>
+  <section>
+    <h4>What a monkey really is</h4>
+    <blockquote cite="http://en.wikipedia.org/wiki/Monkey">
+      <p><em data-guide="The virtual source of truth.">Wikipedia on Monkeys:</em></p>
+      <p>
+        A monkey is a primate of the Haplorrhini suborder and simian infraorder, either an Old World monkey or a New World monkey, but excluding apes and humans. There are about 260 known living species of monkey. Many are arboreal, although there are species that live primarily on the ground, such as baboons. Monkeys are generally considered to be intelligent. Unlike apes, monkeys usually have tails. Tailless monkeys may be called "apes", incorrectly according to modern usage; thus the tailless Barbary macaque is called the "Barbary ape".
+      </p>
+    </blockquote>
+  </section>
 
-    <button
-      data-guide="Hiring a Servant Monkey has never been easier,
-      simply push this button and one will pop right behind you."
-      data-guide-caption="Monkeys everywhere"
-      data-guide-options="">Hire
-    </button>
-  </div>
+  <section>
+    <h3>Sold yet?</h3>
+
+    <div class="text-center">
+      <button
+        data-guide-caption="Monkey Recruitment"
+        data-guide="Hiring a Servant Monkey has never been easier,
+        simply push this button and one will pop right behind you."
+        data-guide-options="marker.position:top">Recruit Monkey
+      </button>
+      <hr />
+    </div>
+
+    <img src="/images/Funny-Little-Monkey.jpg" />
+
+  </section>
 </section>
 
 <script>
@@ -36,11 +53,16 @@
     .fromDOM($('.example'))
     .getTour('Default Tour')
       .setOptions({
-        toggler: {
-          // enabled: false
-        },
+        alwaysMark: false,
+        alwaysHighlight: false,
+
         tutor: {
           spanner: true
+        },
+
+        marker: {
+          withText: false,
+          placement: 'sibling'
         },
         controls: {
           withDeveloperControls: false,
