@@ -65,7 +65,6 @@
     return false;
   };
 
-
   /**
    * Convenience method for adding a jQuery selector element as a guide spot.
    *
