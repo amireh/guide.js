@@ -1,8 +1,8 @@
 ({
-  appDir:         './',
+  appDir:         './src/js',
   baseUrl:        './',
-  dir:            '../../dist',
-  optimize:       'none',
+  dir:            './dist',
+  optimize:       'uglify2',
 
   removeCombined: true,
   keepBuildDir: true,
@@ -14,10 +14,10 @@
 
   uglify2: {
     warnings: true,
-    mangle:   false,
+    mangle:   true,
 
     output: {
-      beautify: true
+      beautify: false
     },
 
     compress: {
@@ -51,25 +51,31 @@
       dependencies: [ 'jQuery', 'lodash', 'ext/lodash', 'ext/jQuery' ]
     },
 
+    'guide-extension': [ 'guide' ],
     'guide-tour': [ 'guide' ],
     'guide-spot': [ 'guide' ],
     'extensions/guide-tutor': [ 'guide' ],
-    'extensions/guide-markers': [ 'guide' ]
+    'extensions/guide-markers': [ 'guide' ],
+    'extensions/guide-toggler': [ 'guide' ],
+    'extensions/guide-controls': [ 'guide' ]
   },
 
   modules: [
     {
-      name: "guide",
+      name: 'guide',
 
       include: [
         'ext/lodash',
         'ext/jQuery',
 
         'guide',
+        'guide-extension',
         'guide-tour',
         'guide-spot',
         'extensions/guide-tutor',
-        'extensions/guide-markers'
+        'extensions/guide-markers',
+        'extensions/guide-toggler',
+        'extensions/guide-controls'
       ],
       exclude: [ ]
     }
