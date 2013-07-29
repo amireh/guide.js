@@ -1,5 +1,12 @@
 [build]
 dist/*
+!dist/guide.js
+!dist/guide.css
+
+[transients]
+_SpecRunner.html
 
 [env]
+.grunt/
+node_modules
 src/watch-inotify.sh
