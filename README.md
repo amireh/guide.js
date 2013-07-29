@@ -110,6 +110,17 @@ cd /path/to/guide.js/src/css
 ./compiler.sh
 ```
 
+## Running tests
+
+A Node package is defined that contains all the development dependencies required
+to run the tests, you need `npm` to install it. Once the package is pulled,
+a Grunt script is used to run the code through JSLint and run the Jasmine specs:
+
+```bash
+npm install
+grunt
+```
+
 ## Related
 
 Here's a list of related libraries I've used before writing `guide.js`. They are

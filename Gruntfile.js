@@ -4,7 +4,6 @@ module.exports = function(grunt) {
   // Project configuration.
   grunt.initConfig({
     jasmine : {
-      // src: 'src/js/**/*.js',
       src: [
         'src/js/ext/*.js',
         'src/js/guide.js',
@@ -17,22 +16,20 @@ module.exports = function(grunt) {
         timeout: 10000,
         outfile: '_SpecRunner.html',
         version: '1.3.1',
-        vendor: 'src/js/vendor/*.js',
-        specs : 'spec/unit/*.js'
+        vendor: 'src/vendor/**/*.js',
+        specs : 'spec/**/*.js'
       }
     },
     jshint: {
       all: [
-        'src/js/ext/*.js',
-        'src/js/*.js',
-        'src/js/extensions/*.js'
+        'src/js/**/*.js'
       ],
       options: {
         jshintrc: '.jshintrc'
       }
     },
     jsvalidate: {
-      files: ['src/js/ext/*.js', 'src/js/*.js']
+      files: ['src/js/**/*.js' ]
     }
   });
 
@@ -40,6 +37,6 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-jsvalidate');
 
-  grunt.registerTask('test', ['jshint', 'jasmine']);
+  grunt.registerTask('test', [ 'jsvalidate', 'jshint', 'jasmine' ]);
   grunt.registerTask('default', ['test']);
 };
