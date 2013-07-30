@@ -362,4 +362,5 @@
 
   // expose the instance to everybody
   window.guide = guide;
+  window.GJS_DEBUG = true;
 })(_, jQuery);

@@ -36,7 +36,7 @@ Optionally, include any extensions you want to use:
 
 ```html
   <script src="https://github.com/amireh/guide.js/src/js/extensions/guide-tutor.js"></script>
-  <script src="https://github.com/amireh/guide.js/src/js/extensions/guide-marker.js"></script>
+  <script src="https://github.com/amireh/guide.js/src/js/extensions/guide-markers.js"></script>
 ```
 
 Now you can start defining tours. See the minimal example for a headstart, or
@@ -58,7 +58,7 @@ guide.js can support extra functionality via extensions, allowing you to pick an
 
 Enabling an extension is as simple as including its JS script. Some extensions may require configuration, others simply add themselves as functionality layers.
 
-See `src/extensions/` for the available stock extensions guide.js ships with.
+See `src/js/extensions/` for the available stock extensions guide.js ships with.
 
 ### Stock extensions
 
@@ -74,25 +74,17 @@ Attach 'guidelets' to DOM elements to display tour entries in-place. Each guidel
 
 **JS**
 
-guide.js can be built using the require.js optimizer and minifies code using `uglifyjs`,
-which you can install using the node package manager:
+guide.js scripts can be built using the uglifyjs compressor. Get the dependencies
+using `npm` and run the Grunt `build` task:
 
 ```bash
-npm install r.js
-npm install uglify-js
+cd /path/to/guide.js
+npm install
+grunt build
 ```
 
-Once you have `r.js` installed, launch a terminal and do the following:
-
-```bash
-cd /path/to/guide.js/src/js
-r.js -o build.js
-```
-
-You will now find the minified JavaScript in `dist/guide.js`.
-
-You can customize the build profile, in `src/js/build.js`, to your liking to
-include or exclude some guide.js extras.
+You will now find the minified JavaScript in `dist/guide.min.js` and a concatenated
+version of all the guide.js scripts in `dist/guide.js`.
 
 **CSS**
 
@@ -100,14 +92,13 @@ To build the stylesheet, you need the [LESS](http://lesscss.org/) compiler:
 
 ```bash
 cd /path/to/guide.js
-lessc --strict-imports --compress src/guide.less dist/guide.css
+lessc --strict-imports --compress src/css/gjs.less dist/gjs.min.css
 ```
 
-If you're using Linux (or you have `inotify-tools` available), you can use a compiler script which will automatically listen to changes made to the source LESS file `guide.less` and produce a built version in `dist/guide.css`.
+If you've followed the steps above for building the JavaScripts, just do:
 
 ```bash
-cd /path/to/guide.js/src/css
-./compiler.sh
+grunt less
 ```
 
 ## Running tests

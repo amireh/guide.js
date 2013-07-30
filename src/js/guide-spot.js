@@ -17,20 +17,14 @@
     },
 
     constructor: function(attributes, options) {
-      this.options = _.extend({}, this.defaults, options);
-
-      _.extend(this, {
-        index: -1
-      }, attributes, _.pick(options, [
-        'text',
-        'caption'
-      ]));
+      _.extend(this, attributes, _.pick(options, ['text','caption']), {
+        options: _.extend({}, this.defaults, options)
+      });
 
       return this;
     },
 
     isCurrent: function() {
-      // return guide.cSpot == this;
       return this.tour.current === this;
     },
 
@@ -97,7 +91,8 @@
     },
 
     focus: function(prev_spot) {
-      var $scroller = this.$scrollAnchor;
+      var that = this,
+          $scroller = this.$scrollAnchor;
 
       this.highlight();
 
@@ -105,14 +100,14 @@
         .addClass(KLASS_FOCUSED)
         .triggerHandler('focus.gjs', prev_spot);
 
-      if (this.options.autoScroll && !$scroller.is(':in_viewport')) {
 
-        _.defer(function() {
+      _.defer(function() {
+        if (that.options.autoScroll && !$scroller.is(':in_viewport')) {
           $('html,body').animate({
             scrollTop: $scroller.offset().top * 0.9
           }, 250);
-        });
-      }
+        }
+      });
     },
 
     defocus: function(next_spot) {
