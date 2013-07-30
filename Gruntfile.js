@@ -7,6 +7,7 @@ module.exports = function(grunt) {
       src: [
         'src/js/ext/*.js',
         'src/js/guide.js',
+        'src/js/guide-optionable.js',
         'src/js/guide-extension.js',
         'src/js/guide-tour.js',
         'src/js/guide-spot.js',

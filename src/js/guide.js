@@ -16,43 +16,9 @@
   KLASS_OVERLAYED       = 'gjs-with-overlay',
   KLASS_NOT_OVERLAYED   = 'gjs-without-overlay',
   KLASS_HIDING          = 'gjs-hiding',
-  KLASS_ENTITY          = 'gjs-entity',
+  KLASS_ENTITY          = 'gjs-entity';
 
-  Optionable = {
-    defaults: {},
-
-    addOption: function(key, default_value) {
-      this.defaults[key] = default_value;
-
-      if (this.options) {
-        if (void 0 === this.options[key]) {
-          this.options[key] = default_value;
-        }
-      }
-    },
-
-    setOptions: function(options) {
-      this.options = this.getOptions(options);
-
-      if (this.refresh) {
-        this.refresh(this.options);
-      }
-
-      if (this.$) {
-        console.log('guide.js:', this.id,'options changed, triggering refresh');
-
-        this.$.triggerHandler('refresh', [ this.options, this ]);
-      }
-
-      return this;
-    },
-
-    getOptions: function(overrides) {
-      return _.extend(_.clone(this.options || {}), overrides || {});
-    }
-  };
-
-  _.extend(guide.prototype, Optionable, {
+  _.extend(guide.prototype, {
     id: 'guide',
 
     defaults: {
@@ -73,12 +39,9 @@
         $container: $('body'),
         $el:        $('<div class="gjs" />'),
         options: _.clone(this.defaults),
-        tours:   [],
         extensions: [],
-        tour: null,
-        // cSpot: null,
-        // pSpot: null,
-        // cursor:  -1
+        tours: [],
+        tour: null
       });
 
       this.$.on('refresh', function(e, options, el) {
@@ -396,9 +359,6 @@
   }); // guide.prototype
 
   guide = new guide();
-
-  // expose the Optionable interface for other components to re-use
-  guide.Optionable = Optionable;
 
   // expose the instance to everybody
   window.guide = guide;

@@ -51,6 +51,7 @@
       dependencies: [ 'jQuery', 'lodash', 'ext/lodash', 'ext/jQuery' ]
     },
 
+    'guide-optionable': [ 'guide' ],
     'guide-extension': [ 'guide' ],
     'guide-tour': [ 'guide' ],
     'guide-spot': [ 'guide' ],
@@ -69,6 +70,7 @@
         'ext/jQuery',
 
         'guide',
+        'guide-optionable',
         'guide-extension',
         'guide-tour',
         'guide-spot',
