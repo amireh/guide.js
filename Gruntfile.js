@@ -100,7 +100,7 @@ module.exports = function(grunt) {
 
     tagrelease: {
       file: 'package.json',
-      commit: false,
+      commit: true,
       message: 'Release %version%',
       prefix: 'v',
       annotate: false

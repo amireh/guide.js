@@ -1,36 +1,36 @@
 {
   "name": "guide.js",
   "description": "Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "homepage": "https://github.com/amireh/guide.js",
   "author": {
     "name": "Ahmad Amireh",
     "email": "ahmad@amireh.net",
     "url": "http://www.amireh.net"
   },
-
-  "licenses": [{
-    "type": "MIT",
-    "url": "https://github.com/eightmedia/hammer.js/blob/master/LICENSE"
-  }],
-
-  "keywords": [ "guide", "tutorial", "tour", "intro" ],
-
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "https://github.com/eightmedia/hammer.js/blob/master/LICENSE"
+    }
+  ],
+  "keywords": [
+    "guide",
+    "tutorial",
+    "tour",
+    "intro"
+  ],
   "repository": {
     "type": "git",
     "url": "git://github.com/amireh/guide.js.git"
   },
-
   "bugs": {
     "url": "https://github.com/amireh/guide.js/issues"
   },
-
   "main": "dist/guide.js",
-
   "scripts": {
     "test": "grunt test"
   },
-
   "devDependencies": {
     "grunt": "~0.4.0",
     "grunt-contrib-watch": "0.5.x",
@@ -42,8 +42,5 @@
     "grunt-tagrelease": "0.1.x",
     "grunt-bumpup": "0.2.x"
   },
-
-  "dependencies": {
-
-  }
+  "dependencies": {}
 }
