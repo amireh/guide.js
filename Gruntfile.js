@@ -34,11 +34,14 @@ module.exports = function(grunt) {
     jasmine : {
       src: sources,
       options : {
-        timeout: 10000,
+        // timeout: 10000,
         outfile: '_SpecRunner.html',
+        keepRunner: true,
         version: '1.3.1',
+        styles: 'dist/guide.css',
+        helpers: 'spec/helpers/**/*.js',
         vendor: 'src/vendor/**/*.js',
-        specs : 'spec/**/*.js'
+        specs : 'spec/unit/**/*.js'
       }
     },
 

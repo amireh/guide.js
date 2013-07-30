@@ -34,15 +34,20 @@
       return this;
     },
 
-    addStep: function($el, options) {
+    addSpot: function($el, options) {
       var spot;
 
+      if (!($el instanceof jQuery)) {
+        throw new Error('guide.js: bad Spot target, expected a jQuery object ' +
+          'but got ' + typeof($el));
+      }
+
       // has the spot been already defined? we can not handle duplicates
-      if ($el.data('guideling')) {
+      if ($el.data('gjs_spot')) {
         console.log('guide.js: element is already bound to a tour spot:');
         console.log($el);
 
-        throw 'guide.js: duplicate spot, see console for more information';
+        throw new Error('guide.js: duplicate spot, see console for more information');
       }
 
       spot = new guide.Spot({
@@ -58,7 +63,7 @@
 
       $el.
         addClass(guide.entityKlass()).
-        data('guideling', spot);
+        data('gjs_spot', spot);
 
       if (guide.isShown()) {
         spot.highlight();
@@ -66,7 +71,7 @@
 
       guide.$.triggerHandler('add', [ spot ]);
 
-      return true;
+      return spot;
     },
 
     /**
@@ -125,7 +130,7 @@
           i; // spot iterator
 
       if (!spot) {
-        throw 'guide.js: bad spot @ ' + index + ' to focus';
+        throw new Error('guide.js: bad spot @ ' + index + ' to focus');
       }
       else if (!spot.$el.is(':visible')) {
         // look for any spot that's visible and focus it instead

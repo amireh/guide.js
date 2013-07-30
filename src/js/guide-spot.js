@@ -17,9 +17,13 @@
     },
 
     constructor: function(attributes, options) {
-      _.extend(this, attributes, _.pick(options, ['text','caption']), {
+      _.extend(this, attributes, _.pick(options || {}, ['text','caption']), {
         options: _.extend({}, this.defaults, options)
       });
+
+      if (!this.tour) {
+        throw new Error('guide.js: expected #tour to be specified for a new Spot, got none');
+      }
 
       return this;
     },

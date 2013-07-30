@@ -2,7 +2,7 @@
   'use strict';
 
   if (!$) {
-    throw 'guide.js: jQuery is undefined, are you sure it has been loaded yet?';
+    throw new Error('guide.js: jQuery is undefined, are you sure it has been loaded yet?');
   }
 
   var
@@ -44,10 +44,6 @@
         tour: null
       });
 
-      this.$.on('refresh', function(e, options, el) {
-        el.toggleOverlayMode();
-      });
-
       console.log('guide.js: running');
     },
 
@@ -64,12 +60,7 @@
       }
 
       if (optSpots) {
-        if (!_.isArray(optSpots)) {
-          throw 'guide.js#defineTour: bad spots, expected array, got: ' +
-                typeof(optSpots);
-        }
-
-        this.fromJSON(optSpots);
+        this.addSpots(optSpots);
       }
 
       return tour;
@@ -83,11 +74,7 @@
       }
 
       if (!(tour = this.getTour(id))) {
-        throw [
-          'guide.js: undefined tour "',
-          id,
-          '", did you forget to call #defineTour()?'
-        ].join('');
+        throw new Error('guide.js: undefined tour "' + id + '", did you call #defineTour()?');
       }
 
       if (this.tour) {
@@ -118,22 +105,36 @@
      *   onDefocus: function($currentSpot) {}
      * }
      */
-    addSpot: function($el, options) {
+    addSpot: function($el, inOptions) {
       var tour    = this.tour,
+          options = inOptions || {},
           tour_id = options.tour;
 
-      if (tour_id && _.isString(tour_id)) {
-        tour = this.defineTour(tour_id);
-      }
-      else if (tour_id) {
-        tour = tour_id;
+      if (tour_id) {
+        if (_.isString(tour_id)) {
+          tour = this.defineTour(tour_id);
+        }
+        else if (tour_id instanceof guide.Tour) {
+          tour = tour_id;
+        }
+        else {
+          throw new Error('guide.js: bad tour object, unrecognized type: ' + typeof(tour_id));
+        }
       }
 
-      return tour.addStep($el, options);
+      return tour.addSpot($el, options);
     },
 
     addSpots: function(spots) {
-      return this.fromJSON(spots);
+      if (spots instanceof jQuery) {
+        return this.fromDOM(spots);
+      }
+      else if (_.isArray(spots)) {
+        return this.fromJSON(spots);
+      }
+
+      throw new Error('guide.js: bad spots, expected Array or jQuery selector,' +
+                      ' got: ' + typeof(spots));
     },
 
     fromJSON: function(spots) {
@@ -146,7 +147,6 @@
       return this;
     },
 
-    /** TODO */
     fromDOM: function(selector_or_container) {
       var that = this,
           $container = $(selector_or_container);
@@ -171,7 +171,7 @@
             $target = $($ref.attr('data-guide-spot'));
 
         that.fromNode($target, {
-          text: $ref.detach()[0].outerHTML
+          text: $ref.detach().attr('data-guide-spot', null)[0].outerHTML
         });
       });
 
@@ -185,9 +185,9 @@
       options = _.extend(
         inOptions || {},
         _.parseOptions($this.attr('data-guide-options')), {
-          caption:  $this.attr('data-guide-caption'),
-          tour:     $this.attr('data-guide-tour')
-        });
+        caption:  $this.attr('data-guide-caption'),
+        tour:     $this.attr('data-guide-tour')
+      });
 
       // if no tour is specified, take a look at the ancestry tree, perhaps
       // an element has a tour defined in [data-guide-tour]
@@ -205,27 +205,31 @@
         'data-guide-caption': null
       });
 
-      this.addSpot($this, options);
+      return this.addSpot($this, options);
     },
 
-    show: function() {
-      var klasses = [ KLASS_ENABLED ];
+    show: function(inOptions) {
+      var options     = inOptions || {},
+          that        = this,
+          should_show  = !this.isShown(),
+          show_after   = this.options.withAnimations ? this.options.toggleDuration:0;
 
-      if (!this.tour) {
-        this.runTour(this.tours[0]);
+      if (!this.tours.length) {
+        throw new Error('guide.js: can not show with no tours defined!');
       }
 
-      this.toggleOverlayMode();
+      if (should_show) {
+        this.$container.addClass(KLASS_ENABLED);
+        this.toggleOverlayMode();
+      }
 
-      this.$container.addClass(klasses.join(' '));
-      this.$.triggerHandler('show');
+      this.runTour(options.tour || this.tour || this.tours[0]);
 
-      this.tour.start();
-
-      this.$el.appendTo(this.$container);
-
-      if (this.options.withAnimations) {
-        this.$el.show(this.options.toggleDuration);
+      if (should_show) {
+        this.$el.appendTo(this.$container);
+        this.$el.show(show_after + 1, function() {
+          that.$.triggerHandler('show');
+        });
       }
 
       return this;
@@ -242,38 +246,50 @@
         this.tour.refresh();
       }
 
+      this.toggleOverlayMode();
+
       return this;
     },
 
+    /**
+     *
+     * @async
+     */
     hide: function() {
-      var that = this;
+      var that        = this,
+          hide_after  = this.options.withAnimations ? this.options.toggleDuration:0;
 
-      this.$container.addClass(KLASS_HIDING);
+      if (this.isShown()) {
+        this.$container.addClass(KLASS_HIDING);
+        that.$el.hide(hide_after + 1, function() {
+          that.$el.detach();
 
-      if (this.options.withAnimations) {
-        that.$el.hide(this.options.toggleDuration, function() {
-          that.__hide();
+          that.$container.removeClass([
+            KLASS_ENABLED,
+            KLASS_OVERLAYED,
+            KLASS_HIDING
+          ].join(' '));
+
+          if (that.tour) {
+            that.tour.stop();
+          }
+
+          that.$.triggerHandler('hide');
         });
       }
-      else {
-        that.__hide();
-      }
 
       return this;
     },
 
-    __hide: function() {
-      this.$el.detach();
+    reset: function() {
+      if (this.isShown()) {
+        this.hide();
+      }
 
-      this.$container.removeClass([
-        KLASS_ENABLED,
-        KLASS_OVERLAYED,
-        KLASS_HIDING
-      ].join(' '));
+      this.tours  = [];
+      this.tour   = this.defineTour('Default Tour');
 
-      this.tour.stop();
-
-      this.$.triggerHandler('hide');
+      this.options = _.clone(this.defaults);
     },
 
     toggle: function() {
@@ -328,14 +344,14 @@
 
     addExtension: function(ext) {
       if (!ext.id) {
-        throw 'guide.js: bad extension, no #id attribute defined';
+        throw new Error('guide.js: bad extension, no #id attribute defined');
       }
 
       this.extensions.push(ext);
 
       if (void 0 === ext.__initExtension) {
-        throw 'guide.js: bad extension, does not seem to implement the ' +
-              'guide.Extension prototype';
+        throw new Error('guide.js: bad extension, does not seem to implement the' +
+              ' guide.Extension prototype');
       }
 
       ext.__initExtension();
@@ -353,8 +369,8 @@
      */
     getTour: function(id) {
       return _.isString(id) ?
-      _.find(this.tours || [], { id: id }) :
-      id;
+        _.find(this.tours || [], { id: id }) :
+        _.find(this.tours || [], id);
     }
   }); // guide.prototype
 

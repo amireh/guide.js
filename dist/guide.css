@@ -533,8 +533,7 @@
   color: #ffffff;
   right: 0;
 }
-#gjs_toggler.collapsed,
-.gjs-hiding #gjs_toggler {
+#gjs_toggler.collapsed {
   /*right: -20px;*/
 
   width: 36px;
