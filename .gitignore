@@ -1,7 +1,4 @@
 [build]
-dist/*
-!dist/guide.js
-!dist/guide.css
 
 [transients]
 _SpecRunner.html
