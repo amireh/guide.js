@@ -125,5 +125,6 @@ implement markers, content feeding, and other things.
 
 ## License
 
-guide.js is developed by [Algol Labs](www.algollabs.com) and is licensed under
-the MIT terms. See `LICENSE`.
+Copyright 2013 Ahmad Amireh.
+
+Licensed under the [MIT License](https://raw.github.com/amireh/guide.js/master/LICENSE).

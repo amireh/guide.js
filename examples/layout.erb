@@ -19,20 +19,25 @@
       <%= yield %>
     </div>
 
-    <!-- guide.js core -->
-    <script src="/src/js/ext/lodash.js"></script>
-    <script src="/src/js/ext/jQuery.js"></script>
-    <script src="/src/js/guide.js"></script>
-    <script src="/src/js/guide-optionable.js"></script>
-    <script src="/src/js/guide-tour.js"></script>
-    <script src="/src/js/guide-spot.js"></script>
+    <% if settings.production? %>
+      <script src="/dist/guide.min.js"></script>
+    <% else %>
+      <!-- guide.js core -->
+      <script src="/src/js/ext/lodash.js"></script>
+      <script src="/src/js/ext/jQuery.js"></script>
+      <script src="/src/js/guide.js"></script>
+      <script src="/src/js/guide-optionable.js"></script>
+      <script src="/src/js/guide-tour.js"></script>
+      <script src="/src/js/guide-spot.js"></script>
 
-    <!-- guide.js extensions -->
-    <script src="/src/js/guide-extension.js"></script>
-    <script src="/src/js/extensions/guide-tutor.js"></script>
-    <script src="/src/js/extensions/guide-markers.js"></script>
-    <script src="/src/js/extensions/guide-controls.js"></script>
-    <script src="/src/js/extensions/guide-toggler.js"></script>
+      <!-- guide.js extensions -->
+      <script src="/src/js/guide-extension.js"></script>
+      <script src="/src/js/extensions/guide-tutor.js"></script>
+      <script src="/src/js/extensions/guide-markers.js"></script>
+      <script src="/src/js/extensions/guide-controls.js"></script>
+      <script src="/src/js/extensions/guide-toggler.js"></script>
+    <% end %>
+
 
     <!-- guide.js examples helpers -->
     <script src="/examples.js"></script>
