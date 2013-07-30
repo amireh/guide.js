@@ -40,7 +40,10 @@
     "grunt-contrib-jasmine": "~0.4.0",
     "grunt-contrib-less": "~0.6.x",
     "grunt-tagrelease": "0.1.x",
-    "grunt-bumpup": "0.2.x"
+    "grunt-bumpup": "0.2.x",
+    "grunt-jsvalidate": "0.2.x"
   },
-  "dependencies": {}
+  "dependencies": {
+
+  }
 }
