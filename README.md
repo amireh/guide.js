@@ -1,6 +1,8 @@
 guide.js
 ========
 
+[![Build Status](https://travis-ci.org/amireh/guide.js.png)](https://travis-ci.org/amireh/guide.js)
+
 Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.
 
 This library started out as a fork of [pageguide.js](https://github.com/tracelytics/pageguide), but ended up being its own package as the code
