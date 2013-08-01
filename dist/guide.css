@@ -180,10 +180,11 @@
 .gjs-marker .text {
   display: none;
   color: #ffffff;
+  white-space: normal;
 }
 .gjs-marker:hover,
 .gjs-marker.focused {
-  z-index: 103;
+  z-index: 106;
   background: rgba(51, 181, 229, 0.95);
 }
 .gjs-marker.focused {
@@ -458,6 +459,7 @@
   -moz-box-shadow: none;
   -o-box-shadow: none;
   box-shadow: none;
+  bottom: 42px;
 }
 #gjs_tutor.with-controls {
   padding-bottom: 52px;
@@ -475,6 +477,7 @@
   position: fixed;
   top: 50%;
   right: 0;
+  z-index: 101;
   margin-top: -24px;
   width: 72px;
   height: 48px;
@@ -518,6 +521,7 @@
   margin: 4px 0 -12px 0;
   font-size: 11px;
   text-align: center;
+  white-space: nowrap;
 }
 #gjs_toggler button:before {
   content: " ";
@@ -528,7 +532,8 @@
 
   margin-bottom: 4px;
 }
-#gjs_toggler button.hide {
+#gjs_toggler button.hide,
+#gjs_toggler button:hover {
   background: #33b5e5;
   color: #ffffff;
   right: 0;
