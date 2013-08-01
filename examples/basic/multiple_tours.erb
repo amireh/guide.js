@@ -1,0 +1,18 @@
+<section>
+  <div data-guide-tour="Tour A">
+    <%= erb :"basic/quickstart" %>
+  </div>
+
+  <div data-guide-tour="Tour B">
+    <%= erb :"styles/slideshow" %>
+  </div>
+</section>
+
+<script>
+  $(function() {
+    guide.setOptions({
+      tutor: { enabled: false }
+    });
+    guide.runTour('Tour A');
+  });
+</script>

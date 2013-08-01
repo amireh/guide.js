@@ -19,16 +19,20 @@
     </p>
 
     <button
-      data-guide="Hiring a Servant Monkey has never been easier,
-      simply push this button and one will pop right behind you."
       data-guide-caption="Monkeys everywhere"
-      data-guide-options="">Hire
+      data-guide="Hiring a Servant Monkey has never been easier,
+      simply push this button and one will pop right behind you.">Hire
     </button>
   </div>
 </section>
 
 <script>
   $(function() {
+    guide.tour.setOptions({
+      marker: {
+        // template: function(data) { return '<div>' + data.text + '</div>' }
+      }
+    });
     guide.fromDOM($('.example')).show();
   });
 </script>

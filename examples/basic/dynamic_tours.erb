@@ -1,0 +1,57 @@
+<section class="dynamic-tours">
+  <div>
+    <button id="show_spot">Create Hidden Element</button>
+    <hr />
+    <button id="add_spot">Add a Tour Spot</button>
+    <p><strong>Dynamic spots:</strong></p>
+    <ul id="spots"></ul>
+  </div>
+</section>
+
+<script>
+  $("#show_spot").on('click', function() {
+    $(this).after($('<p id="invisible">Hi there.</p>'));
+    $(this).off('click');
+    guide.refresh();
+  });
+
+  $("#add_spot").on('click', function() {
+    var index = $('#spots').children().length,
+        left  = index % 2 == 0;
+
+    $('#spots').append($('<li>dynamic element#' + (index+1) + '</li>'));
+
+    guide.addSpot($("#spots li:last"), {
+      text: "This element has been created dynamically and added to the tour.",
+      marker: {
+        position: left ? 'left' : 'right'
+      }
+    });
+
+    guide.refresh();
+  });
+
+  $(function() {
+    guide.addSpot($("#invisible"), {
+      text: "This element has been added as a tour spot even though it did" +
+            " not exist at the time the tour was started.",
+      marker: {
+        position: 'top',
+        width: 160
+      }
+    });
+
+    guide.setOptions({
+      tutor: { enabled: false }
+    });
+
+    guide.fromDOM();
+    guide.show();
+    guide.tour.setOptions({
+      alwaysHighlight: false,
+      alwaysMark: false
+    });
+
+    guide.refresh();
+  });
+</script>

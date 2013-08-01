@@ -118,3 +118,14 @@ body {
 .example img {
   max-width: 100%;
 }
+
+.example #spots li {
+  margin: 10px 0;
+}
+
+.dynamic-tours .gjs-marker:not(.focused) {
+  padding: 0 10px;
+}
+#gjs_controls {
+  overflow: visible;
+}
