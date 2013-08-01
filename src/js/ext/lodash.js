@@ -1,11 +1,7 @@
 /**
+ * @class lodash
+ *
  * guide.js lodash extensions
- *
- * _.assign: dot-notation assignment
- *
- * function: assigns a given value to a nested key within an object
- * usage: _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
- *
  */
 (function(_) {
   'use strict';
@@ -25,6 +21,20 @@
     }
   }());
 
+  /**
+   * Dot-notation assignment. Assigns a value to a nested key within an object.
+   *
+   * @param {String}  k         The dot-delimited key.
+   * @param {Mixed}   v         The value to assign.
+   * @param {Object}  [in_o={}] The object to modify.
+   *
+   * Usage example
+   *
+   *     _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
+   *
+   * @return {Object} The passed object (or a newly created one) with the
+   * assigned property.
+   */
   _.assign = function(k, v, in_o) {
     var path_tokens = k.toString().split('.'),
         pathsz      = path_tokens.length,
@@ -55,36 +65,70 @@
   };
 
   // var strOptionsSeparator = new RegExp('[:|,]'),
-  var strOptionsSeparator = /[:|,]/,
-      strOptionsSanitizer = new RegExp(':\\s+', 'g');
+  var
+  strOptionsSeparator = /[:|,]/,
+  strOptionsSanitizer = new RegExp(':\\s+', 'g'),
+
+  /**
+   * @method typeCast
+   *
+   * Converts stringified numbers and booleans to their real versions.
+   *
+   * @param   {String} The value to convert.
+   * @return  {Number/Boolean} The cast value.
+   */
+  typeCast = function(v) {
+    if (v === 'false') {
+      return false;
+    }
+    else if (v === 'true') {
+      return true;
+    }
+    else if (Number(v).toString() === v) {
+      return Number(v);
+    }
+    else {
+      return v;
+    }
+  };
 
   /**
    * Extracts key-value pairs specified in a string, delimited by a certain
    * separator. The pairs are returned in an object.
    *
    * The default tokenizer/separator delimits by commas, ie:
-   * 'key:value, key2:value2, ..., keyN:[\s*]valueN'. See the @options parameter
+   * 'key:value, key2:value2, ..., keyN:[\s*]valueN'. See the in_options parameter
    * for specifying your own tokenizer.
    *
-   * @example
-   *   _.parseOptions('foo:bar') => { foo: 'bar' }
-   *   _.parseOptions('foo:bar, xyz:123') => { foo: 'bar', xyz: 123 }
-   *   _.parseOptions('x.y.z: true') => { x: { y: { z: true }}}
+   * Usage example:
    *
-   * @param <String> str the options string to parse
-   * @param <Object> options: {
-   *   separator: <RegExp> that will be used for tokenizing
-   *   sanitizer: <RegExp> that will optionally be used to pre-process the str
-   *   convert: <Boolean> whether to query and cast string values to other types
-   * }
+   *     _.parseOptions('foo:bar') // => { foo: 'bar' }
+   *     _.parseOptions('foo:bar, xyz:123') // => { foo: 'bar', xyz: 123 }
+   *     _.parseOptions('x.y.z: true') // => { x: { y: { z: true }}}
    *
-   * @return <Object> the extracted key-value pairs
+   * @param {String} str      The options string to parse.
+   * @param {Object} options  Parser options, see below.
+   *
+   * @param {RegExp}  [options.separator=/[:|,]/]
+   * The key-value delimiter pattern. Used for tokenizing the string into k-v
+   * fragments.
+   *
+   * @param {RegExp}  [options.sanitizer=RegExp(':\\s+', 'g')]
+   * Used to pre-process the string, the default trims the values of whitespace.
+   *
+   * @param {Boolean} [options.convert=true]
+   * Whether to query and cast string values to other types
+   *
+   * @param {Function} [options.converter=typeCast]
+   * A method that takes a string value and returns a type-casted version.
+   *
+   * @return {Object} The extracted key-value pairs.
    */
-  _.parseOptions = function(str, in_options) {
+  _.parseOptions = function(str, options) {
     var
-    options   = in_options || {},
-    separator = options.separator || strOptionsSeparator,
-    sanitizer = options.sanitizer || strOptionsSanitizer,
+    separator = (options||{}).separator || strOptionsSeparator,
+    sanitizer = (options||{}).sanitizer || strOptionsSanitizer,
+    converter = (options||{}).converter || typeCast,
     tokens    = (str || '').replace(sanitizer, ':').split(separator),
     tokenssz  = tokens.length,
     out       = {},
@@ -98,13 +142,7 @@
 
       if (!k) { continue; }
 
-      if (v === 'false') { v = false; }
-      else if (v === 'true') { v = true; }
-      else if (Number(v).toString() === v) {
-        v = Number(v);
-      }
-
-      _.assign(k, v, out);
+      _.assign(k, converter(v), out);
     }
 
     return out;

@@ -139,7 +139,7 @@ module.exports = function(grunt) {
           'src/js'
         ],
 
-        dest: 'docs',
+        dest: 'docs/api',
 
         options: {
           'title': 'Guide.js API Reference',
