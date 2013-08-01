@@ -1,0 +1,36 @@
+[
+  {
+    "name": "guide.js",
+    "groups": [
+      {
+        "name": "Core",
+        "classes": [
+          "Guide",
+          "Optionable",
+          "Extension",
+          "Tour",
+          "Spot"
+        ]
+      },
+
+      {
+        "name": "Extensions",
+        "classes": [
+          "Markers",
+          "Marker",
+          "Toggler",
+          "Tutor",
+          "Controls"
+        ]
+      },
+
+      {
+        "name": "Vendor Extensions",
+        "classes": [
+          "jQuery",
+          "lodash"
+        ]
+      }
+    ]
+  }
+]

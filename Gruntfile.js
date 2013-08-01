@@ -23,7 +23,7 @@ module.exports = function(grunt) {
     watch: {
       scripts: {
         files: [ 'src/js/**/*' ],
-        tasks: [ 'jshint' ]
+        tasks: [ 'jshint', 'docs' ]
       },
       css: {
         files: [ 'src/css/**/*' ],
@@ -131,6 +131,24 @@ module.exports = function(grunt) {
           "dist/guide.min.css": "src/css/gjs.less"
         }
       }
+    },
+
+    jsduck: {
+      main: {
+        src: [
+          'src/js'
+        ],
+
+        dest: 'docs',
+
+        options: {
+          'title': 'Guide.js API Reference',
+          'categories': '.jsduck',
+          'color': true,
+          'warnings': [],
+          'external': ['XMLHttpRequest', 'jQuery', '$']
+        }
+      }
     }
   });
 
@@ -143,9 +161,11 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-bumpup');
   grunt.loadNpmTasks('grunt-tagrelease');
   grunt.loadNpmTasks('grunt-jsvalidate');
+  grunt.loadNpmTasks('grunt-jsduck');
 
   grunt.registerTask('test', [ 'jsvalidate', 'jshint', 'jasmine' ]);
   grunt.registerTask('build', [ 'concat', 'uglify', 'test', 'less' ]);
+  grunt.registerTask('docs', [ 'jsduck' ]);
 
   grunt.registerTask('default', ['test']);
 
