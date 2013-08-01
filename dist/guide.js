@@ -1,20 +1,7 @@
 /**
- * guide.js jQuery extensions
+ * @class jQuery
  *
- * $.is(":viewport_visible"):
- *
- * function: checks whether an element is visible in the current window's
- *           scroll boundaries
- * usage: $('#element').is(":in_viewport")
- *
- * $.consume(evt):
- *
- * function: blocks an event from propagating or bubbling further
- * usage: $.consume(evt)
- *
- * $.fn.guide({}):
- *
- * See method doc below.
+ * guide.js jQuery extensions.
  */
 (function($) {
   'use strict';
@@ -22,9 +9,10 @@
   var EXTENSIONS = [ 'consume', 'guide' ],
       $window    = $(window),
       i,
-      ext;
+      ext,
+      in_viewport;
 
-  // Break if there's a conflicting implementation
+  // Die hard if there's a conflicting implementation
   for (i = 0; i < EXTENSIONS.length; ++i) {
     ext = EXTENSIONS[i];
 
@@ -33,18 +21,42 @@
     }
   }
 
-  $.extend($.expr[':'], {
-    in_viewport: function (el) {
-      var
-      vp_top    = $window.scrollTop(),
-      vp_bottom = vp_top + $window.height(),
-      el_top    = $(el).offset().top,
-      el_bottom = el_top + $(el).height();
+  /**
+   * Checks whether an element is visible in the current window's scroll boundaries.
+   *
+   * An example of scrolling an element into view if it's not visible:
+   *
+   *     if (!$('#element').is(":in_viewport")) {
+   *       $('#element').scrollIntoView();
+   *     }
+   *
+   */
+  in_viewport = function (el) {
+    var
+    vp_top    = $window.scrollTop(),
+    vp_bottom = vp_top + $window.height(),
+    el_top    = $(el).offset().top,
+    el_bottom = el_top + $(el).height();
 
-      return ((vp_top < el_top) && (vp_bottom > el_bottom));
-    }
+    return ((vp_top < el_top) && (vp_bottom > el_bottom));
+  };
+
+  $.extend($.expr[':'], {
+    in_viewport: in_viewport
   });
 
+  /**
+   * Blocks an event from propagating or bubbling further.
+   *
+   * Example of *blocking a `click` event after handling it*:
+   *
+   *     $('#element').on('click', function(evt) {
+   *       return $.consume(evt);
+   *     });
+   *
+   * @param {Event} e The event to consume.
+   * @return {false}
+   */
   $.consume = function(e) {
     if (!e) { return false; }
 
@@ -68,23 +80,23 @@
   /**
    * Convenience method for adding a jQuery selector element as a guide spot.
    *
-   * @example
-   *   $('#my_button').guide({
-   *     text: "Click me to build your own nuclear reactor in just a minute."
-   *   })
+   * Usage example:
    *
-   * @see guide#addSpot for more info on options.
+   *     $('#my_button').guide({
+   *       text: "Click me to build your own nuclear reactor in just a minute."
+   *     })
+   *
+   * See Guide#addSpot for more info on options.
    */
-  $.fn.guide = function(in_options) {
-    var options   = in_options || {},
-        instance  = window.guide;
+  $.fn.guide = function(inOptions) {
+    var instance  = window.guide;
 
     if (!instance) {
       throw 'guide.js: bad $.fn.guide call, global guide has not been setup,' +
             'have you forgotten to initialize guide.js?';
     }
 
-    instance.addSpot($(this), options);
+    instance.addSpot($(this), inOptions || {});
 
     return $(this);
   };
@@ -208,11 +220,22 @@
   'use strict';
 
   if (!$) {
-    throw 'guide.js: jQuery is undefined, are you sure it has been loaded yet?';
+    throw new Error('guide.js: jQuery is undefined, are you sure it has been loaded yet?');
   }
 
   var
-  guide = function() {
+  root = this,
+  module,
+  exports,
+
+  /**
+   * @class Guide
+   * The primary interface for creating and managing guide.js tours.
+   *
+   * @mixins Guide.Optionable
+   * @singleton
+   */
+  Guide = function() {
     this.constructor.apply(this, arguments);
 
     return this;
@@ -224,7 +247,7 @@
   KLASS_HIDING          = 'gjs-hiding',
   KLASS_ENTITY          = 'gjs-entity';
 
-  _.extend(guide.prototype, {
+  _.extend(Guide.prototype, {
     id: 'guide',
 
     defaults: {
@@ -238,6 +261,8 @@
     },
 
     constructor: function() {
+      var that = this;
+
       // Used for emitting custom events.
       this.$ = $(this);
 
@@ -250,8 +275,18 @@
         tour: null
       });
 
-      this.$.on('refresh', function(e, options, el) {
-        el.toggleOverlayMode();
+      this.$.on('start.tours', function(e, tour) {
+        if (!that.isShown()) {
+          that.show({ noTour: true });
+        }
+
+        if (tour !== that.tour) {
+          if (that.tour) {
+            that.tour.stop();
+          }
+
+          that.tour = tour;
+        }
       });
 
       console.log('guide.js: running');
@@ -265,17 +300,12 @@
       var tour;
 
       if (!(tour = this.getTour(label))) {
-        tour = new guide.Tour(label);
+        tour = new Guide.Tour(label);
         this.tours.push(tour);
       }
 
       if (optSpots) {
-        if (!_.isArray(optSpots)) {
-          throw 'guide.js#defineTour: bad spots, expected array, got: ' +
-                typeof(optSpots);
-        }
-
-        this.fromJSON(optSpots);
+        this.addSpots(optSpots);
       }
 
       return tour;
@@ -285,61 +315,73 @@
       var tour;
 
       if (!this.isShown()) {
-        this.show();
+        this.show({ noTour: true });
       }
 
       if (!(tour = this.getTour(id))) {
-        throw [
-          'guide.js: undefined tour "',
-          id,
-          '", did you forget to call #defineTour()?'
-        ].join('');
+        throw new Error('guide.js: undefined tour "' + id + '", did you call #defineTour()?');
       }
 
       if (this.tour) {
         this.tour.stop();
-        this.$.triggerHandler('stop.tours', [ this.tour ]);
       }
 
-      this.tour = tour;
-
-      this.$.triggerHandler('start.tours', [ this.tour ]);
-      this.tour.start();
-
       console.log('guide.js: touring "' + tour.id + '"');
+
+      this.tour = tour;
+      this.tour.start();
 
       return this;
     },
 
     /**
-     * @param <Object> options
+     * Creates a new Tour Spot and attaches it to the current Tour.
+     *
+     * @param {jQuery} $el The target element of the tour spot.
+     * @param {Object} [inOptions={}] inOptions
      * {
-     *   text:
-     *   caption:
-     *   tour: defaults to the current tour
-     *   placement: [ 'inline', 'inline:before', 'inline:after', 'overlay' ]
-     *   position: [ 'tl', 't', 'tr', 'r', 'br', 'b', 'bl', 'l' ]
+     *   text: {String} [required] A text message to show when the spot is focused.
+     *   caption: {String} [optional]
+     *   tour: {Guide.Tour} [optional] defaults to the current tour
      *
      *   onFocus: function($prevSpot) {}
      *   onDefocus: function($currentSpot) {}
      * }
+     *
+     * @return {Guide.Spot} The newly created tour spot.
+     *
+     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
      */
-    addSpot: function($el, options) {
+    addSpot: function($el, inOptions) {
       var tour    = this.tour,
+          options = inOptions || {},
           tour_id = options.tour;
 
-      if (tour_id && _.isString(tour_id)) {
-        tour = this.defineTour(tour_id);
-      }
-      else if (tour_id) {
-        tour = tour_id;
+      if (tour_id) {
+        if (_.isString(tour_id)) {
+          tour = this.defineTour(tour_id);
+        }
+        else if (tour_id instanceof Guide.Tour) {
+          tour = tour_id;
+        }
+        else {
+          throw new Error('guide.js: bad tour object, unrecognized type: ' + typeof(tour_id));
+        }
       }
 
-      return tour.addStep($el, options);
+      return tour.addSpot($el, options);
     },
 
     addSpots: function(spots) {
-      return this.fromJSON(spots);
+      if (spots instanceof jQuery) {
+        return this.fromDOM(spots);
+      }
+      else if (_.isArray(spots)) {
+        return this.fromJSON(spots);
+      }
+
+      throw new Error('guide.js: bad spots, expected Array or jQuery selector,' +
+                      ' got: ' + typeof(spots));
     },
 
     fromJSON: function(spots) {
@@ -352,10 +394,9 @@
       return this;
     },
 
-    /** TODO */
     fromDOM: function(selector_or_container) {
       var that = this,
-          $container = $(selector_or_container);
+          $container = $(selector_or_container || 'body');
 
       $container.find('[data-guide]').each(function() {
         var $target = $(this);
@@ -365,20 +406,20 @@
         });
       });
 
-      // elements with [data-guide-spot] are "references" since they point
+      // Elements with [data-guide-spot] are "references" since they point
       // to a target that will be used as a spot, while they act as the
-      // content of that spot
+      // content of that spot.
       //
-      // @side-effect:
-      // the reference node will be detached and thus no longer
-      // available in the DOM
+      // Side-effect:
+      // The reference node will be detached and no longer available in the DOM.
       $container.find('[data-guide-spot]').each(function() {
         var $ref    = $(this),
-            $target = $($ref.attr('data-guide-spot'));
+            $target = $($ref.attr('data-guide-spot')),
+            options = _.parseOptions($ref.attr('data-guide-options'));
 
-        that.fromNode($target, {
-          text: $ref.detach()[0].outerHTML
-        });
+        that.fromNode($target, _.extend(options, {
+          text: $ref.detach().attr('data-guide-spot', null)[0].outerHTML
+        }));
       });
 
       return this;
@@ -391,9 +432,9 @@
       options = _.extend(
         inOptions || {},
         _.parseOptions($this.attr('data-guide-options')), {
-          caption:  $this.attr('data-guide-caption'),
-          tour:     $this.attr('data-guide-tour')
-        });
+        caption:  $this.attr('data-guide-caption'),
+        tour:     $this.attr('data-guide-tour')
+      });
 
       // if no tour is specified, take a look at the ancestry tree, perhaps
       // an element has a tour defined in [data-guide-tour]
@@ -411,33 +452,82 @@
         'data-guide-caption': null
       });
 
-      this.addSpot($this, options);
+      return this.addSpot($this, options);
     },
 
-    show: function() {
-      var klasses = [ KLASS_ENABLED ];
+    show: function(inOptions) {
+      var options     = inOptions || {},
+          that        = this,
+          should_show  = !this.isShown(),
+          show_after   = this.options.withAnimations ? this.options.toggleDuration:0;
 
-      if (!this.tour) {
-        this.runTour(this.tours[0]);
+      if (!this.tours.length) {
+        throw new Error('guide.js: can not show with no tours defined!');
       }
 
-      this.toggleOverlayMode();
+      if (should_show) {
+        this.$container.addClass(KLASS_ENABLED);
+        this.toggleOverlayMode();
 
-      this.$container.addClass(klasses.join(' '));
-      this.$.triggerHandler('show');
+        this.$.triggerHandler('showing');
+      }
 
-      this.tour.start();
+      if (should_show) {
+        this.$el.appendTo(this.$container);
+        this.$el.show(show_after + 1, function() {
+          that._shown = true;
+          that.$.triggerHandler('show');
 
-      this.$el.appendTo(this.$container);
-
-      if (this.options.withAnimations) {
-        this.$el.show(this.options.toggleDuration);
+          if (!options.noTour) {
+            that.runTour(options.tour || that.tour || that.tours[0]);
+          }
+        });
       }
 
       return this;
     },
 
-    refresh: function() {
+    isShown: function() {
+      // return  this.$container.hasClass(KLASS_ENABLED) &&
+      //         !this.$container.hasClass(KLASS_HIDING);
+      return !!this._shown;
+    },
+
+    /**
+     *
+     * @async
+     */
+    hide: function() {
+      var that        = this,
+          hide_after  = this.options.withAnimations ? this.options.toggleDuration:0;
+
+      if (this.isShown()) {
+        this._shown = false;
+        this.$container.addClass(KLASS_HIDING);
+
+        that.$.triggerHandler('hiding');
+
+        that.$el.hide(hide_after + 1, function() {
+          if (that.tour) {
+            that.tour.stop();
+          }
+
+          that.$.triggerHandler('hide');
+
+          that.$el.detach();
+
+          that.$container.removeClass([
+            KLASS_ENABLED,
+            KLASS_OVERLAYED,
+            KLASS_HIDING
+          ].join(' '));
+        });
+      }
+
+      return this;
+    },
+
+    refresh: function(noCallbacks) {
       _.each(this.extensions, function(e) {
         if (e.refresh) {
           e.refresh();
@@ -445,47 +535,23 @@
       });
 
       if (this.tour) {
-        this.tour.refresh();
+        this.tour.refresh(noCallbacks);
       }
+
+      this.toggleOverlayMode();
 
       return this;
     },
 
-    hide: function() {
-      var that = this;
-
-      this.$container.addClass(KLASS_HIDING);
-
-      if (this.options.withAnimations) {
-        that.$el.hide(this.options.toggleDuration, function() {
-          that.__hide();
-        });
-      }
-      else {
-        that.__hide();
+    reset: function() {
+      if (this.isShown()) {
+        this.hide();
       }
 
-      return this;
-    },
+      this.options = _.clone(this.defaults);
 
-    __hide: function() {
-      this.$el.detach();
-
-      this.$container.removeClass([
-        KLASS_ENABLED,
-        KLASS_OVERLAYED,
-        KLASS_HIDING
-      ].join(' '));
-
-      this.tour.stop();
-
-      this.$.triggerHandler('hide');
-    },
-
-    toggle: function() {
-      return this.isShown() ?
-        this.hide.apply(this, arguments) :
-        this.show.apply(this, arguments);
+      this.tours  = [];
+      this.tour   = this.defineTour('Default Tour');
     },
 
     /**
@@ -509,20 +575,13 @@
       }
 
       if (this.options.withOverlay) {
-        this.$container
-          .addClass(KLASS_OVERLAYED)
-          .removeClass(KLASS_NOT_OVERLAYED);
+        this.$container.addClass(KLASS_OVERLAYED).removeClass(KLASS_NOT_OVERLAYED);
       }
       else {
-        this.$container
-          .removeClass(KLASS_OVERLAYED)
-          .addClass(KLASS_NOT_OVERLAYED);
+        this.$container.removeClass(KLASS_OVERLAYED).addClass(KLASS_NOT_OVERLAYED);
       }
     },
 
-    isShown: function() {
-      return this.$container.hasClass(KLASS_ENABLED);
-    },
 
     dismiss: function(/*optTourId*/) {
       this.$.triggerHandler('dismiss');
@@ -534,14 +593,14 @@
 
     addExtension: function(ext) {
       if (!ext.id) {
-        throw 'guide.js: bad extension, no #id attribute defined';
+        throw new Error('guide.js: bad extension, no #id attribute defined');
       }
 
       this.extensions.push(ext);
 
       if (void 0 === ext.__initExtension) {
-        throw 'guide.js: bad extension, does not seem to implement the ' +
-              'guide.Extension prototype';
+        throw new Error('guide.js: bad extension, does not seem to implement the' +
+              ' guide.Extension prototype');
       }
 
       ext.__initExtension();
@@ -559,17 +618,27 @@
      */
     getTour: function(id) {
       return _.isString(id) ?
-      _.find(this.tours || [], { id: id }) :
-      id;
+        _.find(this.tours || [], { id: id }) :
+        _.find(this.tours || [], id);
     }
   }); // guide.prototype
 
-  guide = new guide();
+  Guide = new Guide();
+
+  console.log($('body'));
 
   // expose the instance to everybody
-  window.guide = guide;
-  window.GJS_DEBUG = true;
-})(_, jQuery);
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = Guide;
+    }
+    exports.guide = Guide;
+  } else {
+    root.guide = Guide;
+  }
+
+
+}).call(this, _, jQuery);
 
 (function(_, $, guide) {
   'use strict';
@@ -588,10 +657,11 @@
     },
 
     setOptions: function(options) {
-      this.options = this.getOptions(options);
+      // this.options = _.extend(this.getOptions(), options);
+      this.options = _.extend(this.options, options);
 
       if (this.refresh) {
-        this.refresh(this.options);
+        this.refresh(this.getOptions());
       }
 
       if (this.$) {
@@ -603,8 +673,8 @@
       return this;
     },
 
-    getOptions: function(overrides) {
-      return _.extend(_.clone(this.options || {}), overrides || {});
+    getOptions: function() {
+      return _.extend({}, this.options);
     }
   };
 
@@ -626,30 +696,36 @@
         throw 'guide.js: bad extension, missing #id';
       }
 
-      this.options = _.clone(this.defaults);
+      this.options = _.extend({}, this.defaults, { enabled: true }, this.options);
 
       guide.$
-      .on('show', function() {
-        if (that.onGuideShow) {
-          that.onGuideShow();
-        }
-      })
-      .on('hide', function() {
-        if (that.onGuideHide) {
-          that.onGuideHide();
-        }
-      })
-      .on('start.tours.gjs_extension', function(e, tour) {
-        tour.$.on('refresh.gjs_extension', function() {
-          that.setOptions(that.getOptions());
+        .on(this.nsEvent('show'), function() {
+          if (that.onGuideShow && that.isEnabled()) {
+            that.onGuideShow();
+          }
+        })
+        .on(this.nsEvent('hide'), function() {
+          if (that.onGuideHide && that.isEnabled()) {
+            that.onGuideHide();
+          }
+        })
+        .on(this.nsEvent('start.tours'), function(e, tour) {
+          if (that.onTourStart && that.isEnabled(tour)) {
+            that.onTourStart(tour);
+          }
+        })
+        .on(this.nsEvent('stop.tours'), function(e, tour) {
+          if (that.onTourStop && that.isEnabled(tour)) {
+            that.onTourStop(tour);
+          }
         });
+    },
 
-        that.setOptions(that.getOptions());
-
-        if (that.onTourStart) {
-          that.onTourStart(tour);
-        }
-      });
+    /**
+     * An event namespaced to this specific extension.
+     */
+    nsEvent: function(event) {
+      return [ event, 'gjs_extension', this.id ].join('.');
     },
 
     /**
@@ -667,17 +743,27 @@
      *   2. the extensions' options specified in the guide.js global option set
      *   3. the extensions' options specified in the current tour's option set
      */
-    getOptions: function(overrides) {
+    getOptions: function(tour) {
       var key = this.id;
 
+      tour = tour || guide.tour;
+
       return _.extend({},
-        this.options || this.defaults,
-        key && guide.getOptions()[key],
-        key && guide.tour ? guide.tour.getOptions()[key] : null,
-        overrides);
+        this.options,
+        guide.options[key],
+        tour ? (tour.options || {})[key] : null);
     },
 
-    isEnabled: function() {
+    isEnabled: function(tour) {
+      if (tour) {
+        var extOptions = (tour.options[this.id] || {});
+
+        if (_.isBoolean(extOptions.enabled)) {
+          return extOptions.enabled;
+        }
+      }
+
+      // return !!this.options.enabled;
       return !!this.getOptions().enabled;
     }
   });
@@ -721,15 +807,80 @@
       return this;
     },
 
-    addStep: function($el, options) {
+    start: function() {
+      var that      = this,
+          callback  = this.options.onStart;
+
+      if (!this.spots.length) {
+        return this;
+      }
+
+      _.each(this.spots, function(spot) {
+        spot.highlight();
+      });
+
+      that.focus(that.current || 0);
+
+      console.log('guide.js', 'tour started');
+      guide.$.triggerHandler('start.tours', [ that ]);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(that, []);
+      }
+
+      return this;
+    },
+
+    stop: function() {
+      var that      = this,
+          callback  = this.options.onStop;
+
+      _.each(this.spots, function(spot) {
+        spot.dehighlight({ force: true });
+      });
+
+      guide.$.triggerHandler('stop.tours', [ this ]);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(that, []);
+      }
+
+      return this;
+    },
+
+    reset: function() {
+      this.cursor = 0;
+      this.current = null;
+
+      return this;
+    },
+
+    isActive: function() {
+      return this === guide.tour;
+    },
+
+    refresh: function() {
+      if (this.isActive()) {
+        this.stop().start();
+      }
+
+      return this;
+    },
+
+    addSpot: function($el, options) {
       var spot;
 
+      if (!($el instanceof jQuery)) {
+        throw new Error('guide.js: bad Spot target, expected a jQuery object ' +
+          'but got ' + typeof($el));
+      }
+
       // has the spot been already defined? we can not handle duplicates
-      if ($el.data('guideling')) {
+      if ($el.data('gjs_spot')) {
         console.log('guide.js: element is already bound to a tour spot:');
         console.log($el);
 
-        throw 'guide.js: duplicate spot, see console for more information';
+        throw new Error('guide.js: duplicate spot, see console for more information');
       }
 
       spot = new guide.Spot({
@@ -745,7 +896,7 @@
 
       $el.
         addClass(guide.entityKlass()).
-        data('guideling', spot);
+        data('gjs_spot', spot);
 
       if (guide.isShown()) {
         spot.highlight();
@@ -753,7 +904,20 @@
 
       guide.$.triggerHandler('add', [ spot ]);
 
-      return true;
+      return spot;
+    },
+
+    addSpots: function(spots) {
+      if (!_.isArray(spots)) {
+        throw new Error('guide.js: bad spots, expected Array,' + ' got: ' +
+                        typeof(spots));
+      }
+
+      _.each(spots, function(definition) {
+        this.addSpot(definition.$el, definition);
+      }, this);
+
+      return this;
     },
 
     /**
@@ -808,18 +972,23 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot  = this.getStep(index),
+      var spot  = this.getSpot(index),
           i; // spot iterator
 
       if (!spot) {
-        throw 'guide.js: bad spot @ ' + index + ' to focus';
+        throw new Error('guide.js: bad spot @ ' + index + ' to focus');
       }
-      else if (!spot.$el.is(':visible')) {
+      else if (spot.isCurrent()) {
+        return false;
+      }
+      else if (!spot.isVisible()) {
+        console.log('guide.js', 'spot', spot.index, 'isnt visible, looking for another one');
+
         // look for any spot that's visible and focus it instead
         for (i = 0; i < this.spots.length; ++i) {
           spot = this.spots[i];
 
-          if (spot.$el.is(':visible')) {
+          if (spot.isVisible()) {
             this.cursor = i;
             break;
           }
@@ -829,16 +998,14 @@
         }
 
         if (!spot) {
+          console.log('guide.js', 'no visible spot to focus, aborting');
           return false;
         }
       }
 
-      if (spot.isCurrent()) {
-        return false;
-      }
-
       if (!this.isActive()) {
-        guide.runTour(this);
+        // guide.runTour(this);
+        return false;
       }
 
       this.previous = this.current;
@@ -860,51 +1027,18 @@
       return true;
     },
 
-    start: function() {
-      if (!this.spots.length) {
-        return this;
-      }
-
-      _.each(this.spots, function(spot) {
-        spot.highlight();
-      });
-
-      this.focus(this.current || 0);
-
-      return this;
-    },
-
-    stop: function() {
-      _.each(this.spots, function(spot) {
-        spot.dehighlight({ force: true });
-      });
-
-      return this;
-    },
-
-    isActive: function() {
-      return guide.isShown() && this === guide.tour;
-    },
-
-    refresh: function() {
-      if (this.isActive()) {
-        this.stop().start();
-      }
-    },
-
-    getStep: function(index_or_el) {
-      var index = index_or_el;
-
-      if (typeof(index) === 'number') {
+    getSpot: function(index) {
+      if (_.isNumber(index)) {
         return this.spots[index];
       }
       else if (!index) {
         return null;
       }
+      else if (index instanceof guide.Spot) {
+        return _.find(this.spots || [], index);
+      }
 
-      // console.log('looking up spot:', arguments)
-
-      return _.find(this.spots || [], index);
+      return null;
     },
 
     indexOf: function(spot) {
@@ -937,9 +1071,15 @@
     },
 
     constructor: function(attributes, options) {
-      _.extend(this, attributes, _.pick(options, ['text','caption']), {
+      _.extend(this, attributes, _.pick(options || {}, ['text','caption']), {
         options: _.extend({}, this.defaults, options)
       });
+
+      this.$scrollAnchor = this.$el;
+
+      if (!this.tour) {
+        throw new Error('guide.js: expected #tour to be specified for a new Spot, got none');
+      }
 
       return this;
     },
@@ -971,6 +1111,10 @@
       return this.hasText() || this.hasCaption();
     },
 
+    isVisible: function() {
+      return this.$el.length && this.$el.is(':visible');
+    },
+
     highlight: function() {
       var applicable =
         this.tour.getOptions().alwaysHighlight ||
@@ -979,6 +1123,14 @@
       // the spot-scoped option takes precedence over the tour one
       if (!this.options.highlight) {
         applicable = false;
+      }
+
+      if (!this.$el.length) {
+        this.$el = $(this.$el.selector);
+
+        if (!this.$scrollAnchor || !this.$scrollAnchor.length) {
+          this.$scrollAnchor = this.$el;
+        }
       }
 
       this.$el.toggleClass('no-highlight', !applicable);
@@ -1020,7 +1172,6 @@
         .addClass(KLASS_FOCUSED)
         .triggerHandler('focus.gjs', prev_spot);
 
-
       _.defer(function() {
         if (that.options.autoScroll && !$scroller.is(':in_viewport')) {
           $('html,body').animate({
@@ -1031,10 +1182,16 @@
     },
 
     defocus: function(next_spot) {
+      var callback = this.options.onDefocus;
+
       this.dehighlight();
 
       this.$el.removeClass(KLASS_FOCUSED);
       this.$el.triggerHandler('defocus.gjs', next_spot);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(this, arguments);
+      }
     },
 
     refresh: function() {
@@ -1045,6 +1202,14 @@
         this.defocus();
         this.focus();
       }
+    },
+
+    setScrollAnchor: function($el) {
+      this.$scrollAnchor = $el;
+    },
+
+    toString: function() {
+      return this.tour.id + '#' + this.index;
     }
   });
 
@@ -1066,7 +1231,14 @@
       '<button data-action="tour.next">&gt;</button>',
       '<button data-action="tour.last">Last</button>',
       '<button data-action="guide.hide">Close</button>',
+      '<select name="tour" data-action="switchTour"></select>',
     '</div>'
+  ].join('')),
+
+  JST_TOUR_LIST = _.template([
+    '<% _.forEach(tours, function(tour) { %>',
+      '<option value="<%= tour.id %>"><%= tour.id %></option>',
+    '<% }); %>'
   ].join('')),
 
   JST_DEV_CONTORLS = _.template([
@@ -1078,9 +1250,10 @@
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
+      enabled: true,
       withDeveloperControls: false,
-      inMarkers:  true,
-      inTutor:    true
+      inMarkers:  false,
+      inTutor:    false
     },
 
     id: 'controls',
@@ -1091,9 +1264,9 @@
       this.$container = guide.$el;
       this.guide = guide;
       this.tour  = guide.tour;
-      this.options = _.defaults({}, this.defaults);
+      this.options = this.getOptions();
 
-      this.refresh();
+      // this.refresh();
 
       guide.$
       .on('show', _.bind(this.show, this))
@@ -1103,12 +1276,31 @@
         that.refreshControls();
       });
 
+      this.$el = $(JST_CONTROLS({}));
+
+      if (this.options.withDeveloperControls) {
+        this.$el.append($(JST_DEV_CONTORLS({})));
+      }
+
+      this.$el
+        .addClass(guide.entityKlass())
+        .on('click', '[data-action]', _.bind(this.delegate, this));
+
+      _.extend(this, {
+        $bwd:   this.$el.find('[data-action*=prev]'),
+        $fwd:   this.$el.find('[data-action*=next]'),
+        $first: this.$el.find('[data-action*=first]'),
+        $last:  this.$el.find('[data-action*=last]'),
+        $hide:  this.$el.find('[data-action*=hide]'),
+        $tour_selector:  this.$el.find('[data-action="switchTour"]')
+      });
+
       return this;
     },
 
     onTourStart: function(tour) {
       this.tour = tour;
-      this.refreshControls();
+      this.refresh();
     },
 
     show: function() {
@@ -1151,56 +1343,38 @@
 
     refresh: function() {
       var
-      tutor_ext   = guide.getExtension('tutor'),
-      marker_ext  = guide.getExtension('markers'),
+      extTutor    = guide.getExtension('tutor'),
+      extMarkers  = guide.getExtension('markers'),
       options     = this.getOptions();
 
-      this.remove();
+      // this.remove();
 
-      if (marker_ext && marker_ext.isEnabled() && options.inMarkers) {
-        this.markerMode(marker_ext);
+      if (extMarkers && extMarkers.isEnabled() && options.inMarkers) {
+        this.markerMode(extMarkers);
       }
-      else if (tutor_ext && tutor_ext.isEnabled() && options.inTutor) {
-        this.tutorMode(tutor_ext);
+      else if (extTutor && extTutor.isEnabled() && options.inTutor) {
+        this.tutorMode(extTutor);
       }
       else {
         this.classicMode();
       }
 
-      this.$el = $(JST_CONTROLS({}));
-
-      if (options.withDeveloperControls) {
-        this.$el.append($(JST_DEV_CONTORLS({})));
-      }
-
-      this.$el
-        .addClass(guide.entityKlass())
-        .on('click', '[data-action]', _.bind(this.delegate, this));
-
-      _.extend(this, {
-        $bwd:   this.$el.find('[data-action*=prev]'),
-        $fwd:   this.$el.find('[data-action*=next]'),
-        $first: this.$el.find('[data-action*=first]'),
-        $last:  this.$el.find('[data-action*=last]'),
-        $hide:  this.$el.find('[data-action*=hide]')
-      });
-
       this.show();
     },
 
     classicMode: function() {
-      var tutor_ext = guide.getExtension('tutor'),
-          marker_ext  = guide.getExtension('markers');
+      var extTutor = guide.getExtension('tutor'),
+          extMarkers  = guide.getExtension('markers');
 
       this.$container = guide.$el;
 
-      if (tutor_ext) {
-        tutor_ext.$el
+      if (extTutor) {
+        extTutor.$el
           .addClass('without-controls')
           .removeClass('with-controls');
       }
 
-      if (marker_ext) {
+      if (extMarkers) {
         guide.$
         .off('marking.gjs_markers.gjs_controls')
         .off('unmarking.gjs_markers.gjs_controls');
@@ -1245,7 +1419,10 @@
           target,
           method;
 
-      if (action.indexOf('.') > -1) {
+      if (!action) {
+        return;
+      }
+      else if (action.indexOf('.') > -1) {
         pair    = action.split('.');
         target  = pair[0];
         method  = pair[1];
@@ -1270,18 +1447,29 @@
     },
 
     refreshControls: function() {
-      var that = this;
+      var tour = this.tour;
 
-      $(function() {
-        that.$bwd.prop('disabled', !guide.tour.hasPrev());
-        that.$fwd.prop('disabled', !guide.tour.hasNext());
-        that.$first.prop('disabled', !guide.tour.hasPrev());
-        that.$last.prop('disabled', !guide.tour.hasNext());
-        that.$hide.toggle(!guide.tour.hasNext());
-      });
+      this.$tour_selector.html(JST_TOUR_LIST({ tours: guide.tours }));
+      this.$bwd.prop('disabled', !tour.hasPrev());
+      this.$fwd.prop('disabled', !tour.hasNext());
+      this.$first.prop('disabled', !tour.hasPrev());
+      this.$last.prop('disabled', !tour.hasNext());
+      this.$hide.toggle(!tour.hasNext());
+      this.$tour_selector.find('[value="' + tour.id + '"]').prop('selected', true);
+    },
+
+    switchTour: function() {
+      var tour = guide.getTour(this.$tour_selector.find(':selected').val());
+
+      if (tour && !tour.isActive()) {
+        tour.reset();
+        guide.runTour(tour);
+      }
+
+      return true;
     }
 
-  }); // tutor.prototype
+  }); // Extension.prototype
 
   guide.addExtension(new Extension());
 })(_, jQuery, window.guide);
@@ -1302,8 +1490,8 @@
    * Plain markers that contain only the step index, no text, and no caption.
    */
   JST_PLAIN = _.template([
-    '<div class="gjs-marker">',
-    '<span class="index"><%= index +1 %></span>',
+    '<div>',
+      '<span class="index"><%= index +1 %></span>',
     '</div>'
   ].join('')),
 
@@ -1311,9 +1499,9 @@
    * Markers that contain the step index when not focused, and text otherwise.
    */
   JST_WITH_CONTENT = _.template([
-    '<div class="gjs-marker">',
-    '<span class="index"><%= index +1 %></span>',
-    '<div class="text"><%= text %></div>',
+    '<div>',
+      '<span class="index"><%= index +1 %></span>',
+      '<div class="text"><%= text %></div>',
     '</div>'
   ].join('')),
 
@@ -1322,10 +1510,10 @@
    * and text otherwise.
    */
   JST_WITH_CAPTION = _.template([
-    '<div class="gjs-marker">',
-    '<span class="index"><%= index +1 %></span>',
-    '<h6 class="caption"><%= caption %></h6>',
-    '<div class="text"><%= text %></div>',
+    '<div>',
+      '<span class="index"><%= index +1 %></span>',
+      '<h6 class="caption"><%= caption %></h6>',
+      '<div class="text"><%= text %></div>',
     '</div>'
   ].join('')),
 
@@ -1342,148 +1530,7 @@
   POS_BR  = 5,
   POS_B   = 6,
   POS_BL  = 7,
-  POS_L   = 8,
-
-  // insert our DOM node at the appropriate position
-  attach = function(m) {
-    switch(m.placement) {
-      case PMT_INLINE:
-        m.spot.$el.append(m.$el);
-      break;
-      case PMT_SIBLING:
-        var
-        p       = m.position,
-        method  = (p >= POS_TR && p <= POS_BR) ?
-          'after' :
-          'before';
-
-        m.spot.$el[method](m.$el);
-      break;
-      case PMT_OVERLAY:
-        guide.$el.append(m.$el);
-      break;
-    }
-
-    return m;
-  },
-
-  /**
-   * Center node horizontally or vertically by applying negative margins.
-   *
-   * @param <jQuery object> $node the element to modify
-   * @param <int> pos the position key
-   *
-   * Positions POS_T and POS_B will cause horizontal centering, while
-   * positions POS_L and POS_R will cause vertical centering.
-   *
-   * @return null
-   */
-  hvCenter = function($node, pos) {
-    var margin = 0, dir;
-
-    switch(pos) {
-      case POS_T:
-      case POS_B:
-        dir = 'left';
-        margin = -1 * ($node.outerWidth() / 2);
-      break;
-
-      case POS_R:
-      case POS_L:
-        dir = 'top';
-        margin = -1 * ($node.outerHeight() / 2);
-      break;
-    }
-
-    $node.css('margin-' + dir, margin);
-  },
-
-  negateMargins = function($node, $anchor, pos, ml, mr) {
-    // we must account for the spot node's margin-[right,left] values;
-    // ie, in any of the right positions, if the spot has any margin-right
-    // we must deduct enough of it to place the marker next to it, we do so
-    // by applying negative margin-left by the computed amount
-    //
-    // same applies to left positions but in the opposite direction (margin-left)
-    var delta = 0, dir, t_m;
-
-    switch(pos) {
-      case POS_TR:
-      case POS_R:
-      case POS_BR:
-        t_m = parseInt($anchor.css('margin-right'), 10);
-
-        if (t_m > 0) {
-          // offset is the spot margin without the marker margin
-          delta = -1 * t_m + ml;
-          dir = 'left';
-        }
-      break;
-
-      case POS_TL:
-      case POS_L:
-      case POS_BL:
-        t_m = parseInt($anchor.css('margin-left'), 10);
-
-        if (t_m > 0) {
-          // offset is spot margin without marker margin (arrow dimension)
-          delta = -1 * (t_m - mr);
-          dir = 'right';
-        }
-      break;
-    }
-
-    if (delta !== 0) {
-      $node.css('margin-' + dir, delta);
-    }
-
-    return hvCenter($node, pos);
-  },
-
-  snapTo = function($node, $anchor, pos, margin) {
-    var
-    offset  = $anchor.offset(),
-    a_w     = $anchor.outerWidth(),
-    a_h     = $anchor.outerHeight(),
-    n_h     = $node.outerHeight(),
-    n_w     = $node.outerWidth(),
-    m       = margin || 15;
-
-    switch(pos) {
-      case POS_TL:
-        offset.top  -= n_h + m;
-      break;
-      case POS_T:
-        offset.top  -= n_h + m;
-        offset.left += a_w / 2 - n_w / 2;
-      break;
-      case POS_TR:
-        offset.top  -= n_h + m;
-        offset.left += a_w - n_w;
-      break;
-      case POS_R:
-        offset.top  += a_h / 2 - (n_h/2);
-        offset.left += a_w + m;
-      break;
-      case POS_BR:
-        offset.top  += a_h + m;
-        offset.left += a_w - n_w;
-      break;
-      case POS_B:
-        offset.top  += a_h + m;
-        offset.left += a_w / 2 - n_w / 2;
-      break;
-      case POS_BL:
-        offset.top  += a_h + m;
-      break;
-      case POS_L:
-        offset.top  += (a_h / 2) - (n_h/2);
-        offset.left -= n_w + m;
-      break;
-    }
-
-    $node.offset(offset);
-  };
+  POS_L   = 8;
 
   /**
    * Marker implementation.
@@ -1492,6 +1539,7 @@
     id: 'markers',
 
     defaults: {
+      enabled: true,
       refreshFrequency: 500
     },
 
@@ -1528,16 +1576,13 @@
       if (!spot.options.withMarker) {
         return null;
       }
+      else if (!this.isEnabled(spot.tour)) {
+        return null;
+      }
+
+      // console.log('guide.js', 'markers', 'adding marker for spot', spot.toString());
 
       marker = new Marker(spot, attributes || {});
-
-      marker.$el
-      .addClass(guide.entityKlass())
-      .on('click.gjs-markers', function(e) {
-        spot.tour.focus(spot);
-
-        return $.consume(e);
-      });
 
       if (guide.isShown() && spot.tour.isActive()) {
         marker.show();
@@ -1555,10 +1600,19 @@
       if (!guide.isShown()) {
         return;
       }
+      else if (!this.isEnabled()) {
+        return;
+      }
 
-      this.onGuideHide();
+      $(window).off('resize.gjs_markers');
+      $(window).on('resize.gjs_markers',
+        _.throttle(
+          _.bind(this.repositionMarkers, this),
+          this.getOptions().refreshFrequency));
 
-      this.rebuildMarkers(tour);
+      // this.onGuideHide();
+
+      // this.rebuildMarkers(tour);
 
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
@@ -1572,7 +1626,7 @@
         }
       });
 
-      this.onGuideShow();
+      // this.onGuideShow();
     },
 
     /**
@@ -1587,17 +1641,36 @@
           _.bind(this.repositionMarkers, this),
           this.options.refreshFrequency));
 
-      return this.onTourStart(guide.tour);
+      $(document.body).on('click.gjs_markers', '.gjs-marker', function(e) {
+        var marker = $(this).data('gjs');
+
+        if (marker) {
+          marker.spot.tour.focus(marker.spot);
+
+          return $.consume(e);
+        }
+
+        return true;
+      });
+
+      // return this.onTourStart(guide.tour);
     },
 
     onGuideHide: function() {
       $(window).off('resize.gjs_markers');
+      $(document.body).off('click.gjs_markers');
 
-      return this.onTourStop(guide.tour);
+      // return this.onTourStop(guide.tour);
     },
 
     onTourStart: function(tour) {
       var that = this;
+
+      if (!this.isEnabled(tour)) {
+        return this;
+      }
+
+      console.log('guide.js', '[markers] showing markers for tour ', tour.id);
 
       // show markers for this tour
       //
@@ -1612,38 +1685,42 @@
       });
 
       // listen to its option changes
-      tour.$
-      .on('refresh.gjs_markers', function(/*e, options*/) {
+      tour.$.on('refresh.gjs_markers', function(/*e, options*/) {
         that.refresh();
       });
     },
 
     onTourStop: function(tour) {
+      console.log('[markers] destroying markers for tour ', tour.id);
+
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
           spot.marker.hide();
+          // spot.marker.remove();
         }
       });
 
       tour.$.off('refresh.gjs_markers');
     },
 
-    rebuildMarkers: function(tour) {
-      var that = this,
-          $container,
-          marker;
+    rebuildMarkers: function(/*tour*/) {
+      // var that = this,
+      //     $container,
+      //     marker;
 
-      _.each(tour.spots, function(spot) {
-        if (spot.marker) {
-          $container = spot.marker.$container;
-          spot.marker.remove();
-          marker = that.addMarker(null, spot, { $container: $container });
-        }
-      });
+      // console.log('[markers] rebuilding markers for tour ', tour.id);
 
-      if (tour.current && tour.current.marker) {
-        tour.current.marker.highlight();
-      }
+      // _.each(tour.spots, function(spot) {
+      //   if (spot.marker) {
+      //     $container = spot.marker.$container;
+      //     spot.marker.remove();
+      //     marker = that.addMarker(null, spot, { $container: $container });
+      //   }
+      // });
+
+      // if (tour.current && tour.current.marker) {
+      //   tour.current.marker.highlight();
+      // }
     },
 
     repositionMarkers: function() {
@@ -1653,9 +1730,11 @@
         return true;
       }
 
+      console.log('[markers] repositioning markers for tour ', tour.id);
+
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
-          spot.marker.$el.place();
+          spot.marker.place();
         }
       });
 
@@ -1663,111 +1742,126 @@
     }
   }); // Extension.prototype
 
+
+  /**
+   * @class Marker
+   *
+   * A single marker object attached to a Tour Spot. Markers show up around
+   * a tour spot, and can show the index of the spot, its content when highlighted,
+   * and more.
+   *
+   * Marker instances allow you to configure where and how they should be placed.
+   *
+   */
   _.extend(Marker.prototype, {
     defaults: {
+
+      /**
+       * The position of the marker relative to the spot target element.
+       *
+       * Position can be one of:
+       *
+       *     'topleft'    'top'    'topright'
+       *     'left'                'right'
+       *     'bottomleft' 'bottom' 'bottomright'
+       *
+       * @cfg
+       */
       position:   'right',
-      placement:  'inline',
+
+      /**
+       * The placement mode to use for attaching the marker.
+       *
+       * Available placement modes are:
+       *
+       *  - `inline`: the marker is attached **inside** the target and is positioned
+       *  using margins
+       *
+       *  - `sibling`: the marker and the target are **wrapped** in a
+       *  container so they become siblings, positioning is done using margins
+       *
+       *  - `overlay`: the marker is positioned independently of the target using
+       *  absolute coordinates
+       *
+       * @cfg
+       */
+      placement:  'sibling',
+
+      /**
+       * Setting this to false will prevent the markers from containing any
+       * content, and instead show only the index of the spot.
+       *
+       * @cfg
+       */
       withText:   true,
+
+      /**
+       * Specify a pixel value to use as the width of the marker, in case the
+       * default (auto) width doesn't make sense (ie, a small button)
+       *
+       * @cfg
+       */
       width:      'auto'
     },
 
     constructor: function(spot, attributes) {
-      var $el,
-          $spot,
-          $container;
-
       _.extend(this, attributes);
-      this.spot   = spot;
 
-      // build the marker options
+      this.spot   = spot;
+      spot.marker = this;
+
+      // Parse the marker options
       this.options = _.extend(
         {},
+        // lowest priority: our defaults
         this.options || this.defaults,
-        // global guide marker options,
+        // then, guide's global marker options,
         guide.getOptions().marker,
-        // the spot's tour options,
+        // then, the spot's tour options,
         spot.tour.getOptions().marker,
-        // accept the spot options
+        // and highest priority: the spot's options
         spot.getOptions().marker);
 
-      $el       = $(this.build(spot));
-      $el.place = $.proxy(this.place, this);
-
-      // expose the placement and position modes as classes for some CSS control
-      $el.addClass([
-        this.options.placement + '-marker',
-        this.options.position
-      ].join(' '));
-
-      _.extend(this, {
-        $el:      $el,
-        $index:   $el.find('.index'),
-        $caption: $el.find('.caption'),
-        $text:    $el.find('.text')
-      });
-
-      if (this.placement === PMT_SIBLING) {
-        $spot = spot.$el;
-        $container = this.$container;
-
-        // the container must be relatively positioned
-        // var $container = $('<div />').css({
-        //   display:  $spot.css('display'),
-        //   position: 'relative'
-        // });
-        if (!$container) {
-          $container =
-            $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
-            .html('').attr({
-              'id': null,
-              'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
-            });
-
-          $container.css({
-            display:  $spot.css('display'),
-            position: 'relative'
-          });
-
-          $container.data('gjs-container', true);
-
-          // we'll keep a reference so we'll be able to use the same container
-          // if/when we refresh
-          this.$container = $container;
-        }
-
-        $container.insertBefore($spot);
-        $spot.appendTo($container);
-        $el.appendTo($container);
-
-        // we'll need these for positioning
-        this.margin_right = parseInt($el.css('margin-right'), 10);
-        this.margin_left  = parseInt($el.css('margin-left'), 10);
-      }
-
-      spot.marker = this;
-      spot.$scrollAnchor = this.$el;
-
-      return this;
+      return this.build();
     },
 
     /**
-     * Build a string version of the DOM element of the marker.
+     * Build the marker element and prepare it for attachment.
      *
-     * @param <Spot> instance to build the marker for
-     *
-     * @return <string> the marker DOM element
+     * @return {Guide.Marker} this
      */
-    build: function(spot) {
-      var template = JST_PLAIN;
+    build: function() {
+      var
+      $el,
+      $container, // used for sibling placement, see below
+      template,
+      spot      = this.spot,
+      $spot     = spot.$el;
 
-      // if spot has explicitly asked for no text, or doesn't have
+      // Shouldn't build a marker for a spot target that's not (yet) visible.
+      if (!spot.isVisible()) {
+        return this;
+      }
+      // Already built? no-op at the moment, we don't support re-building
+      else if (this.$el) {
+        return this;
+      }
+
+      // If spot has explicitly asked for no text, or doesn't have
       // any textual content, then we should respect the setting when
-      // #highlight()-ed
+      // highlighted.
+      //
+      // See #highlight.
       this.withText = this.options.withText && spot.hasContent();
 
-      this.min_width = this.options.width || this.defaults.width;
+      this.width = this.options.width || this.defaults.width;
 
-      // parse placement and position
+      this.spot_klasses = [
+        'gjs-spot-' + this.options.placement,
+        'gjs-spot-' + this.options.position
+      ].join(' ');
+
+      // Parse placement and position modes.
       switch(this.options.placement) {
         case 'inline':  this.placement = PMT_INLINE; break;
         case 'sibling': this.placement = PMT_SIBLING; break;
@@ -1789,57 +1883,169 @@
           throw 'guide-marker.js: bad position "' + this.options.position + '"';
       }
 
-      if (spot.hasCaption()) {
+      // Determine which template we should use.
+      if (_.isFunction(this.options.template)) {
+        template = this.options.template;
+      }
+      else if (spot.hasCaption()) {
         template = JST_WITH_CAPTION;
       }
       else if (spot.hasText()) {
         template = JST_WITH_CONTENT;
       }
+      else {
+        template = JST_PLAIN;
+      }
 
-      return template({
+      // Build the marker element.
+      $el = $(template({
         index:    spot.index,
         text:     spot.getText(),
         caption:  spot.getCaption()
+      }));
+
+      // Assign the marker element as the spot's scrolling anchor so that the
+      // marker is entirely visible when the spot is highlighted.
+      spot.setScrollAnchor($el);
+
+      // A few handy accessors we'll use as the marker content changes, ie: on
+      // (de)highlights
+      _.extend(this, {
+        $el:      $el,
+        $index:   $el.find('.index'),
+        $caption: $el.find('.caption'),
+        $text:    $el.find('.text')
       });
+
+      $el
+        // Expose the marker mode as CSS classes for some control
+        .addClass([
+          'gjs-marker',
+          guide.entityKlass(),
+          this.options.placement + '-marker',
+          this.options.position
+        ].join(' '))
+
+        // Attach the marker to the jQuery object, necessary for handling events
+        //
+        // See Extension#onGuideShow
+        .data('gjs', this);
+
+      // In Sibling placement mode, we need to construct a container element
+      // that will be the parent of the spot target and the marker element.
+      //
+      // While there's high portion of hackery involved here, it is only so in
+      // order to be as transparent as possible, and not to break the page's
+      // layout.
+      if (this.placement === PMT_SIBLING) {
+        if (!this.isWrapped()) {
+          // Build the container:
+          //
+          // Instead of building a plain `<div/>`, we'll try to replicate the
+          // target element, so we won't break any CSS/JS that uses the tag as
+          // an identifier, we'll do that by cloning the tag and stripping
+          // some properties from it.
+          $container = $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
+                      // Empty it, we only need the tag and its structure
+                      .html('')
+                      .attr({
+                        'id': null,
+
+                        // Remove any gjs- related classes from the container
+                        'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+                      })
+                      .css({
+                        // Try to mimic the alignment of the target element
+                        display: $spot.css('display'),
+
+                        // The container must be relatively positioned, since
+                        // we're positioning the marker using margins.
+                        position: 'relative'
+                      })
+
+                      // Set a flag so we can tell whether the spot target is
+                      // already wrapped so that we will properly clean up
+                      //
+                      // See #isWrapped and #remove.
+                      .data('gjs_container', true)
+
+                      // Position the container right where the target is, and
+                      // move the target and the marker inside of it.
+                      .insertBefore($spot)
+                      .append($spot)
+                      .append($el);
+        } else {
+          // Container already built, we just need to place the marker element
+          // inside of it:
+          $container = $spot.parent();
+          $container.append($el);
+        }
+
+        // We'll need the left and right margins for proper positioning.
+        //
+        // See #negateMargins for more info.
+        this.margin_right = parseInt($el.css('margin-right'), 10);
+        this.margin_left  = parseInt($el.css('margin-left'), 10);
+      }
+
+      return this;
     },
 
     show: function() {
-      this.$el.place();
+      if (!this.canShow()) {
+        return this;
+      }
+
+      // Mark the spot as being highlighted by a marker
+      this.spot.$el.addClass(this.spot_klasses);
+
+      // Attach and position the marker
+      this.place();
     },
 
     hide: function() {
-      this.spot.$el.removeClass([
-        'gjs-spot-' + this.options.placement,
-        'gjs-spot-' + this.options.position
-      ].join(' '));
+      this.spot.$el.removeClass(this.spot_klasses);
 
-      this.$el.detach();
+      if (this.$el) {
+        this.$el.detach();
+      }
     },
 
     remove: function() {
+      var $container;
+
       this.hide();
 
-      // return the spot element back to its place by completely removing the
-      // sibling container we created
-      if (this.placement === PMT_SIBLING) {
-        this.$container.replaceWith(this.spot.$el);
-        this.$container.remove();
+      if (this.$el) {
+        this.$el.remove();
       }
 
-      this.$el.remove();
+      // Return the target back to its place by completely removing the
+      // sibling container we created
+      if (this.isWrapped()) {
+        $container = this.spot.$el.parent();
+
+        $container.replaceWith(this.spot.$el);
+        $container.remove();
+      }
     },
 
     highlight: function() {
-      this.$el.addClass('focused');
+      if (!this.$el) {
+        this.build();
+      }
 
       guide.$.triggerHandler('marking.gjs_markers', [ this ]);
 
+      this.$el.addClass('focused');
+
       if (this.withText) {
+        this.$index.hide();
+
         this.$text.show();
         this.$caption.show();
-        this.$index.hide();
         this.$el.css({
-          width: this.min_width
+          width: this.width
         });
       }
 
@@ -1849,30 +2055,50 @@
     },
 
     dehighlight: function(/*spot*/) {
-      this.$el.removeClass('focused');
+      if (!this.$el) {
+        return;
+      }
 
       guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
 
+      this.$el.removeClass('focused');
+
       if (this.withText) {
+        this.$index.show();
+
         this.$text.hide();
         this.$caption.hide();
-        this.$index.show();
         this.$el.css({
           width: 'auto'
         });
-
-        this.$el.place();
       }
 
       if (!this.spot.tour.getOptions().alwaysMark) {
         this.hide();
       }
+      else {
+        this.show();
+      }
 
       guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
     },
 
+    /**
+     * Whether the marker can and should be shown.
+     *
+     * The marker can be shown if the following conditions are met:
+     *
+     * - The marker element is actually built
+     * - The spot target is valid and visible
+     * - The spot is the current one *or* its tour has the `alwaysMark` option
+     *
+     */
     canShow: function() {
       var spot = this.spot;
+
+      if (!this.$el) {
+        return false;
+      }
 
       if (!spot.tour.getOptions().alwaysMark && !spot.isCurrent()) {
         return false;
@@ -1893,29 +2119,182 @@
         return this.hide();
       }
 
-      attach(this);
+      this.attach();
 
-      // mark the spot as being highlighted by a marker
-      $spot.addClass([
-        'gjs-spot-' + this.options.placement,
-        'gjs-spot-' + this.options.position
-      ].join(' '));
+      switch(this.placement) {
+        case PMT_INLINE:
+          this.hvCenter($marker, this.position);
+        break;
+        case PMT_SIBLING:
+          this.negateMargins($marker,
+                        $spot,
+                        this.position,
+                        this.margin_left,
+                        this.margin_right,
+                        15);
 
-      if (this.placement === PMT_INLINE) {
-        hvCenter($marker, this.position);
+          this.hvCenter($marker, this.position);
+        break;
+        case PMT_OVERLAY:
+          this.snapTo($marker, $spot, this.position);
+        break;
       }
-      else if (this.placement === PMT_SIBLING) {
-        negateMargins($marker,
-                      $spot,
-                      this.position,
-                      this.margin_left,
-                      this.margin_right);
+    },
+
+    // insert our DOM node at the appropriate position
+    attach: function() {
+      var method;
+
+      switch(this.placement) {
+        case PMT_INLINE:
+          this.spot.$el.append(this.$el);
+        break;
+        case PMT_SIBLING:
+          method  = (this.position >= POS_TR && this.position <= POS_BR) ?
+            'after' :
+            'before';
+
+          this.spot.$el[method](this.$el);
+        break;
+        case PMT_OVERLAY:
+          guide.$el.append(this.$el);
+        break;
       }
 
-      else if (this.placement === PMT_OVERLAY) {
-        snapTo($marker, $spot, this.position);
+      return this;
+    },
+
+    /**
+     * Center node horizontally or vertically by applying negative margins.
+     *
+     * @param <jQuery object> $node the element to modify
+     * @param <int> pos the position key
+     *
+     * Positions POS_T and POS_B will cause horizontal centering, while
+     * positions POS_L and POS_R will cause vertical centering.
+     *
+     * @return null
+     */
+    hvCenter: function($node, pos) {
+      var margin = 0, dir;
+
+      switch(pos) {
+        case POS_T:
+        case POS_B:
+          dir = 'left';
+          margin = -1 * ($node.outerWidth() / 2);
+        break;
+
+        case POS_R:
+        case POS_L:
+          dir = 'top';
+          margin = -1 * ($node.outerHeight() / 2);
+        break;
       }
-    }
+
+      $node.css('margin-' + dir, margin);
+    },
+
+    negateMargins: function($node, $anchor, pos, ml, mr) {
+      // we must account for the spot node's margin-[right,left] values;
+      // ie, in any of the right positions, if the spot has any margin-right
+      // we must deduct enough of it to place the marker next to it, we do so
+      // by applying negative margin-left by the computed amount
+      //
+      // same applies to left positions but in the opposite direction (margin-left)
+      var delta = 0, dir, t_m;
+
+      switch(pos) {
+        case POS_TR:
+        case POS_R:
+        case POS_BR:
+          t_m = parseInt($anchor.css('margin-right'), 10);
+
+          if (t_m > 0) {
+            // offset is the spot margin without the marker margin
+            delta = -1 * t_m + ml;
+            dir = 'left';
+          }
+        break;
+
+        case POS_TL:
+        case POS_L:
+        case POS_BL:
+          t_m = parseInt($anchor.css('margin-left'), 10);
+
+          if (t_m > 0) {
+            // offset is spot margin without marker margin (arrow dimension)
+            delta = -1 * (t_m - mr);
+            dir = 'right';
+          }
+        break;
+      }
+
+      if (delta !== 0) {
+        $node.css('margin-' + dir, delta);
+      }
+
+      return delta;
+    },
+
+    snapTo: function($node, $anchor, pos, margin) {
+      var
+      offset  = $anchor.offset(),
+      a_w     = $anchor.outerWidth(),
+      a_h     = $anchor.outerHeight(),
+      n_h     = $node.outerHeight(),
+      n_w     = $node.outerWidth(),
+      m       = margin || 0;
+
+      switch(pos) {
+        case POS_TL:
+          offset.top  -= n_h + m;
+        break;
+        case POS_T:
+          offset.top  -= n_h + m;
+          offset.left += a_w / 2 - n_w / 2;
+        break;
+        case POS_TR:
+          offset.top  -= n_h + m;
+          offset.left += a_w - n_w;
+        break;
+        case POS_R:
+          offset.top  += a_h / 2 - (n_h/2);
+          offset.left += a_w + m;
+        break;
+        case POS_BR:
+          offset.top  += a_h + m;
+          offset.left += a_w - n_w;
+        break;
+        case POS_B:
+          offset.top  += a_h + m;
+          offset.left += a_w / 2 - n_w / 2;
+        break;
+        case POS_BL:
+          offset.top  += a_h + m;
+        break;
+        case POS_L:
+          offset.top  += (a_h / 2) - (n_h/2);
+          offset.left -= n_w + m;
+        break;
+      }
+
+      $node.offset(offset);
+    },
+
+    isWrapped: function() {
+      var $container;
+
+      if (!this.spot.$el.length) { return false; }
+
+      $container = this.spot.$el.parent();
+
+      if ($container.length && $container.data('gjs_container')) {
+        return true;
+      }
+    },
+
+
   });
 
   guide.addExtension(new Extension());
@@ -1955,8 +2334,9 @@
       this.$el.on('click', '.hide', _.bind(guide.hide, guide));
 
       guide.$
-      .on('show hide',  _.bind(this.update, this))
-      .on('dismiss', _.bind(this.remove, this));
+      .on(this.nsEvent('showing'), _.bind(this.collapse, this))
+      .on(this.nsEvent('hiding'), _.bind(this.expand, this))
+      .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
       this.show();
 
@@ -1979,27 +2359,26 @@
       this.$el.remove();
     },
 
-    update: function() {
-      if (guide.isShown()) {
-        this.$indicator
-          .text('Stop Tour')
-          .removeClass('show')
-          .addClass('hide');
-      }
-      else {
-        this.$indicator
-          .text('Tour')
-          .removeClass('hide')
-          .addClass('show');
-      }
+    collapse: function() {
+      this.$indicator
+        .text('Stop Tour')
+        .removeClass('show')
+        .addClass('hide');
 
-      this.$el.toggleClass('collapsed', !guide.isShown());
+      this.$el.removeClass('collapsed');
     },
 
-    refresh: function(inOptions) {
-      var options = inOptions || this.options;
+    expand: function() {
+      this.$indicator
+        .text('Tour')
+        .removeClass('hide')
+        .addClass('show');
 
-      if (!options.enabled) {
+      this.$el.addClass('collapsed');
+    },
+
+    refresh: function() {
+      if (!this.isEnabled()) {
         this.hide();
       } else {
         this.show();
@@ -2021,14 +2400,11 @@
 
   JST_TUTOR = _.template([
     '<div>',
-    // '<button id="gjs_close_tutor">&times;</button>',
-
     '<div class="navigation">',
       '<button class="bwd"></button>',
       '<span></span>',
       '<button class="fwd"></button>',
     '</div>',
-
     '<div class="content"></div>',
     '</div>'
   ].join('')),
@@ -2051,8 +2427,6 @@
     },
 
     constructor: function() {
-      var that = this;
-
       this.$container = guide.$el;
 
       this.$el = $(JST_TUTOR({}));
@@ -2074,12 +2448,7 @@
         .on('show', _.bind(this.show, this))
         .on('hide', _.bind(this.hide, this))
         .on('dismiss', _.bind(this.remove, this))
-        .on('focus', _.bind(this.focus, this))
-        .on('start.tours', function(e, tour) {
-          if (tour.current) {
-            that.focus(e, tour.current, tour);
-          }
-        });
+        .on('focus', _.bind(this.focus, this));
 
       this.$close_btn.on('click', _.bind(guide.hide, guide));
 
@@ -2095,7 +2464,7 @@
     },
 
     show: function() {
-      if (!this.getOptions().enabled) {
+      if (!this.isEnabled()) {
         return this;
       }
 
@@ -2114,21 +2483,36 @@
       this.$el.remove();
     },
 
-    toggle: function() {
-      return this.$el.parent().length ?
-        this.hide.apply(this, arguments) :
-        this.show.apply(this, arguments);
-    },
-
     refresh: function() {
       var options = this.getOptions();
 
-      if (!options.enabled) {
+      if (!this.isEnabled()) {
         return this.hide();
+      }
+      else if (!this.$el.parent().length) {
+        this.show();
       }
 
       this.$el.toggleClass('spanner', options.spanner);
       this.focus(null, guide.tour.current, guide.tour);
+    },
+
+    onGuideStart: function() {
+      this.show();
+    },
+
+    onGuideStop: function() {
+      this.hide();
+    },
+
+    onTourStart: function(tour) {
+      if (tour.current) {
+        this.focus(null, tour.current, tour);
+      }
+    },
+
+    onTourStop: function() {
+      this.hide();
     },
 
     focus: function(e, spot, tour) {
