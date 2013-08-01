@@ -1,20 +1,7 @@
 /**
- * guide.js jQuery extensions
+ * @class jQuery
  *
- * $.is(":viewport_visible"):
- *
- * function: checks whether an element is visible in the current window's
- *           scroll boundaries
- * usage: $('#element').is(":in_viewport")
- *
- * $.consume(evt):
- *
- * function: blocks an event from propagating or bubbling further
- * usage: $.consume(evt)
- *
- * $.fn.guide({}):
- *
- * See method doc below.
+ * guide.js jQuery extensions.
  */
 (function($) {
   'use strict';
@@ -22,9 +9,10 @@
   var EXTENSIONS = [ 'consume', 'guide' ],
       $window    = $(window),
       i,
-      ext;
+      ext,
+      in_viewport;
 
-  // Break if there's a conflicting implementation
+  // Die hard if there's a conflicting implementation
   for (i = 0; i < EXTENSIONS.length; ++i) {
     ext = EXTENSIONS[i];
 
@@ -33,18 +21,42 @@
     }
   }
 
-  $.extend($.expr[':'], {
-    in_viewport: function (el) {
-      var
-      vp_top    = $window.scrollTop(),
-      vp_bottom = vp_top + $window.height(),
-      el_top    = $(el).offset().top,
-      el_bottom = el_top + $(el).height();
+  /**
+   * Checks whether an element is visible in the current window's scroll boundaries.
+   *
+   * An example of scrolling an element into view if it's not visible:
+   *
+   *     if (!$('#element').is(":in_viewport")) {
+   *       $('#element').scrollIntoView();
+   *     }
+   *
+   */
+  in_viewport = function (el) {
+    var
+    vp_top    = $window.scrollTop(),
+    vp_bottom = vp_top + $window.height(),
+    el_top    = $(el).offset().top,
+    el_bottom = el_top + $(el).height();
 
-      return ((vp_top < el_top) && (vp_bottom > el_bottom));
-    }
+    return ((vp_top < el_top) && (vp_bottom > el_bottom));
+  };
+
+  $.extend($.expr[':'], {
+    in_viewport: in_viewport
   });
 
+  /**
+   * Blocks an event from propagating or bubbling further.
+   *
+   * Example of *blocking a `click` event after handling it*:
+   *
+   *     $('#element').on('click', function(evt) {
+   *       return $.consume(evt);
+   *     });
+   *
+   * @param {Event} e The event to consume.
+   * @return {false}
+   */
   $.consume = function(e) {
     if (!e) { return false; }
 
@@ -68,23 +80,23 @@
   /**
    * Convenience method for adding a jQuery selector element as a guide spot.
    *
-   * @example
-   *   $('#my_button').guide({
-   *     text: "Click me to build your own nuclear reactor in just a minute."
-   *   })
+   * Usage example:
    *
-   * @see guide#addSpot for more info on options.
+   *     $('#my_button').guide({
+   *       text: "Click me to build your own nuclear reactor in just a minute."
+   *     })
+   *
+   * See Guide#addSpot for more info on options.
    */
-  $.fn.guide = function(in_options) {
-    var options   = in_options || {},
-        instance  = window.guide;
+  $.fn.guide = function(inOptions) {
+    var instance  = window.guide;
 
     if (!instance) {
       throw 'guide.js: bad $.fn.guide call, global guide has not been setup,' +
             'have you forgotten to initialize guide.js?';
     }
 
-    instance.addSpot($(this), options);
+    instance.addSpot($(this), inOptions || {});
 
     return $(this);
   };

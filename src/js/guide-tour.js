@@ -34,6 +34,66 @@
       return this;
     },
 
+    start: function() {
+      var that      = this,
+          callback  = this.options.onStart;
+
+      if (!this.spots.length) {
+        return this;
+      }
+
+      _.each(this.spots, function(spot) {
+        spot.highlight();
+      });
+
+      that.focus(that.current || 0);
+
+      console.log('guide.js', 'tour started');
+      guide.$.triggerHandler('start.tours', [ that ]);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(that, []);
+      }
+
+      return this;
+    },
+
+    stop: function() {
+      var that      = this,
+          callback  = this.options.onStop;
+
+      _.each(this.spots, function(spot) {
+        spot.dehighlight({ force: true });
+      });
+
+      guide.$.triggerHandler('stop.tours', [ this ]);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(that, []);
+      }
+
+      return this;
+    },
+
+    reset: function() {
+      this.cursor = 0;
+      this.current = null;
+
+      return this;
+    },
+
+    isActive: function() {
+      return this === guide.tour;
+    },
+
+    refresh: function() {
+      if (this.isActive()) {
+        this.stop().start();
+      }
+
+      return this;
+    },
+
     addSpot: function($el, options) {
       var spot;
 
@@ -72,6 +132,19 @@
       guide.$.triggerHandler('add', [ spot ]);
 
       return spot;
+    },
+
+    addSpots: function(spots) {
+      if (!_.isArray(spots)) {
+        throw new Error('guide.js: bad spots, expected Array,' + ' got: ' +
+                        typeof(spots));
+      }
+
+      _.each(spots, function(definition) {
+        this.addSpot(definition.$el, definition);
+      }, this);
+
+      return this;
     },
 
     /**
@@ -126,18 +199,23 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot  = this.getStep(index),
+      var spot  = this.getSpot(index),
           i; // spot iterator
 
       if (!spot) {
         throw new Error('guide.js: bad spot @ ' + index + ' to focus');
       }
-      else if (!spot.$el.is(':visible')) {
+      else if (spot.isCurrent()) {
+        return false;
+      }
+      else if (!spot.isVisible()) {
+        console.log('guide.js', 'spot', spot.index, 'isnt visible, looking for another one');
+
         // look for any spot that's visible and focus it instead
         for (i = 0; i < this.spots.length; ++i) {
           spot = this.spots[i];
 
-          if (spot.$el.is(':visible')) {
+          if (spot.isVisible()) {
             this.cursor = i;
             break;
           }
@@ -147,16 +225,14 @@
         }
 
         if (!spot) {
+          console.log('guide.js', 'no visible spot to focus, aborting');
           return false;
         }
       }
 
-      if (spot.isCurrent()) {
-        return false;
-      }
-
       if (!this.isActive()) {
-        guide.runTour(this);
+        // guide.runTour(this);
+        return false;
       }
 
       this.previous = this.current;
@@ -178,51 +254,18 @@
       return true;
     },
 
-    start: function() {
-      if (!this.spots.length) {
-        return this;
-      }
-
-      _.each(this.spots, function(spot) {
-        spot.highlight();
-      });
-
-      this.focus(this.current || 0);
-
-      return this;
-    },
-
-    stop: function() {
-      _.each(this.spots, function(spot) {
-        spot.dehighlight({ force: true });
-      });
-
-      return this;
-    },
-
-    isActive: function() {
-      return guide.isShown() && this === guide.tour;
-    },
-
-    refresh: function() {
-      if (this.isActive()) {
-        this.stop().start();
-      }
-    },
-
-    getStep: function(index_or_el) {
-      var index = index_or_el;
-
-      if (typeof(index) === 'number') {
+    getSpot: function(index) {
+      if (_.isNumber(index)) {
         return this.spots[index];
       }
       else if (!index) {
         return null;
       }
+      else if (index instanceof guide.Spot) {
+        return _.find(this.spots || [], index);
+      }
 
-      // console.log('looking up spot:', arguments)
-
-      return _.find(this.spots || [], index);
+      return null;
     },
 
     indexOf: function(spot) {

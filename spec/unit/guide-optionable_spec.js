@@ -9,13 +9,6 @@ describe("guide", function() {
       });
     });
 
-    describe('#getOptions', function() {
-      it('should accept overrides', function() {
-        expect(o.getOptions({ foo: 123 })).toEqual({ foo: 123 });
-        expect(o.getOptions()).toEqual({});
-      });
-    });
-
     describe('#setOptions', function() {
       it('should #refresh on option changes', function() {
         o.refresh = function() {}

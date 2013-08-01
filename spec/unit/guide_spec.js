@@ -83,6 +83,26 @@ describe("guide", function() {
       $ref.remove();
       $foo.remove();
     });
+
+    it("should handle repetitive calls", function() {
+      var entity      = 'div[data-guide="Text"]';
+
+      $('body').affix(entity);
+
+      guide.fromDOM($('body'));
+      expect(guide.tours.length).toEqual(1);
+      expect(guide.tour.spots.length).toEqual(1);
+
+      guide.fromDOM($('body'));
+      expect(guide.tours.length).toEqual(1);
+      expect(guide.tour.spots.length).toEqual(1);
+
+      $('body').affix(entity);
+
+      guide.fromDOM($('body'));
+      expect(guide.tours.length).toEqual(1);
+      expect(guide.tour.spots.length).toEqual(2);
+    });
   });
 
   describe('#fromJSON', function() {
@@ -105,4 +125,8 @@ describe("guide", function() {
       });
     });
   });
+
+  it('should #show', function() {
+    guide.show();
+  })
 });

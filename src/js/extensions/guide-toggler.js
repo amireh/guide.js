@@ -32,8 +32,9 @@
       this.$el.on('click', '.hide', _.bind(guide.hide, guide));
 
       guide.$
-      .on('show hide',  _.bind(this.update, this))
-      .on('dismiss', _.bind(this.remove, this));
+      .on(this.nsEvent('showing'), _.bind(this.collapse, this))
+      .on(this.nsEvent('hiding'), _.bind(this.expand, this))
+      .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
       this.show();
 
@@ -56,27 +57,26 @@
       this.$el.remove();
     },
 
-    update: function() {
-      if (guide.isShown()) {
-        this.$indicator
-          .text('Stop Tour')
-          .removeClass('show')
-          .addClass('hide');
-      }
-      else {
-        this.$indicator
-          .text('Tour')
-          .removeClass('hide')
-          .addClass('show');
-      }
+    collapse: function() {
+      this.$indicator
+        .text('Stop Tour')
+        .removeClass('show')
+        .addClass('hide');
 
-      this.$el.toggleClass('collapsed', !guide.isShown());
+      this.$el.removeClass('collapsed');
     },
 
-    refresh: function(inOptions) {
-      var options = inOptions || this.options;
+    expand: function() {
+      this.$indicator
+        .text('Tour')
+        .removeClass('hide')
+        .addClass('show');
 
-      if (!options.enabled) {
+      this.$el.addClass('collapsed');
+    },
+
+    refresh: function() {
+      if (!this.isEnabled()) {
         this.hide();
       } else {
         this.show();

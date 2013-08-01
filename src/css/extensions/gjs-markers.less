@@ -29,11 +29,12 @@
   .text {
     display: none;
     color: @gjs-highlight-fg;
+    white-space: normal;
   }
 
   &:hover,
   &.focused {
-    z-index: @gjs-layer-active;
+    z-index: @gjs-layer-active + 3;
     background: fade(@gjs-highlight-bg, 95%);
   }
 

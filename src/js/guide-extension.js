@@ -9,30 +9,36 @@
         throw 'guide.js: bad extension, missing #id';
       }
 
-      this.options = _.clone(this.defaults);
+      this.options = _.extend({}, this.defaults, { enabled: true }, this.options);
 
       guide.$
-      .on('show', function() {
-        if (that.onGuideShow) {
-          that.onGuideShow();
-        }
-      })
-      .on('hide', function() {
-        if (that.onGuideHide) {
-          that.onGuideHide();
-        }
-      })
-      .on('start.tours.gjs_extension', function(e, tour) {
-        tour.$.on('refresh.gjs_extension', function() {
-          that.setOptions(that.getOptions());
+        .on(this.nsEvent('show'), function() {
+          if (that.onGuideShow && that.isEnabled()) {
+            that.onGuideShow();
+          }
+        })
+        .on(this.nsEvent('hide'), function() {
+          if (that.onGuideHide && that.isEnabled()) {
+            that.onGuideHide();
+          }
+        })
+        .on(this.nsEvent('start.tours'), function(e, tour) {
+          if (that.onTourStart && that.isEnabled(tour)) {
+            that.onTourStart(tour);
+          }
+        })
+        .on(this.nsEvent('stop.tours'), function(e, tour) {
+          if (that.onTourStop && that.isEnabled(tour)) {
+            that.onTourStop(tour);
+          }
         });
+    },
 
-        that.setOptions(that.getOptions());
-
-        if (that.onTourStart) {
-          that.onTourStart(tour);
-        }
-      });
+    /**
+     * An event namespaced to this specific extension.
+     */
+    nsEvent: function(event) {
+      return [ event, 'gjs_extension', this.id ].join('.');
     },
 
     /**
@@ -50,17 +56,27 @@
      *   2. the extensions' options specified in the guide.js global option set
      *   3. the extensions' options specified in the current tour's option set
      */
-    getOptions: function(overrides) {
+    getOptions: function(tour) {
       var key = this.id;
 
+      tour = tour || guide.tour;
+
       return _.extend({},
-        this.options || this.defaults,
-        key && guide.getOptions()[key],
-        key && guide.tour ? guide.tour.getOptions()[key] : null,
-        overrides);
+        this.options,
+        guide.options[key],
+        tour ? (tour.options || {})[key] : null);
     },
 
-    isEnabled: function() {
+    isEnabled: function(tour) {
+      if (tour) {
+        var extOptions = (tour.options[this.id] || {});
+
+        if (_.isBoolean(extOptions.enabled)) {
+          return extOptions.enabled;
+        }
+      }
+
+      // return !!this.options.enabled;
       return !!this.getOptions().enabled;
     }
   });

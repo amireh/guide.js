@@ -21,6 +21,8 @@
         options: _.extend({}, this.defaults, options)
       });
 
+      this.$scrollAnchor = this.$el;
+
       if (!this.tour) {
         throw new Error('guide.js: expected #tour to be specified for a new Spot, got none');
       }
@@ -55,6 +57,10 @@
       return this.hasText() || this.hasCaption();
     },
 
+    isVisible: function() {
+      return this.$el.length && this.$el.is(':visible');
+    },
+
     highlight: function() {
       var applicable =
         this.tour.getOptions().alwaysHighlight ||
@@ -63,6 +69,14 @@
       // the spot-scoped option takes precedence over the tour one
       if (!this.options.highlight) {
         applicable = false;
+      }
+
+      if (!this.$el.length) {
+        this.$el = $(this.$el.selector);
+
+        if (!this.$scrollAnchor || !this.$scrollAnchor.length) {
+          this.$scrollAnchor = this.$el;
+        }
       }
 
       this.$el.toggleClass('no-highlight', !applicable);
@@ -104,7 +118,6 @@
         .addClass(KLASS_FOCUSED)
         .triggerHandler('focus.gjs', prev_spot);
 
-
       _.defer(function() {
         if (that.options.autoScroll && !$scroller.is(':in_viewport')) {
           $('html,body').animate({
@@ -115,10 +128,16 @@
     },
 
     defocus: function(next_spot) {
+      var callback = this.options.onDefocus;
+
       this.dehighlight();
 
       this.$el.removeClass(KLASS_FOCUSED);
       this.$el.triggerHandler('defocus.gjs', next_spot);
+
+      if (callback && _.isFunction(callback)) {
+        callback.apply(this, arguments);
+      }
     },
 
     refresh: function() {
@@ -129,6 +148,14 @@
         this.defocus();
         this.focus();
       }
+    },
+
+    setScrollAnchor: function($el) {
+      this.$scrollAnchor = $el;
+    },
+
+    toString: function() {
+      return this.tour.id + '#' + this.index;
     }
   });
 

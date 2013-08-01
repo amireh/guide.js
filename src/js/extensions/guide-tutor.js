@@ -8,14 +8,11 @@
 
   JST_TUTOR = _.template([
     '<div>',
-    // '<button id="gjs_close_tutor">&times;</button>',
-
     '<div class="navigation">',
       '<button class="bwd"></button>',
       '<span></span>',
       '<button class="fwd"></button>',
     '</div>',
-
     '<div class="content"></div>',
     '</div>'
   ].join('')),
@@ -38,8 +35,6 @@
     },
 
     constructor: function() {
-      var that = this;
-
       this.$container = guide.$el;
 
       this.$el = $(JST_TUTOR({}));
@@ -61,12 +56,7 @@
         .on('show', _.bind(this.show, this))
         .on('hide', _.bind(this.hide, this))
         .on('dismiss', _.bind(this.remove, this))
-        .on('focus', _.bind(this.focus, this))
-        .on('start.tours', function(e, tour) {
-          if (tour.current) {
-            that.focus(e, tour.current, tour);
-          }
-        });
+        .on('focus', _.bind(this.focus, this));
 
       this.$close_btn.on('click', _.bind(guide.hide, guide));
 
@@ -82,7 +72,7 @@
     },
 
     show: function() {
-      if (!this.getOptions().enabled) {
+      if (!this.isEnabled()) {
         return this;
       }
 
@@ -101,21 +91,36 @@
       this.$el.remove();
     },
 
-    toggle: function() {
-      return this.$el.parent().length ?
-        this.hide.apply(this, arguments) :
-        this.show.apply(this, arguments);
-    },
-
     refresh: function() {
       var options = this.getOptions();
 
-      if (!options.enabled) {
+      if (!this.isEnabled()) {
         return this.hide();
+      }
+      else if (!this.$el.parent().length) {
+        this.show();
       }
 
       this.$el.toggleClass('spanner', options.spanner);
       this.focus(null, guide.tour.current, guide.tour);
+    },
+
+    onGuideStart: function() {
+      this.show();
+    },
+
+    onGuideStop: function() {
+      this.hide();
+    },
+
+    onTourStart: function(tour) {
+      if (tour.current) {
+        this.focus(null, tour.current, tour);
+      }
+    },
+
+    onTourStop: function() {
+      this.hide();
     },
 
     focus: function(e, spot, tour) {

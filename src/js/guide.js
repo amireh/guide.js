@@ -6,7 +6,18 @@
   }
 
   var
-  guide = function() {
+  root = this,
+  module,
+  exports,
+
+  /**
+   * @class Guide
+   * The primary interface for creating and managing guide.js tours.
+   *
+   * @mixins Guide.Optionable
+   * @singleton
+   */
+  Guide = function() {
     this.constructor.apply(this, arguments);
 
     return this;
@@ -18,7 +29,7 @@
   KLASS_HIDING          = 'gjs-hiding',
   KLASS_ENTITY          = 'gjs-entity';
 
-  _.extend(guide.prototype, {
+  _.extend(Guide.prototype, {
     id: 'guide',
 
     defaults: {
@@ -32,6 +43,8 @@
     },
 
     constructor: function() {
+      var that = this;
+
       // Used for emitting custom events.
       this.$ = $(this);
 
@@ -42,6 +55,20 @@
         extensions: [],
         tours: [],
         tour: null
+      });
+
+      this.$.on('start.tours', function(e, tour) {
+        if (!that.isShown()) {
+          that.show({ noTour: true });
+        }
+
+        if (tour !== that.tour) {
+          if (that.tour) {
+            that.tour.stop();
+          }
+
+          that.tour = tour;
+        }
       });
 
       console.log('guide.js: running');
@@ -55,7 +82,7 @@
       var tour;
 
       if (!(tour = this.getTour(label))) {
-        tour = new guide.Tour(label);
+        tour = new Guide.Tour(label);
         this.tours.push(tour);
       }
 
@@ -70,7 +97,7 @@
       var tour;
 
       if (!this.isShown()) {
-        this.show();
+        this.show({ noTour: true });
       }
 
       if (!(tour = this.getTour(id))) {
@@ -79,31 +106,33 @@
 
       if (this.tour) {
         this.tour.stop();
-        this.$.triggerHandler('stop.tours', [ this.tour ]);
       }
 
-      this.tour = tour;
-
-      this.$.triggerHandler('start.tours', [ this.tour ]);
-      this.tour.start();
-
       console.log('guide.js: touring "' + tour.id + '"');
+
+      this.tour = tour;
+      this.tour.start();
 
       return this;
     },
 
     /**
-     * @param <Object> options
+     * Creates a new Tour Spot and attaches it to the current Tour.
+     *
+     * @param {jQuery} $el The target element of the tour spot.
+     * @param {Object} [inOptions={}] inOptions
      * {
-     *   text:
-     *   caption:
-     *   tour: defaults to the current tour
-     *   placement: [ 'inline', 'inline:before', 'inline:after', 'overlay' ]
-     *   position: [ 'tl', 't', 'tr', 'r', 'br', 'b', 'bl', 'l' ]
+     *   text: {String} [required] A text message to show when the spot is focused.
+     *   caption: {String} [optional]
+     *   tour: {Guide.Tour} [optional] defaults to the current tour
      *
      *   onFocus: function($prevSpot) {}
      *   onDefocus: function($currentSpot) {}
      * }
+     *
+     * @return {Guide.Spot} The newly created tour spot.
+     *
+     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
      */
     addSpot: function($el, inOptions) {
       var tour    = this.tour,
@@ -114,7 +143,7 @@
         if (_.isString(tour_id)) {
           tour = this.defineTour(tour_id);
         }
-        else if (tour_id instanceof guide.Tour) {
+        else if (tour_id instanceof Guide.Tour) {
           tour = tour_id;
         }
         else {
@@ -149,7 +178,7 @@
 
     fromDOM: function(selector_or_container) {
       var that = this,
-          $container = $(selector_or_container);
+          $container = $(selector_or_container || 'body');
 
       $container.find('[data-guide]').each(function() {
         var $target = $(this);
@@ -159,20 +188,20 @@
         });
       });
 
-      // elements with [data-guide-spot] are "references" since they point
+      // Elements with [data-guide-spot] are "references" since they point
       // to a target that will be used as a spot, while they act as the
-      // content of that spot
+      // content of that spot.
       //
-      // @side-effect:
-      // the reference node will be detached and thus no longer
-      // available in the DOM
+      // Side-effect:
+      // The reference node will be detached and no longer available in the DOM.
       $container.find('[data-guide-spot]').each(function() {
         var $ref    = $(this),
-            $target = $($ref.attr('data-guide-spot'));
+            $target = $($ref.attr('data-guide-spot')),
+            options = _.parseOptions($ref.attr('data-guide-options'));
 
-        that.fromNode($target, {
+        that.fromNode($target, _.extend(options, {
           text: $ref.detach().attr('data-guide-spot', null)[0].outerHTML
-        });
+        }));
       });
 
       return this;
@@ -221,34 +250,29 @@
       if (should_show) {
         this.$container.addClass(KLASS_ENABLED);
         this.toggleOverlayMode();
-      }
 
-      this.runTour(options.tour || this.tour || this.tours[0]);
+        this.$.triggerHandler('showing');
+      }
 
       if (should_show) {
         this.$el.appendTo(this.$container);
         this.$el.show(show_after + 1, function() {
+          that._shown = true;
           that.$.triggerHandler('show');
+
+          if (!options.noTour) {
+            that.runTour(options.tour || that.tour || that.tours[0]);
+          }
         });
       }
 
       return this;
     },
 
-    refresh: function() {
-      _.each(this.extensions, function(e) {
-        if (e.refresh) {
-          e.refresh();
-        }
-      });
-
-      if (this.tour) {
-        this.tour.refresh();
-      }
-
-      this.toggleOverlayMode();
-
-      return this;
+    isShown: function() {
+      // return  this.$container.hasClass(KLASS_ENABLED) &&
+      //         !this.$container.hasClass(KLASS_HIDING);
+      return !!this._shown;
     },
 
     /**
@@ -260,8 +284,18 @@
           hide_after  = this.options.withAnimations ? this.options.toggleDuration:0;
 
       if (this.isShown()) {
+        this._shown = false;
         this.$container.addClass(KLASS_HIDING);
+
+        that.$.triggerHandler('hiding');
+
         that.$el.hide(hide_after + 1, function() {
+          if (that.tour) {
+            that.tour.stop();
+          }
+
+          that.$.triggerHandler('hide');
+
           that.$el.detach();
 
           that.$container.removeClass([
@@ -269,14 +303,24 @@
             KLASS_OVERLAYED,
             KLASS_HIDING
           ].join(' '));
-
-          if (that.tour) {
-            that.tour.stop();
-          }
-
-          that.$.triggerHandler('hide');
         });
       }
+
+      return this;
+    },
+
+    refresh: function(noCallbacks) {
+      _.each(this.extensions, function(e) {
+        if (e.refresh) {
+          e.refresh();
+        }
+      });
+
+      if (this.tour) {
+        this.tour.refresh(noCallbacks);
+      }
+
+      this.toggleOverlayMode();
 
       return this;
     },
@@ -286,16 +330,10 @@
         this.hide();
       }
 
+      this.options = _.clone(this.defaults);
+
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
-
-      this.options = _.clone(this.defaults);
-    },
-
-    toggle: function() {
-      return this.isShown() ?
-        this.hide.apply(this, arguments) :
-        this.show.apply(this, arguments);
     },
 
     /**
@@ -319,20 +357,13 @@
       }
 
       if (this.options.withOverlay) {
-        this.$container
-          .addClass(KLASS_OVERLAYED)
-          .removeClass(KLASS_NOT_OVERLAYED);
+        this.$container.addClass(KLASS_OVERLAYED).removeClass(KLASS_NOT_OVERLAYED);
       }
       else {
-        this.$container
-          .removeClass(KLASS_OVERLAYED)
-          .addClass(KLASS_NOT_OVERLAYED);
+        this.$container.removeClass(KLASS_OVERLAYED).addClass(KLASS_NOT_OVERLAYED);
       }
     },
 
-    isShown: function() {
-      return this.$container.hasClass(KLASS_ENABLED);
-    },
 
     dismiss: function(/*optTourId*/) {
       this.$.triggerHandler('dismiss');
@@ -374,9 +405,19 @@
     }
   }); // guide.prototype
 
-  guide = new guide();
+  Guide = new Guide();
+
+  console.log($('body'));
 
   // expose the instance to everybody
-  window.guide = guide;
-  window.GJS_DEBUG = true;
-})(_, jQuery);
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = Guide;
+    }
+    exports.guide = Guide;
+  } else {
+    root.guide = Guide;
+  }
+
+
+}).call(this, _, jQuery);

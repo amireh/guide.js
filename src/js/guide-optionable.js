@@ -15,10 +15,11 @@
     },
 
     setOptions: function(options) {
-      this.options = this.getOptions(options);
+      // this.options = _.extend(this.getOptions(), options);
+      this.options = _.extend(this.options, options);
 
       if (this.refresh) {
-        this.refresh(this.options);
+        this.refresh(this.getOptions());
       }
 
       if (this.$) {
@@ -30,8 +31,8 @@
       return this;
     },
 
-    getOptions: function(overrides) {
-      return _.extend(_.clone(this.options || {}), overrides || {});
+    getOptions: function() {
+      return _.extend({}, this.options);
     }
   };
 

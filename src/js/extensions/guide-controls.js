@@ -13,7 +13,14 @@
       '<button data-action="tour.next">&gt;</button>',
       '<button data-action="tour.last">Last</button>',
       '<button data-action="guide.hide">Close</button>',
+      '<select name="tour" data-action="switchTour"></select>',
     '</div>'
+  ].join('')),
+
+  JST_TOUR_LIST = _.template([
+    '<% _.forEach(tours, function(tour) { %>',
+      '<option value="<%= tour.id %>"><%= tour.id %></option>',
+    '<% }); %>'
   ].join('')),
 
   JST_DEV_CONTORLS = _.template([
@@ -25,9 +32,10 @@
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
+      enabled: true,
       withDeveloperControls: false,
-      inMarkers:  true,
-      inTutor:    true
+      inMarkers:  false,
+      inTutor:    false
     },
 
     id: 'controls',
@@ -38,9 +46,9 @@
       this.$container = guide.$el;
       this.guide = guide;
       this.tour  = guide.tour;
-      this.options = _.defaults({}, this.defaults);
+      this.options = this.getOptions();
 
-      this.refresh();
+      // this.refresh();
 
       guide.$
       .on('show', _.bind(this.show, this))
@@ -50,12 +58,31 @@
         that.refreshControls();
       });
 
+      this.$el = $(JST_CONTROLS({}));
+
+      if (this.options.withDeveloperControls) {
+        this.$el.append($(JST_DEV_CONTORLS({})));
+      }
+
+      this.$el
+        .addClass(guide.entityKlass())
+        .on('click', '[data-action]', _.bind(this.delegate, this));
+
+      _.extend(this, {
+        $bwd:   this.$el.find('[data-action*=prev]'),
+        $fwd:   this.$el.find('[data-action*=next]'),
+        $first: this.$el.find('[data-action*=first]'),
+        $last:  this.$el.find('[data-action*=last]'),
+        $hide:  this.$el.find('[data-action*=hide]'),
+        $tour_selector:  this.$el.find('[data-action="switchTour"]')
+      });
+
       return this;
     },
 
     onTourStart: function(tour) {
       this.tour = tour;
-      this.refreshControls();
+      this.refresh();
     },
 
     show: function() {
@@ -98,56 +125,38 @@
 
     refresh: function() {
       var
-      tutor_ext   = guide.getExtension('tutor'),
-      marker_ext  = guide.getExtension('markers'),
+      extTutor    = guide.getExtension('tutor'),
+      extMarkers  = guide.getExtension('markers'),
       options     = this.getOptions();
 
-      this.remove();
+      // this.remove();
 
-      if (marker_ext && marker_ext.isEnabled() && options.inMarkers) {
-        this.markerMode(marker_ext);
+      if (extMarkers && extMarkers.isEnabled() && options.inMarkers) {
+        this.markerMode(extMarkers);
       }
-      else if (tutor_ext && tutor_ext.isEnabled() && options.inTutor) {
-        this.tutorMode(tutor_ext);
+      else if (extTutor && extTutor.isEnabled() && options.inTutor) {
+        this.tutorMode(extTutor);
       }
       else {
         this.classicMode();
       }
 
-      this.$el = $(JST_CONTROLS({}));
-
-      if (options.withDeveloperControls) {
-        this.$el.append($(JST_DEV_CONTORLS({})));
-      }
-
-      this.$el
-        .addClass(guide.entityKlass())
-        .on('click', '[data-action]', _.bind(this.delegate, this));
-
-      _.extend(this, {
-        $bwd:   this.$el.find('[data-action*=prev]'),
-        $fwd:   this.$el.find('[data-action*=next]'),
-        $first: this.$el.find('[data-action*=first]'),
-        $last:  this.$el.find('[data-action*=last]'),
-        $hide:  this.$el.find('[data-action*=hide]')
-      });
-
       this.show();
     },
 
     classicMode: function() {
-      var tutor_ext = guide.getExtension('tutor'),
-          marker_ext  = guide.getExtension('markers');
+      var extTutor = guide.getExtension('tutor'),
+          extMarkers  = guide.getExtension('markers');
 
       this.$container = guide.$el;
 
-      if (tutor_ext) {
-        tutor_ext.$el
+      if (extTutor) {
+        extTutor.$el
           .addClass('without-controls')
           .removeClass('with-controls');
       }
 
-      if (marker_ext) {
+      if (extMarkers) {
         guide.$
         .off('marking.gjs_markers.gjs_controls')
         .off('unmarking.gjs_markers.gjs_controls');
@@ -192,7 +201,10 @@
           target,
           method;
 
-      if (action.indexOf('.') > -1) {
+      if (!action) {
+        return;
+      }
+      else if (action.indexOf('.') > -1) {
         pair    = action.split('.');
         target  = pair[0];
         method  = pair[1];
@@ -217,18 +229,29 @@
     },
 
     refreshControls: function() {
-      var that = this;
+      var tour = this.tour;
 
-      $(function() {
-        that.$bwd.prop('disabled', !guide.tour.hasPrev());
-        that.$fwd.prop('disabled', !guide.tour.hasNext());
-        that.$first.prop('disabled', !guide.tour.hasPrev());
-        that.$last.prop('disabled', !guide.tour.hasNext());
-        that.$hide.toggle(!guide.tour.hasNext());
-      });
+      this.$tour_selector.html(JST_TOUR_LIST({ tours: guide.tours }));
+      this.$bwd.prop('disabled', !tour.hasPrev());
+      this.$fwd.prop('disabled', !tour.hasNext());
+      this.$first.prop('disabled', !tour.hasPrev());
+      this.$last.prop('disabled', !tour.hasNext());
+      this.$hide.toggle(!tour.hasNext());
+      this.$tour_selector.find('[value="' + tour.id + '"]').prop('selected', true);
+    },
+
+    switchTour: function() {
+      var tour = guide.getTour(this.$tour_selector.find(':selected').val());
+
+      if (tour && !tour.isActive()) {
+        tour.reset();
+        guide.runTour(tour);
+      }
+
+      return true;
     }
 
-  }); // tutor.prototype
+  }); // Extension.prototype
 
   guide.addExtension(new Extension());
 })(_, jQuery, window.guide);
