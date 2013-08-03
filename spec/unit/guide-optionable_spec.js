@@ -43,6 +43,21 @@ describe("guide", function() {
           }
         });
       });
+
+      it('should reject bad input', function() {
+        expect(function() {
+          o.setOptions(true);
+        }).toThrow();
+
+        expect(function() {
+          o.setOptions(undefined);
+        }).toThrow();
+
+        expect(function() {
+          o.setOptions(null);
+        }).toThrow();
+
+      });
     });
 
     describe('#getOptions', function() {

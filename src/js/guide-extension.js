@@ -75,20 +75,45 @@
         tour ? (tour.options || {})[key] : null);
     },
 
+    /**
+     * Whether the extension is available for use in the passed tour.
+     *
+     * If the tour does not explicitly specify an #enabled option for this extension,
+     * the global guide options is then queried, and if not set there either,
+     * the default value is used (which is `true`).
+     */
     isEnabled: function(tour) {
-      if (tour) {
-        var extOptions = (tour.options[this.id] || {});
+      var tourExtOptions;
 
-        if (_.isBoolean(extOptions.enabled)) {
-          return extOptions.enabled;
+      if (tour) {
+        tourExtOptions = tour.options[this.id] || {};
+
+        if (_.isBoolean(tourExtOptions.enabled)) {
+          return tourExtOptions.enabled;
         }
       }
 
-      // return !!this.options.enabled;
       return !!this.getOptions().enabled;
     },
 
-    refresh: function() {},
+    /**
+     * Handle the extension options, re-render nodes, or re-install event handlers.
+     *
+     * Behaviour of #refresh is heavily extension-specific and so no stock
+     * implementation exists.
+     *
+     * This method is implicitly called in Guide#refresh and Optionable#setOptions.
+     */
+    refresh: function() {
+    },
+
+    /**
+     * Restore all internal state/context of the extension to the point where
+     * guide.js has not been used yet.
+     *
+     * The stock #reset behaviour merely resets the Extension's options to
+     * their defaults.
+     */
     reset: function() {
       this.options = _.clone(this.defaults);
     }

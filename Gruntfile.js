@@ -150,6 +150,20 @@ module.exports = function(grunt) {
           'external': ['XMLHttpRequest', 'jQuery', '$']
         }
       }
+    },
+
+    'string-replace': {
+      version: {
+        files: {
+          'src/js/guide.js': [ 'src/js/guide.js' ]
+        },
+        options: {
+          replacements: [{
+            pattern: /([g|G])uide\.VERSION\s*=\s*\'.*\';/,
+            replacement: "$1uide.VERSION = '<%= pkg.version %>';"
+          }]
+        }
+      }
     }
   });
 
@@ -163,6 +177,7 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-tagrelease');
   grunt.loadNpmTasks('grunt-jsvalidate');
   grunt.loadNpmTasks('grunt-jsduck');
+  grunt.loadNpmTasks('grunt-string-replace');
 
   grunt.registerTask('test', [ 'jsvalidate', 'jshint', 'jasmine' ]);
   grunt.registerTask('build', [ 'concat', 'uglify', 'test', 'less' ]);
@@ -178,5 +193,6 @@ module.exports = function(grunt) {
     grunt.task.run('bumpup:' + type);
     grunt.config.set('pkg', readPkg());
     grunt.task.run('tagrelease');
+    grunt.task.run('string-replace:version')
   });
 };

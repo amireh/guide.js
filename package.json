@@ -1,7 +1,7 @@
 {
   "name": "guide.js",
   "description": "Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "homepage": "https://github.com/amireh/guide.js",
   "author": {
     "name": "Ahmad Amireh",
@@ -42,7 +42,8 @@
     "grunt-tagrelease": "0.1.x",
     "grunt-bumpup": "0.2.x",
     "grunt-jsvalidate": "0.2.x",
-    "grunt-jsduck": "0.1.x"
+    "grunt-jsduck": "0.1.x",
+    "grunt-string-replace": "0.2.x"
   },
   "dependencies": {}
 }

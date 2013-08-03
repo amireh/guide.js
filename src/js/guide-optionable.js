@@ -14,8 +14,8 @@
     /**
      * Assign option values to this object, overriding any existing values.
      *
-     * If the object supports it, #refresh will be called with the new options
-     * to give a chance for the object to reflect the new options.
+     * If the object supports it, #refresh will be called to give a chance for
+     * the object to reflect the new options.
      *
      * @fires refresh
      * @param {Object/String} options
@@ -26,11 +26,15 @@
       if (_.isString(options)) {
         options = _.parseOptions(options);
       }
+      else if (!_.isObject(options)) {
+        throw 'guide.js: bad options passed to #setOptions; expected an Object' +
+              ' or a String, but got: ' + typeof(options);
+      }
 
       this.options = _.extend(this.options || {}, options);
 
       if (this.refresh) {
-        this.refresh(this.getOptions());
+        this.refresh();
       }
 
       if (this.$) {
