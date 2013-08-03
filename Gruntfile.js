@@ -189,10 +189,10 @@ module.exports = function(grunt) {
   grunt.registerTask('release', function (type) {
     type = type ? type : 'patch';
     grunt.task.run('test');
-    grunt.task.run('build');
     grunt.task.run('bumpup:' + type);
     grunt.config.set('pkg', readPkg());
-    grunt.task.run('tagrelease');
     grunt.task.run('string-replace:version')
+    grunt.task.run('build');
+    grunt.task.run('tagrelease');
   });
 };
