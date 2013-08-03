@@ -32,6 +32,30 @@ describe("guide", function() {
 
         expect(o.handler).toHaveBeenCalled();
       });
+
+      it('should accept a string of options', function() {
+        o.setOptions('a:1, foo.bar:true');
+
+        expect(o.options).toEqual({
+          a: 1,
+          foo: {
+            bar: true
+          }
+        });
+      });
+    });
+
+    describe('#getOptions', function() {
+      it('should not mutate the original options', function() {
+        o.options = { foo: true };
+        var options = o.getOptions();
+
+        expect(options).toEqual(o.options);
+
+        options.foo = false;
+        expect(o.options).toEqual({ foo: true });
+        expect(o.getOptions()).toEqual({ foo: true });
+      });
     });
   });
 })
