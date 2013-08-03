@@ -8,12 +8,12 @@
 
   JST_TUTOR = _.template([
     '<div>',
-    '<div class="navigation">',
+    '<div class="tutor-navigation">',
       '<button class="bwd"></button>',
       '<span></span>',
       '<button class="fwd"></button>',
     '</div>',
-    '<div class="content"></div>',
+    '<div class="tutor-content"></div>',
     '</div>'
   ].join('')),
 
@@ -45,9 +45,9 @@
       });
 
       _.extend(this, {
-        $content: this.$el.find('> .content'),
-        $nav: this.$el.find('> .navigation'),
-        $close_btn: this.$el.find('#gjs_close_tutor'),
+        $content: this.$el.find('> .tutor-content'),
+        $nav: this.$el.find('> .tutor-navigation'),
+        // $close_btn: this.$el.find('#gjs_close_tutor'),
         $bwd: this.$el.find('.bwd'),
         $fwd: this.$el.find('.fwd')
       });
@@ -58,7 +58,7 @@
         .on('dismiss', _.bind(this.remove, this))
         .on('focus', _.bind(this.focus, this));
 
-      this.$close_btn.on('click', _.bind(guide.hide, guide));
+      // this.$close_btn.on('click', _.bind(guide.hide, guide));
 
       this.$nav
         .on('click','.bwd', function() {
@@ -97,7 +97,7 @@
       if (!this.isEnabled()) {
         return this.hide();
       }
-      else if (!this.$el.parent().length) {
+      else if (!this.$el.parent().length /* not attached yet? */) {
         this.show();
       }
 
@@ -113,10 +113,8 @@
       this.hide();
     },
 
-    onTourStart: function(tour) {
-      if (tour.current) {
-        this.focus(null, tour.current, tour);
-      }
+    onTourStart: function(/*tour*/) {
+      this.refresh();
     },
 
     onTourStop: function() {

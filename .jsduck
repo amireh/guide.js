@@ -28,6 +28,7 @@
         "name": "Vendor Extensions",
         "classes": [
           "jQuery",
+          "jQuery.Event",
           "lodash"
         ]
       }

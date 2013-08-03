@@ -23,9 +23,6 @@
   background: rgba(0, 0, 0, 0.85);
   color: white;
   font-size: 16px;
-  -webkit-box-sizing: content-box;
-  -moz-box-sizing: content-box;
-  box-sizing: content-box;
   -webkit-border-radius: 3px 3px 0 0;
   -moz-border-radius: 3px 3px 0 0;
   -o-border-radius: 3px 3px 0 0;
@@ -35,7 +32,13 @@
   -o-box-shadow: 0 0 9px 4px rgba(0, 0, 0, 0.4);
   box-shadow: 0 0 9px 4px rgba(0, 0, 0, 0.4);
 }
-#gjs_tutor .navigation {
+#gjs_tutor,
+#gjs_tutor * {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+}
+#gjs_tutor .tutor-navigation {
   position: absolute;
   width: 120px;
 }
@@ -49,7 +52,7 @@
   -o-box-shadow: none;
   box-shadow: none;
 }
-#gjs_tutor .content {
+#gjs_tutor .tutor-content {
   display: inline-block;
   margin-left: 130px;
   vertical-align: top;
@@ -57,6 +60,9 @@
 }
 #gjs_tutor .fwd,
 #gjs_tutor .bwd {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
   -webkit-appearance: none;
   -moz-appearance: none;
   -o-appearance: none;
@@ -181,6 +187,7 @@
   display: none;
   color: #ffffff;
   white-space: normal;
+  cursor: inherit;
 }
 .gjs-marker:hover,
 .gjs-marker.focused {
@@ -364,6 +371,9 @@
   position: fixed;
   height: 32px;
   line-height: 32px;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
   bottom: 0;
   left: 0;
   right: 0;
@@ -547,7 +557,8 @@
  * gjs.js Skin
  */
 .gjs-spot {
-  position: relative;
+  /*position: relative;*/
+
 }
 .gjs-spot:after {
   position: absolute;
@@ -562,6 +573,13 @@
 
   background-color: rgba(51, 181, 229, 0.1);
 }
+.gjs-positioning-fix {
+  position: relative;
+}
+.gjs-spot-inline {
+  /*position: relative;*/
+
+}
 .gjs-spot-focused:after {
   background-color: rgba(51, 181, 229, 0.2);
 }
@@ -574,7 +592,12 @@
   display: none;
   content: normal;
 }
-.gjs-with-overlay .gjs:after {
+.gjs-with-overlay #gjs {
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
+}
+.gjs-with-overlay #gjs:after {
   position: fixed;
   top: 0;
   bottom: 0;
@@ -605,9 +628,6 @@
   -o-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
   box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
 }
-.gjs-spot-inline {
-  position: relative;
-}
 .gjs-entity .caption {
   margin: 0 0 10px 0;
   font-size: 16px;
@@ -620,4 +640,7 @@
 
   border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 0 1px 0 #2eb3e4;
+  -webkit-box-sizing: content-box;
+  -moz-box-sizing: content-box;
+  box-sizing: content-box;
 }

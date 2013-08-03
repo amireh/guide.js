@@ -231,13 +231,16 @@
     refreshControls: function() {
       var tour = this.tour;
 
-      this.$tour_selector.html(JST_TOUR_LIST({ tours: guide.tours }));
-      this.$bwd.prop('disabled', !tour.hasPrev());
-      this.$fwd.prop('disabled', !tour.hasNext());
-      this.$first.prop('disabled', !tour.hasPrev());
-      this.$last.prop('disabled', !tour.hasNext());
-      this.$hide.toggle(!tour.hasNext());
-      this.$tour_selector.find('[value="' + tour.id + '"]').prop('selected', true);
+      this.$bwd.prop('disabled',    !tour.hasPrev());
+      this.$fwd.prop('disabled',    !tour.hasNext());
+      this.$first.prop('disabled',  !tour.hasPrev());
+      this.$last.prop('disabled',   !tour.hasNext());
+      this.$hide.toggle(            !tour.hasNext());
+
+      this.$tour_selector
+        .html(JST_TOUR_LIST({ tours: guide.tours }))
+        .toggle(guide.tours.length > 1)
+        .find('[value="' + tour.id + '"]').prop('selected', true);
     },
 
     switchTour: function() {

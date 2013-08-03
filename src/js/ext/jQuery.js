@@ -17,7 +17,8 @@
     ext = EXTENSIONS[i];
 
     if (void 0 !== $[ext] || void 0 !== $.fn[ext]) {
-      throw 'guide.js: existing $.' + ext + ' implementation!';
+      // throw 'guide.js: existing $.' + ext + ' implementation!';
+      console.log('guide.js: existing $.' + ext + ' implementation!');
     }
   }
 

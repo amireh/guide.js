@@ -1,23 +1,23 @@
 describe("lodash", function() {
-  it("_.assign()", function() {
+  it("_#dotAssign", function() {
     var o = {};
 
-    expect(_.assign('foo.bar', 123, o)).toEqual({
+    expect(_.dotAssign('foo.bar', 123, o)).toEqual({
       foo: { bar: 123 }
     });
 
-    expect(_.assign('foo.bar', null, o)).toEqual({
+    expect(_.dotAssign('foo.bar', null, o)).toEqual({
       foo: { bar: null }
     });
   });
 
-  it("_.assign() should implicitly create an object", function() {
-    expect(_.assign('foo.bar', 123, undefined)).toEqual({
+  it("_#dotAssign should implicitly create an object", function() {
+    expect(_.dotAssign('foo.bar', 123, undefined)).toEqual({
       foo: { bar: 123 }
     });
   });
 
-  describe("_.parseOptions", function() {
+  describe("_#parseOptions", function() {
 
     it("should parse options", function() {
       expect(_.parseOptions('foo:bar')).toEqual({

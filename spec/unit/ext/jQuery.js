@@ -1,10 +1,21 @@
 describe("jQuery", function() {
+  var $el;
+
+  beforeEach(function() {
+    $el = $('<div />');
+  });
+
+  afterEach(function() {
+    $el.remove();
+  });
+
   it(':in_viewport', function() {
+
     $(function() {
-      var $el = $('<div />'),
-          offset;
+      var offset;
 
       $el.appendTo($('body'));
+
       offset = $el.offset();
 
       console.log('offset:' , offset.top, offset.left);
@@ -16,18 +27,21 @@ describe("jQuery", function() {
 
       $el.appendTo($('body'));
       expect($el.is(':in_viewport')).toEqual(true);
+
       $el.css({ position: 'fixed' });
       $el.offset({
         top:  -9999,
         left: -9999
       });
+
       expect($el.is(':in_viewport')).toEqual(false);
+
+      $el.remove();
     });
   });
 
   it('$.consume()', function() {
     var
-    $el = $('<div />'),
     listener = {
       will_pass: function() {},
       wont_pass: function() {}

@@ -33,52 +33,73 @@
     id: 'guide',
 
     defaults: {
-      withOverlay:    false,
-      withAnimations: true,
-      toggleDuration: 500
-    },
 
-    entityKlass: function() {
-      return KLASS_ENTITY;
+      /**
+       * @cfg {Boolean} [withOverlay=false]
+       * Attach a CSS 'shade' overlay to the document.
+       */
+      withOverlay: false,
+
+      /**
+       * @cfg {Boolean} [withAnimations=true]
+       * Animate showing or hiding tours using jQuery.
+       */
+      withAnimations: true,
+
+      /**
+       * @cfg {Boolean} [animeDuration=500]
+       * How long the animations should take.
+       */
+      animeDuration: 500
     },
 
     constructor: function() {
-      var that = this;
-
-      // Used for emitting custom events.
-      this.$ = $(this);
-
       _.extend(this, {
         $container: $('body'),
-        $el:        $('<div class="gjs" />'),
+        $el:        $('<div id="gjs" />'),
         options: _.clone(this.defaults),
         extensions: [],
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * Modules can use this object to emit events just like any other jQuery
+         * selector:
+         *
+         *     guide.$.triggerHandler('my_event', [ arg1, arg2 ]);
+         *
+         * And they can also listen to these events:
+         *
+         *     guide.$.on('my_event', function(e, arg1, arg2) {
+         *       // ...
+         *     });
+         */
+        $: $(this),
+
+        /** @property {Tour[]} tours All defined tours, see #defineTour. */
         tours: [],
+
+        /** @property {Tour} tour The active tour */
         tour: null
-      });
-
-      this.$.on('start.tours', function(e, tour) {
-        if (!that.isShown()) {
-          that.show({ noTour: true });
-        }
-
-        if (tour !== that.tour) {
-          if (that.tour) {
-            that.tour.stop();
-          }
-
-          that.tour = tour;
-        }
       });
 
       console.log('guide.js: running');
     },
 
-    inactiveTours: function() {
-      return _.without(this.tours, this.tour);
-    },
-
-    defineTour: function(label, optSpots) {
+    /**
+     * Define a blank tour uniquely identified by the given label.
+     *
+     * @param {String} label
+     * A unique name for this tour.
+     *
+     * @param {Object[]} [spots=[]]
+     * A collection of spot definitions to pass to the tour, see Tour#addSpots.
+     *
+     * @return {Tour}
+     * The newly created tour, or an existing one if the name was taken.
+     */
+    defineTour: function(label, spots) {
       var tour;
 
       if (!(tour = this.getTour(label))) {
@@ -86,26 +107,62 @@
         this.tours.push(tour);
       }
 
-      if (optSpots) {
-        this.addSpots(optSpots);
+      if (spots) {
+        this.addSpots(spots);
       }
 
       return tour;
     },
 
-    runTour: function(id) {
-      var tour;
+    /**
+     * Looks up a tour by its label or an actual Tour object.
+     *
+     * @param {Tour/String} id The tour's label, or object, to look for.
+     * @return {Tour/null} The tour, if found.
+     */
+    getTour: function(id) {
+      return _.isString(id) ?
+        _.find(this.tours || [], { id: id }) :
+        _.find(this.tours || [], id);
+    },
 
-      if (!this.isShown()) {
-        this.show({ noTour: true });
-      }
+    /** @private */
+    inactiveTours: function() {
+      return _.without(this.tours, this.tour);
+    },
+
+    /**
+     * Shows the guide, stops the active tour (if any,) and starts the given tour.
+     *
+     * @param {Tour/String} id The Tour to start.
+     * @async
+     */
+    runTour: function(id) {
+      var current = this.tour,
+          tour;
 
       if (!(tour = this.getTour(id))) {
-        throw new Error('guide.js: undefined tour "' + id + '", did you call #defineTour()?');
+        throw 'guide.js: undefined tour "' + id + '", did you call #defineTour()?';
       }
 
-      if (this.tour) {
-        this.tour.stop();
+      // Must show first then start the tour.
+      if (!this.isShown()) {
+        this.$.one('show', _.bind(this.runTour, this, tour.id ));
+        this.show({ noAutorun: true });
+
+        return false;
+      }
+
+      // Must stop the current tour first, wait for it to clean up, then start
+      // the new one.
+      if (current) {
+        // Kill the active tour reference, otherwise we're stuck in a loop.
+        this.tour = null;
+
+        current.$.one('stop', _.bind(this.runTour, this, tour.id ));
+        current.stop();
+
+        return false;
       }
 
       console.log('guide.js: touring "' + tour.id + '"');
@@ -113,27 +170,10 @@
       this.tour = tour;
       this.tour.start();
 
-      return this;
+      return true;
     },
 
-    /**
-     * Creates a new Tour Spot and attaches it to the current Tour.
-     *
-     * @param {jQuery} $el The target element of the tour spot.
-     * @param {Object} [inOptions={}] inOptions
-     * {
-     *   text: {String} [required] A text message to show when the spot is focused.
-     *   caption: {String} [optional]
-     *   tour: {Guide.Tour} [optional] defaults to the current tour
-     *
-     *   onFocus: function($prevSpot) {}
-     *   onDefocus: function($currentSpot) {}
-     * }
-     *
-     * @return {Guide.Spot} The newly created tour spot.
-     *
-     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
-     */
+
     addSpot: function($el, inOptions) {
       var tour    = this.tour,
           options = inOptions || {},
@@ -237,87 +277,88 @@
       return this.addSpot($this, options);
     },
 
-    show: function(inOptions) {
+    show: function(inOptions, inCallback) {
       var options     = inOptions || {},
           that        = this,
-          should_show  = !this.isShown(),
-          show_after   = this.options.withAnimations ? this.options.toggleDuration:0;
+          animeMs     = this.options.withAnimations ? this.options.animeDuration:0;
 
-      if (!this.tours.length) {
-        throw new Error('guide.js: can not show with no tours defined!');
+      if (this.isShown()) {
+        return this;
+      }
+      else if (!this.tours.length) {
+        throw 'guide.js: can not show with no tours defined!';
       }
 
-      if (should_show) {
-        this.$container.addClass(KLASS_ENABLED);
-        this.toggleOverlayMode();
+      this.$.triggerHandler('showing');
 
-        this.$.triggerHandler('showing');
-      }
+      this.$container.addClass(KLASS_ENABLED);
+      this.toggleOverlayMode();
 
-      if (should_show) {
-        this.$el.appendTo(this.$container);
-        this.$el.show(show_after + 1, function() {
-          that._shown = true;
-          that.$.triggerHandler('show');
+      this.$el.appendTo(this.$container);
+      this.$el.show(animeMs, function() {
+        that.$.triggerHandler('show');
 
-          if (!options.noTour) {
-            that.runTour(options.tour || that.tour || that.tours[0]);
-          }
-        });
-      }
+        if (!options.noAutorun) {
+          that.runTour(options.tour || that.tour || that.tours[0]);
+        }
+
+        if (inCallback && _.isFunction(inCallback)) {
+          inCallback.apply(that, []);
+        }
+      });
 
       return this;
     },
 
     isShown: function() {
-      // return  this.$container.hasClass(KLASS_ENABLED) &&
-      //         !this.$container.hasClass(KLASS_HIDING);
-      return !!this._shown;
+      return  this.$container.hasClass(KLASS_ENABLED) &&
+              !this.$container.hasClass(KLASS_HIDING);
     },
 
     /**
+     * Hide all guide.js spawned elements, turn off all extensions, and stop
+     * the active tour, if any.
      *
      * @async
      */
     hide: function() {
-      var that        = this,
-          hide_after  = this.options.withAnimations ? this.options.toggleDuration:0;
+      var that     = this,
+          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
 
-      if (this.isShown()) {
-        this._shown = false;
-        this.$container.addClass(KLASS_HIDING);
-
-        that.$.triggerHandler('hiding');
-
-        that.$el.hide(hide_after + 1, function() {
-          if (that.tour) {
-            that.tour.stop();
-          }
-
-          that.$.triggerHandler('hide');
-
-          that.$el.detach();
-
-          that.$container.removeClass([
-            KLASS_ENABLED,
-            KLASS_OVERLAYED,
-            KLASS_HIDING
-          ].join(' '));
-        });
+      if (!this.isShown()) {
+        return this;
       }
+
+      this.$container.addClass(KLASS_HIDING);
+
+      that.$.triggerHandler('hiding');
+
+      that.$el.hide(animeMs, function() {
+        if (that.tour) {
+          that.tour.stop();
+        }
+
+        that.$.triggerHandler('hide');
+
+        that.$el.detach();
+
+        that.$container.removeClass([
+          KLASS_ENABLED,
+          KLASS_OVERLAYED,
+          KLASS_HIDING
+        ].join(' '));
+      });
 
       return this;
     },
 
-    refresh: function(noCallbacks) {
+    refresh: function() {
       _.each(this.extensions, function(e) {
-        if (e.refresh) {
-          e.refresh();
-        }
+        e.refresh();
       });
 
       if (this.tour) {
-        this.tour.refresh(noCallbacks);
+        this.tour.refresh();
       }
 
       this.toggleOverlayMode();
@@ -330,7 +371,11 @@
         this.hide();
       }
 
+      this.$.triggerHandler('reset.guide');
       this.options = _.clone(this.defaults);
+
+      _.each(this.extensions, function(ext) { ext.reset(true); });
+      _.each(this.tours, function(tour) { tour.reset(true); });
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
@@ -364,13 +409,24 @@
       }
     },
 
-
     dismiss: function(/*optTourId*/) {
       this.$.triggerHandler('dismiss');
     },
 
     focus: function() {
       return this.tour.focus.apply(this.tour, arguments);
+    },
+
+
+    /**
+     * All nodes generated by guide.js or any of its extensions should mark
+     * themselves with the CSS class returned by this method.
+     *
+     * @return {String}
+     * The CSS class guide.js uses to flag its entities, see KLASS_ENTITY.
+     */
+    entityKlass: function() {
+      return KLASS_ENTITY;
     },
 
     addExtension: function(ext) {
@@ -392,22 +448,12 @@
 
     getExtension: function(id) {
       return _.find(this.extensions, { id: id });
-    },
-
-    /**
-     * @private
-     * @nodoc
-     */
-    getTour: function(id) {
-      return _.isString(id) ?
-        _.find(this.tours || [], { id: id }) :
-        _.find(this.tours || [], id);
     }
+
   }); // guide.prototype
 
   Guide = new Guide();
-
-  console.log($('body'));
+  Guide.VERSION = '1.2.0';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -418,6 +464,7 @@
   } else {
     root.guide = Guide;
   }
+
 
 
 }).call(this, _, jQuery);

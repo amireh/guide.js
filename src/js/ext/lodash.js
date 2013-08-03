@@ -7,7 +7,7 @@
   'use strict';
 
   (function() {
-    var EXTENSIONS = [ 'assign', 'parseOptions' ],
+    var EXTENSIONS = [ 'dotAssign', 'parseOptions' ],
         ext,
         ext_iter;
 
@@ -30,12 +30,12 @@
    *
    * Usage example
    *
-   *     _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
+   *     _.dotAssign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
    *
    * @return {Object} The passed object (or a newly created one) with the
    * assigned property.
    */
-  _.assign = function(k, v, in_o) {
+  _.dotAssign = function(k, v, in_o) {
     var path_tokens = k.toString().split('.'),
         pathsz      = path_tokens.length,
         o           = in_o || {},
@@ -142,7 +142,7 @@
 
       if (!k) { continue; }
 
-      _.assign(k, converter(v), out);
+      _.dotAssign(k, converter(v), out);
     }
 
     return out;

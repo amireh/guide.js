@@ -23,7 +23,7 @@
       }
 
       if (this.$) {
-        console.log('guide.js:', this.id,'options changed, triggering refresh');
+        // console.log('guide.js:', this.id,'options changed, triggering refresh');
 
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }

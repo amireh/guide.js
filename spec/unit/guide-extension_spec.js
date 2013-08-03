@@ -49,7 +49,7 @@ describe("guide", function() {
 
       tour.addSpot($('<div />'), { text: 'Hello' });
 
-      guide.runTour(tour);
+      guide.runTour('Default Tour');
 
       expect(e.isEnabled()).toBeFalsy();
     });

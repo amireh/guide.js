@@ -76,8 +76,6 @@
         guide.tour.addOption('alwaysMark', true);
       }
 
-      this.$container = guide.$el;
-
       guide.$
         .on('add', _.bind(this.addMarker, this))
         .on('focus', function(e, spot) {
@@ -128,11 +126,11 @@
         return;
       }
 
-      $(window).off('resize.gjs_markers');
-      $(window).on('resize.gjs_markers',
-        _.throttle(
-          _.bind(this.repositionMarkers, this),
-          this.getOptions().refreshFrequency));
+      // $(window).off('resize.gjs_markers');
+      // $(window).on('resize.gjs_markers',
+      //   _.throttle(
+      //     _.bind(this.repositionMarkers, this),
+      //     this.getOptions().refreshFrequency));
 
       // this.onGuideHide();
 
@@ -143,7 +141,7 @@
           if (spot.tour.getOptions().alwaysMark) {
             spot.marker.show();
           } else {
-            if (!spot.isCurrent()) {
+            if (!spot.isFocused()) {
               spot.marker.hide();
             }
           }
@@ -160,13 +158,13 @@
      * @see #repositionMarkers
      */
     onGuideShow: function() {
-      $(window).on('resize.gjs_markers',
-        _.throttle(
-          _.bind(this.repositionMarkers, this),
-          this.options.refreshFrequency));
+      // $(window).on('resize.gjs_markers',
+      //   _.throttle(
+      //     _.bind(this.repositionMarkers, this),
+      //     this.options.refreshFrequency));
 
-      $(document.body).on('click.gjs_markers', '.gjs-marker', function(e) {
-        var marker = $(this).data('gjs');
+      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
+        var marker = $(this).data('gjs-marker');
 
         if (marker) {
           marker.spot.tour.focus(marker.spot);
@@ -181,8 +179,8 @@
     },
 
     onGuideHide: function() {
-      $(window).off('resize.gjs_markers');
-      $(document.body).off('click.gjs_markers');
+      // $(window).off('resize.gjs_markers');
+      $(document.body).off(this.nsEvent('click'));
 
       // return this.onTourStop(guide.tour);
     },
@@ -193,8 +191,6 @@
       if (!this.isEnabled(tour)) {
         return this;
       }
-
-      console.log('guide.js', '[markers] showing markers for tour ', tour.id);
 
       // show markers for this tour
       //
@@ -209,22 +205,19 @@
       });
 
       // listen to its option changes
-      tour.$.on('refresh.gjs_markers', function(/*e, options*/) {
+      tour.$.on(this.nsEvent('refresh'), function(/*e, options*/) {
         that.refresh();
       });
     },
 
     onTourStop: function(tour) {
-      console.log('[markers] destroying markers for tour ', tour.id);
-
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
           spot.marker.hide();
-          // spot.marker.remove();
         }
       });
 
-      tour.$.off('refresh.gjs_markers');
+      tour.$.off(this.nsEvent('refresh'));
     },
 
     rebuildMarkers: function(/*tour*/) {
@@ -257,7 +250,7 @@
       console.log('[markers] repositioning markers for tour ', tour.id);
 
       _.each(tour.spots, function(spot) {
-        if (spot.marker) {
+        if (spot.marker && spot.marker.placement === PMT_OVERLAY) {
           spot.marker.place();
         }
       });
@@ -338,13 +331,17 @@
       this.options = _.extend(
         {},
         // lowest priority: our defaults
-        this.options || this.defaults,
+        this.defaults,
+
+        (attributes || {}).options,
         // then, guide's global marker options,
         guide.getOptions().marker,
         // then, the spot's tour options,
         spot.tour.getOptions().marker,
         // and highest priority: the spot's options
         spot.getOptions().marker);
+
+      this.spot.$.on('remove', _.bind(this.remove, this));
 
       return this.build();
     },
@@ -453,7 +450,7 @@
         // Attach the marker to the jQuery object, necessary for handling events
         //
         // See Extension#onGuideShow
-        .data('gjs', this);
+        .data('gjs-marker', this);
 
       // In Sibling placement mode, we need to construct a container element
       // that will be the parent of the spot target and the marker element.
@@ -491,7 +488,7 @@
                       // already wrapped so that we will properly clean up
                       //
                       // See #isWrapped and #remove.
-                      .data('gjs_container', true)
+                      .data('gjs-container', true)
 
                       // Position the container right where the target is, and
                       // move the target and the marker inside of it.
@@ -504,6 +501,8 @@
           $container = $spot.parent();
           $container.append($el);
         }
+
+        this.$container = $container;
 
         // We'll need the left and right margins for proper positioning.
         //
@@ -536,21 +535,22 @@
     },
 
     remove: function() {
-      var $container;
-
       this.hide();
 
       if (this.$el) {
         this.$el.remove();
+        this.$el = null;
       }
 
       // Return the target back to its place by completely removing the
       // sibling container we created
       if (this.isWrapped()) {
-        $container = this.spot.$el.parent();
+        if (this.spot.$el.parent().is(this.$container)) {
+          this.$container.replaceWith(this.spot.$el);
+        }
 
-        $container.replaceWith(this.spot.$el);
-        $container.remove();
+        this.$container.remove();
+        this.$container = null;
       }
     },
 
@@ -624,11 +624,11 @@
         return false;
       }
 
-      if (!spot.tour.getOptions().alwaysMark && !spot.isCurrent()) {
+      if (!spot.tour.getOptions().alwaysMark && !spot.isFocused()) {
         return false;
       }
 
-      if (!spot.$el.length || !spot.$el.is(':visible')) {
+      if (!spot.isVisible()) {
         return false;
       }
 
@@ -807,17 +807,16 @@
     },
 
     isWrapped: function() {
-      var $container;
+      var $container = this.$container;
 
-      if (!this.spot.$el.length) { return false; }
+      // if (!this.spot.$el.length) { return false; }
 
-      $container = this.spot.$el.parent();
+      // $container = this.spot.$el.parent();
 
-      if ($container.length && $container.data('gjs_container')) {
+      if ($container && $container.length && $container.data('gjs-container')) {
         return true;
       }
-    },
-
+    }
 
   });
 

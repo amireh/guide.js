@@ -2,12 +2,23 @@
   'use strict';
 
   var
+  /**
+   * @class Tour
+   *
+   * A guide.js tour is a collection of {@link Spot tour spots} which provides
+   * an interface for navigating between the spots and focusing them.
+   */
   Tour = function() {
     return this.constructor.apply(this, arguments);
   };
 
   _.extend(Tour.prototype, guide.Optionable, {
     defaults: {
+      /**
+       * @cfg {Boolean} [alwaysHighlight=true]
+       * Highlight all spots while the tour is active, as opposed to highlighting
+       * only the focused spot.
+       */
       alwaysHighlight: true
     },
 
@@ -29,16 +40,25 @@
         cursor: -1
       });
 
-      console.log('guide.js: tour defined: ', this.id);
+      // console.log('guide.js: tour defined: ', this.id);
 
       return this;
     },
 
+    /**
+     * Show the guide if it isn't shown yet, and start the tour by highlighting
+     * the spots and focusing the current (if resuming) or the first one.
+     *
+     * @fires start_tours
+     * @fires start
+     */
     start: function() {
-      var that      = this,
-          callback  = this.options.onStart;
+      var callback    = this.options.onStart,
+          spotToFocus = this.current || this.spots[0];
 
-      if (!this.spots.length) {
+      if (!guide.isShown()) {
+        guide.runTour(this);
+
         return this;
       }
 
@@ -46,46 +66,118 @@
         spot.highlight();
       });
 
-      that.focus(that.current || 0);
+      if (spotToFocus) {
+        this.focus(spotToFocus);
+      }
 
-      console.log('guide.js', 'tour started');
-      guide.$.triggerHandler('start.tours', [ that ]);
+      /**
+       * @event start_tours
+       *
+       * Fired when the tour has been started, ie: the spots have been highlighted
+       * and one has been focused, if viable.
+       *
+       * **This event is triggered on `guide.$`, the guide event delegator.**
+       *
+       * @param {Tour} tour This tour.
+       */
+      guide.$.triggerHandler('start.tours', [ this ]);
+
+      /**
+       * @event start
+       *
+       * Same as Tour#start_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('start');
 
       if (callback && _.isFunction(callback)) {
-        callback.apply(that, []);
+        callback.apply(this, []);
       }
 
       return this;
     },
 
+    /**
+     * Stop the current tour by dehighlighting all its spots, and de-focusing
+     * the current spot, if any.
+     *
+     * @fires stop_tours
+     * @fires stop
+     */
     stop: function() {
-      var that      = this,
-          callback  = this.options.onStop;
+      var callback  = this.options.onStop;
 
       _.each(this.spots, function(spot) {
         spot.dehighlight({ force: true });
       });
 
+      /**
+       * @event stop_tours
+       *
+       * Fired when the tour has been stopped: the spots have been dehighlighted
+       * and de-focused.
+       *
+       * **This event is triggered on `guide.$`, the guide event delegator.**
+       *
+       * @param {Tour} tour This tour.
+       */
       guide.$.triggerHandler('stop.tours', [ this ]);
 
+      /**
+       * @event stop
+       *
+       * Same as Tour#stop_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('stop');
+
       if (callback && _.isFunction(callback)) {
-        callback.apply(that, []);
+        callback.apply(this, []);
       }
 
       return this;
     },
 
-    reset: function() {
-      this.cursor = 0;
-      this.current = null;
+    /**
+     * Reset the tour's internal state by de-focusing its current target, and
+     * resetting the spot cursor so when #start is called again, the tour will
+     * start from the first spot.
+     */
+    reset: function(full) {
+      if (this.current) {
+        this.current.defocus();
+        this.current = null;
+
+        // should we also de-highlight, as in #stop?
+      }
+
+      this.previous = null;
+      this.cursor = -1;
+
+      if (full) {
+        guide.$.triggerHandler('reset.tours', [ this ]);
+
+        _.each(this.spots, function(spot) {
+          spot.remove();
+        });
+
+        this.spots = [];
+        this.options = _.clone(this.defaults);
+      }
 
       return this;
     },
 
+    /**
+     * Whether the user is currently taking this tour.
+     */
     isActive: function() {
-      return this === guide.tour;
+      return this === guide.tour && guide.isShown();
     },
 
+    /**
+     * Restart the tour if it's active.
+     */
     refresh: function() {
       if (this.isActive()) {
         this.stop().start();
@@ -94,38 +186,36 @@
       return this;
     },
 
+    /**
+     * Define a new spot for the user to visit in this tour.
+     *
+     * @param {jQuery} $el The target element of the tour spot.
+     * @param {Object} [inOptions={}] The options to pass to Spot#constructor.
+     *
+     * @fires add
+     *
+     * @return {Spot} The newly created tour spot.
+     *
+     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
+     */
     addSpot: function($el, options) {
       var spot;
 
       if (!($el instanceof jQuery)) {
-        throw new Error('guide.js: bad Spot target, expected a jQuery object ' +
-          'but got ' + typeof($el));
+        throw 'guide.js: bad Spot target, expected a jQuery object ' +
+              'but got ' + typeof($el);
       }
 
       // has the spot been already defined? we can not handle duplicates
-      if ($el.data('gjs_spot')) {
-        console.log('guide.js: element is already bound to a tour spot:');
-        console.log($el);
-
-        throw new Error('guide.js: duplicate spot, see console for more information');
+      if ($el.data('gjs-spot')) {
+        throw 'guide.js: duplicate spot, see console for more information';
       }
 
-      spot = new guide.Spot({
-        $el: $el,
-        // the element that will be used as an indicator of the spot's position
-        // when scrolling the element into view, could be modified by extensions
-        $scrollAnchor: $el,
-        tour: this,
-        index: this.spots.length
-      }, options);
+      spot = new guide.Spot($el, this, this.spots.length, options);
 
       this.spots.push(spot);
 
-      $el.
-        addClass(guide.entityKlass()).
-        data('gjs_spot', spot);
-
-      if (guide.isShown()) {
+      if (this.isActive()) {
         spot.highlight();
       }
 
@@ -202,10 +292,14 @@
       var spot  = this.getSpot(index),
           i; // spot iterator
 
-      if (!spot) {
-        throw new Error('guide.js: bad spot @ ' + index + ' to focus');
+      if (!this.isActive()) {
+        return false;
       }
-      else if (spot.isCurrent()) {
+
+      if (!spot) {
+        throw 'guide.js: bad spot @ ' + index + ' to focus';
+      }
+      else if (spot.isFocused()) {
         return false;
       }
       else if (!spot.isVisible()) {
@@ -230,11 +324,6 @@
         }
       }
 
-      if (!this.isActive()) {
-        // guide.runTour(this);
-        return false;
-      }
-
       this.previous = this.current;
       this.current = spot;
       this.cursor  = spot.index;
@@ -247,9 +336,21 @@
 
       guide.$.triggerHandler('pre-focus', [ spot, this ]);
       spot.focus(this.previous);
+
+      /**
+       * @event focus
+       * Fired when a tour focuses a new spot.
+       *
+       * **This event is triggered on the guide event delegator, Guide#$.**
+       *
+       * @param {jQuery.Event} event
+       *  A default jQuery event.
+       * @param {Spot} previousSpot
+       *  The spot that was previously focused, if any.
+       */
       guide.$.triggerHandler('focus', [ spot, this ]);
 
-      console.log('guide.js: visiting tour spot #', spot.index);
+      // console.log('guide.js: visiting tour spot #', spot.index);
 
       return true;
     },
@@ -258,18 +359,15 @@
       if (_.isNumber(index)) {
         return this.spots[index];
       }
-      else if (!index) {
+      else if (!index /* undefined arg */) {
         return null;
       }
       else if (index instanceof guide.Spot) {
+        // We need to do the lookup because it might be a spot in another tour.
         return _.find(this.spots || [], index);
       }
 
       return null;
-    },
-
-    indexOf: function(spot) {
-      return _.indexOf(this.spots, spot);
     }
   });
 

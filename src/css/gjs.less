@@ -8,13 +8,21 @@
  * gjs.js Skin
  */
 .gjs-spot {
-  position: relative;
+  /*position: relative;*/
 
   &:after {
     .gjs-fullscreen(-5px);
     /*.gjs-box-shadow(0, 0, 1px, 1px, lighten(@gjs-highlight-bg, 10%));*/
     background-color: fade(@gjs-highlight-bg, 10%);
   }
+}
+
+.gjs-positioning-fix {
+  position: relative;
+}
+
+.gjs-spot-inline {
+  /*position: relative;*/
 }
 
 .gjs-spot-focused {
@@ -38,7 +46,8 @@
   }
 }
 
-.gjs-with-overlay .gjs {
+.gjs-with-overlay #gjs {
+  .gjs-box-sizing(content-box);
 
   &:after {
     .gjs-fullscreen(0; fixed);
@@ -64,14 +73,11 @@
   .gjs-box-shadow(0; 2px; 15px; 0; rgba(0,0,0,.4));
 }
 
-.gjs-spot-inline {
-  position: relative;
-}
-
 .gjs-entity .caption {
   margin: 0 0 10px 0;
   font-size: 16px;
   padding: 0 0 10px 0;
   /*border-bottom: 1px solid @gjs-highlight-contrast;*/
   .gjs-border-bottom();
+  .gjs-box-sizing(content-box);
 }

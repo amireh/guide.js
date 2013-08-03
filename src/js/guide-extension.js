@@ -9,7 +9,10 @@
         throw 'guide.js: bad extension, missing #id';
       }
 
-      this.options = _.extend({}, this.defaults, { enabled: true }, this.options);
+      // Make sure an `enabled` option always exists
+      _.defaults(this.defaults, { enabled: true });
+
+      this.options = _.extend({}, this.defaults, this.options);
 
       guide.$
         .on(this.nsEvent('show'), function() {
@@ -30,6 +33,11 @@
         .on(this.nsEvent('stop.tours'), function(e, tour) {
           if (that.onTourStop && that.isEnabled(tour)) {
             that.onTourStop(tour);
+          }
+        })
+        .on(this.nsEvent('reset.tours'), function(e, tour) {
+          if (that.onTourReset && that.isEnabled(tour)) {
+            that.onTourReset(tour);
           }
         });
     },
@@ -78,6 +86,11 @@
 
       // return !!this.options.enabled;
       return !!this.getOptions().enabled;
+    },
+
+    refresh: function() {},
+    reset: function() {
+      this.options = _.clone(this.defaults);
     }
   });
 

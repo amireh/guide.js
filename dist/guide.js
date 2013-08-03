@@ -17,7 +17,8 @@
     ext = EXTENSIONS[i];
 
     if (void 0 !== $[ext] || void 0 !== $.fn[ext]) {
-      throw 'guide.js: existing $.' + ext + ' implementation!';
+      // throw 'guide.js: existing $.' + ext + ' implementation!';
+      console.log('guide.js: existing $.' + ext + ' implementation!');
     }
   }
 
@@ -104,13 +105,9 @@
 })($);
 
 /**
+ * @class lodash
+ *
  * guide.js lodash extensions
- *
- * _.assign: dot-notation assignment
- *
- * function: assigns a given value to a nested key within an object
- * usage: _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
- *
  */
 (function(_) {
   'use strict';
@@ -130,6 +127,20 @@
     }
   }());
 
+  /**
+   * Dot-notation assignment. Assigns a value to a nested key within an object.
+   *
+   * @param {String}  k         The dot-delimited key.
+   * @param {Mixed}   v         The value to assign.
+   * @param {Object}  [in_o={}] The object to modify.
+   *
+   * Usage example
+   *
+   *     _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
+   *
+   * @return {Object} The passed object (or a newly created one) with the
+   * assigned property.
+   */
   _.assign = function(k, v, in_o) {
     var path_tokens = k.toString().split('.'),
         pathsz      = path_tokens.length,
@@ -160,36 +171,70 @@
   };
 
   // var strOptionsSeparator = new RegExp('[:|,]'),
-  var strOptionsSeparator = /[:|,]/,
-      strOptionsSanitizer = new RegExp(':\\s+', 'g');
+  var
+  strOptionsSeparator = /[:|,]/,
+  strOptionsSanitizer = new RegExp(':\\s+', 'g'),
+
+  /**
+   * @method typeCast
+   *
+   * Converts stringified numbers and booleans to their real versions.
+   *
+   * @param   {String} The value to convert.
+   * @return  {Number/Boolean} The cast value.
+   */
+  typeCast = function(v) {
+    if (v === 'false') {
+      return false;
+    }
+    else if (v === 'true') {
+      return true;
+    }
+    else if (Number(v).toString() === v) {
+      return Number(v);
+    }
+    else {
+      return v;
+    }
+  };
 
   /**
    * Extracts key-value pairs specified in a string, delimited by a certain
    * separator. The pairs are returned in an object.
    *
    * The default tokenizer/separator delimits by commas, ie:
-   * 'key:value, key2:value2, ..., keyN:[\s*]valueN'. See the @options parameter
+   * 'key:value, key2:value2, ..., keyN:[\s*]valueN'. See the in_options parameter
    * for specifying your own tokenizer.
    *
-   * @example
-   *   _.parseOptions('foo:bar') => { foo: 'bar' }
-   *   _.parseOptions('foo:bar, xyz:123') => { foo: 'bar', xyz: 123 }
-   *   _.parseOptions('x.y.z: true') => { x: { y: { z: true }}}
+   * Usage example:
    *
-   * @param <String> str the options string to parse
-   * @param <Object> options: {
-   *   separator: <RegExp> that will be used for tokenizing
-   *   sanitizer: <RegExp> that will optionally be used to pre-process the str
-   *   convert: <Boolean> whether to query and cast string values to other types
-   * }
+   *     _.parseOptions('foo:bar') // => { foo: 'bar' }
+   *     _.parseOptions('foo:bar, xyz:123') // => { foo: 'bar', xyz: 123 }
+   *     _.parseOptions('x.y.z: true') // => { x: { y: { z: true }}}
    *
-   * @return <Object> the extracted key-value pairs
+   * @param {String} str      The options string to parse.
+   * @param {Object} options  Parser options, see below.
+   *
+   * @param {RegExp}  [options.separator=/[:|,]/]
+   * The key-value delimiter pattern. Used for tokenizing the string into k-v
+   * fragments.
+   *
+   * @param {RegExp}  [options.sanitizer=RegExp(':\\s+', 'g')]
+   * Used to pre-process the string, the default trims the values of whitespace.
+   *
+   * @param {Boolean} [options.convert=true]
+   * Whether to query and cast string values to other types
+   *
+   * @param {Function} [options.converter=typeCast]
+   * A method that takes a string value and returns a type-casted version.
+   *
+   * @return {Object} The extracted key-value pairs.
    */
-  _.parseOptions = function(str, in_options) {
+  _.parseOptions = function(str, options) {
     var
-    options   = in_options || {},
-    separator = options.separator || strOptionsSeparator,
-    sanitizer = options.sanitizer || strOptionsSanitizer,
+    separator = (options||{}).separator || strOptionsSeparator,
+    sanitizer = (options||{}).sanitizer || strOptionsSanitizer,
+    converter = (options||{}).converter || typeCast,
     tokens    = (str || '').replace(sanitizer, ':').split(separator),
     tokenssz  = tokens.length,
     out       = {},
@@ -203,13 +248,7 @@
 
       if (!k) { continue; }
 
-      if (v === 'false') { v = false; }
-      else if (v === 'true') { v = true; }
-      else if (Number(v).toString() === v) {
-        v = Number(v);
-      }
-
-      _.assign(k, v, out);
+      _.assign(k, converter(v), out);
     }
 
     return out;
@@ -251,52 +290,73 @@
     id: 'guide',
 
     defaults: {
-      withOverlay:    false,
-      withAnimations: true,
-      toggleDuration: 500
-    },
 
-    entityKlass: function() {
-      return KLASS_ENTITY;
+      /**
+       * @cfg {Boolean} [withOverlay=false]
+       * Attach a CSS 'shade' overlay to the document.
+       */
+      withOverlay: false,
+
+      /**
+       * @cfg {Boolean} [withAnimations=true]
+       * Animate showing or hiding tours using jQuery.
+       */
+      withAnimations: true,
+
+      /**
+       * @cfg {Boolean} [animeDuration=500]
+       * How long the animations should take.
+       */
+      animeDuration: 500
     },
 
     constructor: function() {
-      var that = this;
-
-      // Used for emitting custom events.
-      this.$ = $(this);
-
       _.extend(this, {
         $container: $('body'),
-        $el:        $('<div class="gjs" />'),
+        $el:        $('<div id="gjs" />'),
         options: _.clone(this.defaults),
         extensions: [],
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * Modules can use this object to emit events just like any other jQuery
+         * selector:
+         *
+         *     guide.$.triggerHandler('my_event', [ arg1, arg2 ]);
+         *
+         * And they can also listen to these events:
+         *
+         *     guide.$.on('my_event', function(e, arg1, arg2) {
+         *       // ...
+         *     });
+         */
+        $: $(this),
+
+        /** @property {Tour[]} tours All defined tours, see #defineTour. */
         tours: [],
+
+        /** @property {Tour} tour The active tour */
         tour: null
-      });
-
-      this.$.on('start.tours', function(e, tour) {
-        if (!that.isShown()) {
-          that.show({ noTour: true });
-        }
-
-        if (tour !== that.tour) {
-          if (that.tour) {
-            that.tour.stop();
-          }
-
-          that.tour = tour;
-        }
       });
 
       console.log('guide.js: running');
     },
 
-    inactiveTours: function() {
-      return _.without(this.tours, this.tour);
-    },
-
-    defineTour: function(label, optSpots) {
+    /**
+     * Define a blank tour uniquely identified by the given label.
+     *
+     * @param {String} label
+     * A unique name for this tour.
+     *
+     * @param {Object[]} [spots=[]]
+     * A collection of spot definitions to pass to the tour, see Tour#addSpots.
+     *
+     * @return {Tour}
+     * The newly created tour, or an existing one if the name was taken.
+     */
+    defineTour: function(label, spots) {
       var tour;
 
       if (!(tour = this.getTour(label))) {
@@ -304,26 +364,62 @@
         this.tours.push(tour);
       }
 
-      if (optSpots) {
-        this.addSpots(optSpots);
+      if (spots) {
+        this.addSpots(spots);
       }
 
       return tour;
     },
 
-    runTour: function(id) {
-      var tour;
+    /**
+     * Looks up a tour by its label or an actual Tour object.
+     *
+     * @param {Tour/String} id The tour's label, or object, to look for.
+     * @return {Tour/null} The tour, if found.
+     */
+    getTour: function(id) {
+      return _.isString(id) ?
+        _.find(this.tours || [], { id: id }) :
+        _.find(this.tours || [], id);
+    },
 
-      if (!this.isShown()) {
-        this.show({ noTour: true });
-      }
+    /** @private */
+    inactiveTours: function() {
+      return _.without(this.tours, this.tour);
+    },
+
+    /**
+     * Shows the guide, stops the active tour (if any,) and starts the given tour.
+     *
+     * @param {Tour/String} id The Tour to start.
+     * @async
+     */
+    runTour: function(id) {
+      var current = this.tour,
+          tour;
 
       if (!(tour = this.getTour(id))) {
-        throw new Error('guide.js: undefined tour "' + id + '", did you call #defineTour()?');
+        throw 'guide.js: undefined tour "' + id + '", did you call #defineTour()?';
       }
 
-      if (this.tour) {
-        this.tour.stop();
+      // Must show first then start the tour.
+      if (!this.isShown()) {
+        this.$.one('show', _.bind(this.runTour, this, tour));
+        this.show({ noAutorun: true });
+
+        return this;
+      }
+
+      // Must stop the current tour first, wait for it to clean up, then start
+      // the new one.
+      if (current) {
+        // Kill the active tour reference, otherwise we're stuck in a loop.
+        this.tour = null;
+
+        current.$.one('stop', _.bind(this.runTour, this, tour));
+        current.stop();
+
+        return this;
       }
 
       console.log('guide.js: touring "' + tour.id + '"');
@@ -334,24 +430,7 @@
       return this;
     },
 
-    /**
-     * Creates a new Tour Spot and attaches it to the current Tour.
-     *
-     * @param {jQuery} $el The target element of the tour spot.
-     * @param {Object} [inOptions={}] inOptions
-     * {
-     *   text: {String} [required] A text message to show when the spot is focused.
-     *   caption: {String} [optional]
-     *   tour: {Guide.Tour} [optional] defaults to the current tour
-     *
-     *   onFocus: function($prevSpot) {}
-     *   onDefocus: function($currentSpot) {}
-     * }
-     *
-     * @return {Guide.Spot} The newly created tour spot.
-     *
-     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
-     */
+
     addSpot: function($el, inOptions) {
       var tour    = this.tour,
           options = inOptions || {},
@@ -458,84 +537,81 @@
     show: function(inOptions) {
       var options     = inOptions || {},
           that        = this,
-          should_show  = !this.isShown(),
-          show_after   = this.options.withAnimations ? this.options.toggleDuration:0;
+          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
 
-      if (!this.tours.length) {
+      if (this.isShown()) {
+        return this;
+      }
+      else if (!this.tours.length) {
         throw new Error('guide.js: can not show with no tours defined!');
       }
 
-      if (should_show) {
-        this.$container.addClass(KLASS_ENABLED);
-        this.toggleOverlayMode();
+      this.$.triggerHandler('showing');
 
-        this.$.triggerHandler('showing');
-      }
+      this.$container.addClass(KLASS_ENABLED);
+      this.toggleOverlayMode();
 
-      if (should_show) {
-        this.$el.appendTo(this.$container);
-        this.$el.show(show_after + 1, function() {
-          that._shown = true;
-          that.$.triggerHandler('show');
+      this.$el.appendTo(this.$container);
+      this.$el.show(animeMs + 1, function() {
+        that.$.triggerHandler('show');
 
-          if (!options.noTour) {
-            that.runTour(options.tour || that.tour || that.tours[0]);
-          }
-        });
-      }
+        if (!options.noAutorun) {
+          that.runTour(options.tour || that.tour || that.tours[0]);
+        }
+      });
 
       return this;
     },
 
     isShown: function() {
-      // return  this.$container.hasClass(KLASS_ENABLED) &&
-      //         !this.$container.hasClass(KLASS_HIDING);
-      return !!this._shown;
+      return  this.$container.hasClass(KLASS_ENABLED) &&
+              !this.$container.hasClass(KLASS_HIDING);
     },
 
     /**
+     * Hide all guide.js spawned elements, turn off all extensions, and stop
+     * the active tour, if any.
      *
      * @async
      */
     hide: function() {
       var that        = this,
-          hide_after  = this.options.withAnimations ? this.options.toggleDuration:0;
+          hide_after  = this.options.withAnimations ? this.options.animeDuration:0;
 
-      if (this.isShown()) {
-        this._shown = false;
-        this.$container.addClass(KLASS_HIDING);
-
-        that.$.triggerHandler('hiding');
-
-        that.$el.hide(hide_after + 1, function() {
-          if (that.tour) {
-            that.tour.stop();
-          }
-
-          that.$.triggerHandler('hide');
-
-          that.$el.detach();
-
-          that.$container.removeClass([
-            KLASS_ENABLED,
-            KLASS_OVERLAYED,
-            KLASS_HIDING
-          ].join(' '));
-        });
+      if (!this.isShown()) {
+        return this;
       }
+
+      this.$container.addClass(KLASS_HIDING);
+
+      that.$.triggerHandler('hiding');
+
+      that.$el.hide(hide_after + 1, function() {
+        if (that.tour) {
+          that.tour.stop();
+        }
+
+        that.$.triggerHandler('hide');
+
+        that.$el.detach();
+
+        that.$container.removeClass([
+          KLASS_ENABLED,
+          KLASS_OVERLAYED,
+          KLASS_HIDING
+        ].join(' '));
+      });
 
       return this;
     },
 
-    refresh: function(noCallbacks) {
+    refresh: function() {
       _.each(this.extensions, function(e) {
-        if (e.refresh) {
-          e.refresh();
-        }
+        e.refresh();
       });
 
       if (this.tour) {
-        this.tour.refresh(noCallbacks);
+        this.tour.refresh();
       }
 
       this.toggleOverlayMode();
@@ -548,7 +624,10 @@
         this.hide();
       }
 
+      this.$.triggerHandler('reset.guide');
       this.options = _.clone(this.defaults);
+
+      _.each(this.tours, function(tour) { tour.reset(true); });
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
@@ -582,13 +661,24 @@
       }
     },
 
-
     dismiss: function(/*optTourId*/) {
       this.$.triggerHandler('dismiss');
     },
 
     focus: function() {
       return this.tour.focus.apply(this.tour, arguments);
+    },
+
+
+    /**
+     * All nodes generated by guide.js or any of its extensions should mark
+     * themselves with the CSS class returned by this method.
+     *
+     * @return {String}
+     * The CSS class guide.js uses to flag its entities, see KLASS_ENTITY.
+     */
+    entityKlass: function() {
+      return KLASS_ENTITY;
     },
 
     addExtension: function(ext) {
@@ -610,22 +700,12 @@
 
     getExtension: function(id) {
       return _.find(this.extensions, { id: id });
-    },
-
-    /**
-     * @private
-     * @nodoc
-     */
-    getTour: function(id) {
-      return _.isString(id) ?
-        _.find(this.tours || [], { id: id }) :
-        _.find(this.tours || [], id);
     }
+
   }); // guide.prototype
 
   Guide = new Guide();
-
-  console.log($('body'));
+  Guide.VERSION = '1.2.0';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -636,6 +716,7 @@
   } else {
     root.guide = Guide;
   }
+
 
 
 }).call(this, _, jQuery);
@@ -718,6 +799,11 @@
           if (that.onTourStop && that.isEnabled(tour)) {
             that.onTourStop(tour);
           }
+        })
+        .on(this.nsEvent('reset.tours'), function(e, tour) {
+          if (that.onTourReset && that.isEnabled(tour)) {
+            that.onTourReset(tour);
+          }
         });
     },
 
@@ -765,7 +851,9 @@
 
       // return !!this.options.enabled;
       return !!this.getOptions().enabled;
-    }
+    },
+
+    refresh: function() {}
   });
 
   guide.Extension = Extension;
@@ -775,12 +863,23 @@
   'use strict';
 
   var
+  /**
+   * @class Tour
+   *
+   * A guide.js tour is a collection of {@link Spot tour spots} which provides
+   * an interface for navigating between the spots and focusing them.
+   */
   Tour = function() {
     return this.constructor.apply(this, arguments);
   };
 
   _.extend(Tour.prototype, guide.Optionable, {
     defaults: {
+      /**
+       * @cfg {Boolean} [alwaysHighlight=true]
+       * Highlight all spots while the tour is active, as opposed to highlighting
+       * only the focused spot.
+       */
       alwaysHighlight: true
     },
 
@@ -807,11 +906,20 @@
       return this;
     },
 
+    /**
+     * Show the guide if it isn't shown yet, and start the tour by highlighting
+     * the spots and focusing the current (if resuming) or the first one.
+     *
+     * @fires start_tours
+     * @fires start
+     */
     start: function() {
-      var that      = this,
-          callback  = this.options.onStart;
+      var callback    = this.options.onStart,
+          spotToFocus = this.current || this.spots[0];
 
-      if (!this.spots.length) {
+      if (!guide.isShown()) {
+        guide.runTour(this);
+
         return this;
       }
 
@@ -819,46 +927,115 @@
         spot.highlight();
       });
 
-      that.focus(that.current || 0);
+      if (spotToFocus) {
+        this.focus(spotToFocus);
+      }
 
-      console.log('guide.js', 'tour started');
-      guide.$.triggerHandler('start.tours', [ that ]);
+      /**
+       * @event start_tours
+       *
+       * Fired when the tour has been started, ie: the spots have been highlighted
+       * and one has been focused, if viable.
+       *
+       * **This event is triggered on `guide.$`, the guide event delegator.**
+       *
+       * @param {Tour} tour This tour.
+       */
+      guide.$.triggerHandler('start.tours', [ this ]);
+
+      /**
+       * @event start
+       *
+       * Same as Tour#start_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('start');
 
       if (callback && _.isFunction(callback)) {
-        callback.apply(that, []);
+        callback.apply(this, []);
       }
 
       return this;
     },
 
+    /**
+     * Stop the current tour by dehighlighting all its spots, and de-focusing
+     * the current spot, if any.
+     *
+     * @fires stop_tours
+     * @fires stop
+     */
     stop: function() {
-      var that      = this,
-          callback  = this.options.onStop;
+      var callback  = this.options.onStop;
 
       _.each(this.spots, function(spot) {
         spot.dehighlight({ force: true });
       });
 
+      /**
+       * @event stop_tours
+       *
+       * Fired when the tour has been stopped: the spots have been dehighlighted
+       * and de-focused.
+       *
+       * **This event is triggered on `guide.$`, the guide event delegator.**
+       *
+       * @param {Tour} tour This tour.
+       */
       guide.$.triggerHandler('stop.tours', [ this ]);
 
+      /**
+       * @event stop
+       *
+       * Same as Tour#stop_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('stop');
+
       if (callback && _.isFunction(callback)) {
-        callback.apply(that, []);
+        callback.apply(this, []);
       }
 
       return this;
     },
 
-    reset: function() {
-      this.cursor = 0;
-      this.current = null;
+    /**
+     * Reset the tour's internal state by de-focusing its current target, and
+     * resetting the spot cursor so when #start is called again, the tour will
+     * start from the first spot.
+     */
+    reset: function(full) {
+      if (this.current) {
+        this.current.defocus();
+        this.current = null;
+
+        // should we also de-highlight, as in #stop?
+      }
+
+      this.previous = null;
+      this.cursor = -1;
+
+      if (full) {
+        guide.$.triggerHandler('reset.tours', [ this ]);
+
+        _.each(this.spots, function(spot) {
+          spot.remove();
+        });
+      }
 
       return this;
     },
 
+    /**
+     * Whether the user is currently taking this tour.
+     */
     isActive: function() {
-      return this === guide.tour;
+      return this === guide.tour && guide.isShown();
     },
 
+    /**
+     * Restart the tour if it's active.
+     */
     refresh: function() {
       if (this.isActive()) {
         this.stop().start();
@@ -867,6 +1044,18 @@
       return this;
     },
 
+    /**
+     * Define a new spot for the user to visit in this tour.
+     *
+     * @param {jQuery} $el The target element of the tour spot.
+     * @param {Object} [inOptions={}] The options to pass to Spot#constructor.
+     *
+     * @fires add
+     *
+     * @return {Spot} The newly created tour spot.
+     *
+     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
+     */
     addSpot: function($el, options) {
       var spot;
 
@@ -883,22 +1072,11 @@
         throw new Error('guide.js: duplicate spot, see console for more information');
       }
 
-      spot = new guide.Spot({
-        $el: $el,
-        // the element that will be used as an indicator of the spot's position
-        // when scrolling the element into view, could be modified by extensions
-        $scrollAnchor: $el,
-        tour: this,
-        index: this.spots.length
-      }, options);
+      spot = new guide.Spot($el, this, this.spots.length, options);
 
       this.spots.push(spot);
 
-      $el.
-        addClass(guide.entityKlass()).
-        data('gjs_spot', spot);
-
-      if (guide.isShown()) {
+      if (this.isActive()) {
         spot.highlight();
       }
 
@@ -975,10 +1153,14 @@
       var spot  = this.getSpot(index),
           i; // spot iterator
 
-      if (!spot) {
-        throw new Error('guide.js: bad spot @ ' + index + ' to focus');
+      if (!this.isActive()) {
+        return false;
       }
-      else if (spot.isCurrent()) {
+
+      if (!spot) {
+        throw 'guide.js: bad spot @ ' + index + ' to focus';
+      }
+      else if (spot.isFocused()) {
         return false;
       }
       else if (!spot.isVisible()) {
@@ -1003,11 +1185,6 @@
         }
       }
 
-      if (!this.isActive()) {
-        // guide.runTour(this);
-        return false;
-      }
-
       this.previous = this.current;
       this.current = spot;
       this.cursor  = spot.index;
@@ -1020,6 +1197,18 @@
 
       guide.$.triggerHandler('pre-focus', [ spot, this ]);
       spot.focus(this.previous);
+
+      /**
+       * @event focus
+       * Fired when a tour focuses a new spot.
+       *
+       * **This event is triggered on the guide event delegator, Guide#$.**
+       *
+       * @param {jQuery.Event} event
+       *  A default jQuery event.
+       * @param {Spot} previousSpot
+       *  The spot that was previously focused, if any.
+       */
       guide.$.triggerHandler('focus', [ spot, this ]);
 
       console.log('guide.js: visiting tour spot #', spot.index);
@@ -1031,18 +1220,15 @@
       if (_.isNumber(index)) {
         return this.spots[index];
       }
-      else if (!index) {
+      else if (!index /* undefined arg */) {
         return null;
       }
       else if (index instanceof guide.Spot) {
+        // We need to do the lookup because it might be a spot in another tour.
         return _.find(this.spots || [], index);
       }
 
       return null;
-    },
-
-    indexOf: function(spot) {
-      return _.indexOf(this.spots, spot);
     }
   });
 
@@ -1056,6 +1242,15 @@
   'use strict';
   var
 
+  /**
+   * @class Spot
+   *
+   * A tour spot represents an element in the DOM that will be visited in a
+   * {@link Tour tour}.
+   *
+   * Spots contain text to be shown to the user to tell them about the element
+   * they represent, and have a static position in the tour (their *index*.)
+   */
   Spot = function() {
     return this.constructor.apply(this, arguments);
   },
@@ -1065,26 +1260,109 @@
 
   _.extend(Spot.prototype, guide.Optionable, {
     defaults: {
+
+      /**
+       * @cfg {Boolean} [withMarker=true]
+       * Attach a Marker to this spot, if the Markers extension is enabled.
+       */
       withMarker: true,
+
+      /**
+       * @cfg {Boolean} [highlight=true]
+       * Highlight this spot while the tour is active by attaching an opaque
+       * overlay on top of it using CSS.
+       */
       highlight:  true,
+
+      /**
+       * @cfg {Boolean} [autoScroll=true]
+       * Scroll the window to the position of the spot when it receives focus,
+       * if it's not currently visible within the window's viewport.
+       *
+       * See jQuery#in_viewport for testing the element's visibility.
+       */
       autoScroll: true
     },
 
-    constructor: function(attributes, options) {
-      _.extend(this, attributes, _.pick(options || {}, ['text','caption']), {
+    /**
+     * Build a new Spot.
+     *
+     * @param {jQuery}  $el           Selector of the element to bind this spot to.
+     * @param {Tour}    tour          The tour this spot belongs to.
+     * @param {Number}  index         The position of the spot in the tour.
+     * @param {Object}  [options={}]  The Spot options, see below.
+     *
+     * @param {String} options.text
+     *  A text message to show when the spot is focused.
+     *
+     * @param {String} [options.caption=""]
+     *  A heading or title to use for this spot.
+     *
+     * @param {Function} [options.onFocus=null]
+     *  A callback to be called when the spot is focused, which will receive
+     *  the previously focused spot as the first argument, if any.
+     *
+     * @param {Function} [options.onDefocus=null]
+     *  A callback to be called when the spot is no longer focused.
+     *
+     *  The callback receives the spot that will be focused right after this one
+     *  as the second argument.
+     */
+    constructor: function($el, tour, index, options) {
+      options = options || {};
+
+      if (!$el) {
+        throw 'guide.js: expected `$el` to be specified for a new Spot, got none';
+      }
+      if (!tour) {
+        throw 'guide.js: expected `tour` to be specified for a new Spot, got none';
+      }
+
+      _.extend(this, {
+        /**
+         * @property {jQuery} $el
+         * The target element that is represented by this spot.
+         */
+        $el:      $el,
+
+        /**
+         * @property {Tour} tour
+         * The tour this spot belongs to.
+         */
+        tour:     tour,
+
+        /**
+         * @property {Number} index
+         * The position of the spot in the tour.
+         */
+        index:    _.isNumber(index) ? index : -1,
+
+        text:     options.text,
+        caption:  options.caption,
+
+        /**
+         * @property {jQuery} [$scrollAnchor=$el]
+         * The element that will be used as an indicator of the spot's position
+         * when scrolling the element into view, if #autoScroll is enabled.
+         *
+         * This could be modified by extensions.
+         */
+        $scrollAnchor: $el,
+
         options: _.extend({}, this.defaults, options)
       });
 
-      this.$scrollAnchor = this.$el;
-
-      if (!this.tour) {
-        throw new Error('guide.js: expected #tour to be specified for a new Spot, got none');
-      }
+      $el
+        .addClass(guide.entityKlass())
+        .data('gjs_spot', this);
 
       return this;
     },
 
-    isCurrent: function() {
+    /**
+     * Whether the spot is the current one being visited by the user.
+     */
+    isFocused: function() {
       return this.tour.current === this;
     },
 
@@ -1092,7 +1370,6 @@
       return this.text;
     },
 
-    /** Whether the spot has any text defined. */
     hasText: function() {
       return !!((this.getText()||'').length);
     },
@@ -1101,76 +1378,110 @@
       return this.caption;
     },
 
-    /** Whether the spot has a caption defined. */
     hasCaption: function() {
       return !!(this.getCaption()||'').length;
     },
 
-    /** Whether the spot has either a caption or text content. */
     hasContent: function() {
       return this.hasText() || this.hasCaption();
     },
 
+    /**
+     * Check if the spot target is currently available *and* visible in the DOM.
+     */
     isVisible: function() {
       return this.$el.length && this.$el.is(':visible');
     },
 
+    /**
+     * Highlight the spot's #$el by applying a CSS class.
+     *
+     * The spot will be highlighted if all of the following conditions are met:
+     *
+     * 1. The #highlight option is enabled
+     * 2. The target #$el is valid and is visible, see #isVisible, otherwise the selector
+     * is refreshed in hopes of the target becoming available now
+     */
     highlight: function() {
       var applicable =
-        this.tour.getOptions().alwaysHighlight ||
-        this.isCurrent();
+        // The spot-scoped option takes precedence over the tour one.
+        this.options.highlight &&
+        (this.tour.getOptions().alwaysHighlight || this.isFocused());
 
-      // the spot-scoped option takes precedence over the tour one
-      if (!this.options.highlight) {
-        applicable = false;
-      }
-
-      if (!this.$el.length) {
+      // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
+      // the selector to see if it's now available, otherwise we can't highlight.
+      if (!this.isVisible()) {
         this.$el = $(this.$el.selector);
 
-        if (!this.$scrollAnchor || !this.$scrollAnchor.length) {
+        if (!this.$scrollAnchor ||
+          // Could be set by an extension, like Markers, to something other than
+          // the target $el, don't override it.
+          !this.$scrollAnchor.length) {
           this.$scrollAnchor = this.$el;
         }
+
+        applicable = applicable && this.isVisible();
       }
 
-      this.$el.toggleClass('no-highlight', !applicable);
-      this.$el.toggleClass(KLASS_TARGET, applicable);
+      if (applicable) {
+        this.$el
+          .toggleClass('no-highlight', !applicable)
+          .toggleClass(KLASS_TARGET,    applicable);
+      }
 
       return this;
     },
 
     /**
-     * Remove the highlight CSS classes on the spot $element.
+     * Remove the CSS highlight classes on the spot's #$el.
      *
-     * If the Tour option 'alwaysHighlight' is enabled, the spot will only
-     * be de-focused, but will stay highlighted.
+     * If the Tour#alwaysHighlight option is enabled, this is a no-op.
      *
-     * @param <Object> options: {
-     *  "force": <Boolean> will dehighlight regardless of any options that might
-     *           be respected
-     * }
+     * @param {Object} [options={}]
+     * @param {Boolean} [options.force=false]
+     *  Dehighlight regardless of any options that might otherwise be respected.
      */
     dehighlight: function(options) {
-      var applicable =
-        (options||{}).force ||
-        !this.tour.getOptions().alwaysHighlight;
-
-      if (applicable) {
+      if ((options||{}).force ||
+          !this.tour.getOptions().alwaysHighlight) {
         this.$el.removeClass(KLASS_TARGET);
       }
 
       return this;
     },
 
+    /**
+     * Apply a CSS class to indicate that the spot is focused, and scroll it
+     * into view if #autoScroll is enabled. The spot will also be implicitly
+     * {@link highlight highlighted}.
+     *
+     * @fires focus_gjs
+     */
     focus: function(prev_spot) {
-      var that = this,
+      var that      = this,
+          callback  = this.options.onDefocus,
           $scroller = this.$scrollAnchor;
 
-      this.highlight();
+      this
+        .highlight()
+        .$el
+          .addClass(KLASS_FOCUSED)
+          /**
+           * @event focus_gjs
+           * Fired when a tour focuses a new spot.
+           *
+           * **This event is triggered on the Spot's #$el.**
+           *
+           * @param {jQuery.Event} event
+           *  A default jQuery event.
+           * @param {Spot} previousSpot
+           *  The spot that was previously focused, if any.
+           */
+          .triggerHandler('focus.gjs', prev_spot);
 
-      this.$el
-        .addClass(KLASS_FOCUSED)
-        .triggerHandler('focus.gjs', prev_spot);
+      if (callback && _.isFunction(callback)) {
+        callback.apply(this, arguments);
+      }
 
       _.defer(function() {
         if (that.options.autoScroll && !$scroller.is(':in_viewport')) {
@@ -1179,8 +1490,13 @@
           }, 250);
         }
       });
+
+      return this;
     },
 
+    /**
+     *
+     */
     defocus: function(next_spot) {
       var callback = this.options.onDefocus;
 
@@ -1192,16 +1508,26 @@
       if (callback && _.isFunction(callback)) {
         callback.apply(this, arguments);
       }
+
+      return this;
+    },
+
+    remove: function() {
+      this.$el
+        .removeData('gjs_spot')
+        .removeClass([
+          'no-highlight',
+          KLASS_TARGET,
+          KLASS_FOCUSED
+        ].join(' '));
     },
 
     refresh: function() {
-      this.dehighlight();
-      this.highlight();
-
-      if (this.isCurrent()) {
-        this.defocus();
-        this.focus();
+      if (this.isFocused()) {
+        return this.defocus().focus();
       }
+
+      return this.dehighlight().highlight();
     },
 
     setScrollAnchor: function($el) {
@@ -1449,13 +1775,16 @@
     refreshControls: function() {
       var tour = this.tour;
 
-      this.$tour_selector.html(JST_TOUR_LIST({ tours: guide.tours }));
-      this.$bwd.prop('disabled', !tour.hasPrev());
-      this.$fwd.prop('disabled', !tour.hasNext());
-      this.$first.prop('disabled', !tour.hasPrev());
-      this.$last.prop('disabled', !tour.hasNext());
-      this.$hide.toggle(!tour.hasNext());
-      this.$tour_selector.find('[value="' + tour.id + '"]').prop('selected', true);
+      this.$bwd.prop('disabled',    !tour.hasPrev());
+      this.$fwd.prop('disabled',    !tour.hasNext());
+      this.$first.prop('disabled',  !tour.hasPrev());
+      this.$last.prop('disabled',   !tour.hasNext());
+      this.$hide.toggle(            !tour.hasNext());
+
+      this.$tour_selector
+        .html(JST_TOUR_LIST({ tours: guide.tours }))
+        .toggle(guide.tours.length > 1)
+        .find('[value="' + tour.id + '"]').prop('selected', true);
     },
 
     switchTour: function() {
@@ -1619,7 +1948,7 @@
           if (spot.tour.getOptions().alwaysMark) {
             spot.marker.show();
           } else {
-            if (!spot.isCurrent()) {
+            if (!spot.isFocused()) {
               spot.marker.hide();
             }
           }
@@ -1685,22 +2014,29 @@
       });
 
       // listen to its option changes
-      tour.$.on('refresh.gjs_markers', function(/*e, options*/) {
+      tour.$.on(this.nsEvent('refresh'), function(/*e, options*/) {
         that.refresh();
       });
     },
 
     onTourStop: function(tour) {
-      console.log('[markers] destroying markers for tour ', tour.id);
+      console.log('[markers] hiding markers for tour ', tour.id);
 
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
           spot.marker.hide();
-          // spot.marker.remove();
         }
       });
 
-      tour.$.off('refresh.gjs_markers');
+      tour.$.off(this.nsEvent('refresh'));
+    },
+
+    onTourReset: function(tour) {
+      _.each(tour.spots, function(spot) {
+        if (spot.marker) {
+          spot.marker.remove();
+        }
+      });
     },
 
     rebuildMarkers: function(/*tour*/) {
@@ -2100,7 +2436,7 @@
         return false;
       }
 
-      if (!spot.tour.getOptions().alwaysMark && !spot.isCurrent()) {
+      if (!spot.tour.getOptions().alwaysMark && !spot.isFocused()) {
         return false;
       }
 
@@ -2338,7 +2674,7 @@
       .on(this.nsEvent('hiding'), _.bind(this.expand, this))
       .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
-      this.show();
+      this.show().expand();
 
       return this;
     },
@@ -2400,12 +2736,12 @@
 
   JST_TUTOR = _.template([
     '<div>',
-    '<div class="navigation">',
+    '<div class="tutor-navigation">',
       '<button class="bwd"></button>',
       '<span></span>',
       '<button class="fwd"></button>',
     '</div>',
-    '<div class="content"></div>',
+    '<div class="tutor-content"></div>',
     '</div>'
   ].join('')),
 
@@ -2437,9 +2773,9 @@
       });
 
       _.extend(this, {
-        $content: this.$el.find('> .content'),
-        $nav: this.$el.find('> .navigation'),
-        $close_btn: this.$el.find('#gjs_close_tutor'),
+        $content: this.$el.find('> .tutor-content'),
+        $nav: this.$el.find('> .tutor-navigation'),
+        // $close_btn: this.$el.find('#gjs_close_tutor'),
         $bwd: this.$el.find('.bwd'),
         $fwd: this.$el.find('.fwd')
       });
@@ -2450,7 +2786,7 @@
         .on('dismiss', _.bind(this.remove, this))
         .on('focus', _.bind(this.focus, this));
 
-      this.$close_btn.on('click', _.bind(guide.hide, guide));
+      // this.$close_btn.on('click', _.bind(guide.hide, guide));
 
       this.$nav
         .on('click','.bwd', function() {
@@ -2489,7 +2825,7 @@
       if (!this.isEnabled()) {
         return this.hide();
       }
-      else if (!this.$el.parent().length) {
+      else if (!this.$el.parent().length /* not attached yet? */) {
         this.show();
       }
 
@@ -2505,10 +2841,8 @@
       this.hide();
     },
 
-    onTourStart: function(tour) {
-      if (tour.current) {
-        this.focus(null, tour.current, tour);
-      }
+    onTourStart: function(/*tour*/) {
+      this.refresh();
     },
 
     onTourStop: function() {

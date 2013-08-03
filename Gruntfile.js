@@ -145,6 +145,7 @@ module.exports = function(grunt) {
           'title': 'Guide.js API Reference',
           'categories': '.jsduck',
           'color': true,
+          'tags': [ 'docs/jsduck_tags/async_tag' ],
           'warnings': [],
           'external': ['XMLHttpRequest', 'jQuery', '$']
         }

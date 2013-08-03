@@ -29,10 +29,14 @@
 <script>
   $(function() {
     guide.tour.setOptions({
+      // markers: { enabled: false },
+      alwaysMark: false,
       marker: {
+        withText: false
         // template: function(data) { return '<div>' + data.text + '</div>' }
       }
     });
+
     guide.fromDOM($('.example')).show();
   });
 </script>
