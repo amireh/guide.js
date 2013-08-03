@@ -185,12 +185,15 @@ module.exports = function(grunt) {
 
   grunt.registerTask('default', ['test']);
 
+  grunt.registerTask('updatePkg', function () {
+    grunt.config.set('pkg', readPkg());
+  });
+
   // Release alias task
   grunt.registerTask('release', function (type) {
-    type = type ? type : 'patch';
     grunt.task.run('test');
-    grunt.task.run('bumpup:' + type);
-    grunt.config.set('pkg', readPkg());
+    grunt.task.run('bumpup:' + ( type || 'patch' ));
+    grunt.task.run('updatePkg');
     grunt.task.run('string-replace:version')
     grunt.task.run('build');
     grunt.task.run('tagrelease');
