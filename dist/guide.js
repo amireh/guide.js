@@ -707,7 +707,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.2.2';
+  Guide.VERSION = '1.2.4';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {

@@ -160,7 +160,7 @@ module.exports = function(grunt) {
         options: {
           replacements: [{
             pattern: /([g|G])uide\.VERSION\s*=\s*\'.*\';/,
-            replacement: "$1uide.VERSION = '<%= pkg.version %>';"
+            replacement: "$1uide.VERSION = '<%= grunt.config.get('pkg.version') %>';"
           }]
         }
       }
