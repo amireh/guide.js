@@ -113,7 +113,7 @@
   'use strict';
 
   (function() {
-    var EXTENSIONS = [ 'assign', 'parseOptions' ],
+    var EXTENSIONS = [ 'dotAssign', 'parseOptions' ],
         ext,
         ext_iter;
 
@@ -136,12 +136,12 @@
    *
    * Usage example
    *
-   *     _.assign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
+   *     _.dotAssign('foo.bar', 123, {}) // returns { foo: { bar: 123 } }
    *
    * @return {Object} The passed object (or a newly created one) with the
    * assigned property.
    */
-  _.assign = function(k, v, in_o) {
+  _.dotAssign = function(k, v, in_o) {
     var path_tokens = k.toString().split('.'),
         pathsz      = path_tokens.length,
         o           = in_o || {},
@@ -248,7 +248,7 @@
 
       if (!k) { continue; }
 
-      _.assign(k, converter(v), out);
+      _.dotAssign(k, converter(v), out);
     }
 
     return out;
@@ -404,10 +404,10 @@
 
       // Must show first then start the tour.
       if (!this.isShown()) {
-        this.$.one('show', _.bind(this.runTour, this, tour));
+        this.$.one('show', _.bind(this.runTour, this, tour.id ));
         this.show({ noAutorun: true });
 
-        return this;
+        return false;
       }
 
       // Must stop the current tour first, wait for it to clean up, then start
@@ -416,10 +416,10 @@
         // Kill the active tour reference, otherwise we're stuck in a loop.
         this.tour = null;
 
-        current.$.one('stop', _.bind(this.runTour, this, tour));
+        current.$.one('stop', _.bind(this.runTour, this, tour.id ));
         current.stop();
 
-        return this;
+        return false;
       }
 
       console.log('guide.js: touring "' + tour.id + '"');
@@ -427,7 +427,7 @@
       this.tour = tour;
       this.tour.start();
 
-      return this;
+      return true;
     },
 
 
@@ -534,16 +534,16 @@
       return this.addSpot($this, options);
     },
 
-    show: function(inOptions) {
+    show: function(inOptions, inCallback) {
       var options     = inOptions || {},
           that        = this,
-          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
+          animeMs     = this.options.withAnimations ? this.options.animeDuration:0;
 
       if (this.isShown()) {
         return this;
       }
       else if (!this.tours.length) {
-        throw new Error('guide.js: can not show with no tours defined!');
+        throw 'guide.js: can not show with no tours defined!';
       }
 
       this.$.triggerHandler('showing');
@@ -552,11 +552,15 @@
       this.toggleOverlayMode();
 
       this.$el.appendTo(this.$container);
-      this.$el.show(animeMs + 1, function() {
+      this.$el.show(animeMs, function() {
         that.$.triggerHandler('show');
 
         if (!options.noAutorun) {
           that.runTour(options.tour || that.tour || that.tours[0]);
+        }
+
+        if (inCallback && _.isFunction(inCallback)) {
+          inCallback.apply(that, []);
         }
       });
 
@@ -575,8 +579,8 @@
      * @async
      */
     hide: function() {
-      var that        = this,
-          hide_after  = this.options.withAnimations ? this.options.animeDuration:0;
+      var that     = this,
+          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
 
       if (!this.isShown()) {
         return this;
@@ -586,7 +590,7 @@
 
       that.$.triggerHandler('hiding');
 
-      that.$el.hide(hide_after + 1, function() {
+      that.$el.hide(animeMs, function() {
         if (that.tour) {
           that.tour.stop();
         }
@@ -627,6 +631,7 @@
       this.$.triggerHandler('reset.guide');
       this.options = _.clone(this.defaults);
 
+      _.each(this.extensions, function(ext) { ext.reset(true); });
       _.each(this.tours, function(tour) { tour.reset(true); });
 
       this.tours  = [];
@@ -746,7 +751,7 @@
       }
 
       if (this.$) {
-        console.log('guide.js:', this.id,'options changed, triggering refresh');
+        // console.log('guide.js:', this.id,'options changed, triggering refresh');
 
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }
@@ -777,7 +782,10 @@
         throw 'guide.js: bad extension, missing #id';
       }
 
-      this.options = _.extend({}, this.defaults, { enabled: true }, this.options);
+      // Make sure an `enabled` option always exists
+      _.defaults(this.defaults, { enabled: true });
+
+      this.options = _.extend({}, this.defaults, this.options);
 
       guide.$
         .on(this.nsEvent('show'), function() {
@@ -853,7 +861,10 @@
       return !!this.getOptions().enabled;
     },
 
-    refresh: function() {}
+    refresh: function() {},
+    reset: function() {
+      this.options = _.clone(this.defaults);
+    }
   });
 
   guide.Extension = Extension;
@@ -901,7 +912,7 @@
         cursor: -1
       });
 
-      console.log('guide.js: tour defined: ', this.id);
+      // console.log('guide.js: tour defined: ', this.id);
 
       return this;
     },
@@ -1021,6 +1032,9 @@
         _.each(this.spots, function(spot) {
           spot.remove();
         });
+
+        this.spots = [];
+        this.options = _.clone(this.defaults);
       }
 
       return this;
@@ -1060,16 +1074,13 @@
       var spot;
 
       if (!($el instanceof jQuery)) {
-        throw new Error('guide.js: bad Spot target, expected a jQuery object ' +
-          'but got ' + typeof($el));
+        throw 'guide.js: bad Spot target, expected a jQuery object ' +
+              'but got ' + typeof($el);
       }
 
       // has the spot been already defined? we can not handle duplicates
-      if ($el.data('gjs_spot')) {
-        console.log('guide.js: element is already bound to a tour spot:');
-        console.log($el);
-
-        throw new Error('guide.js: duplicate spot, see console for more information');
+      if ($el.data('gjs-spot')) {
+        throw 'guide.js: duplicate spot, see console for more information';
       }
 
       spot = new guide.Spot($el, this, this.spots.length, options);
@@ -1211,7 +1222,7 @@
        */
       guide.$.triggerHandler('focus', [ spot, this ]);
 
-      console.log('guide.js: visiting tour spot #', spot.index);
+      // console.log('guide.js: visiting tour spot #', spot.index);
 
       return true;
     },
@@ -1319,6 +1330,8 @@
       }
 
       _.extend(this, {
+        $: $(this),
+
         /**
          * @property {jQuery} $el
          * The target element that is represented by this spot.
@@ -1354,7 +1367,7 @@
 
       $el
         .addClass(guide.entityKlass())
-        .data('gjs_spot', this);
+        .data('gjs-spot', this);
 
       return this;
     },
@@ -1387,10 +1400,21 @@
     },
 
     /**
+     * Check if the spot target is currently reachable in the DOM.
+     */
+    isAvailable: function() {
+      return !!(this.$el.length);
+    },
+
+    isAttached: function() {
+      return this.isAvailable() && this.$el.parent().length > 0;
+    },
+
+    /**
      * Check if the spot target is currently available *and* visible in the DOM.
      */
     isVisible: function() {
-      return this.$el.length && this.$el.is(':visible');
+      return this.isAttached() && this.$el.is(':visible');
     },
 
     /**
@@ -1403,33 +1427,47 @@
      * is refreshed in hopes of the target becoming available now
      */
     highlight: function() {
-      var applicable =
+      var
+      positionQuery,
+      applicable =
         // The spot-scoped option takes precedence over the tour one.
         this.options.highlight &&
-        (this.tour.getOptions().alwaysHighlight || this.isFocused());
+        ( this.tour.getOptions().alwaysHighlight ||
+          this.isFocused()
+        );
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
       // the selector to see if it's now available, otherwise we can't highlight.
+      if (!this.isAvailable()) {
+        this.__refreshTarget();
+      }
+
+      // Still not visible? Abort highlighting
       if (!this.isVisible()) {
-        this.$el = $(this.$el.selector);
+        applicable = false;
+      }
 
-        if (!this.$scrollAnchor ||
-          // Could be set by an extension, like Markers, to something other than
-          // the target $el, don't override it.
-          !this.$scrollAnchor.length) {
-          this.$scrollAnchor = this.$el;
+      if (!applicable) {
+        return false;
+      }
+
+      // Apply the positioning fix if the target is statically positioned;
+      // to be able to properly highlight the target, it must be positioned
+      // as one of 'relative', 'absolute', or 'fixed' so that we can apply
+      // the necessary CSS style.
+      if (!this.options.noPositioningFix) {
+        positionQuery = this.$el.css('position');
+
+        if (_.indexOf( [ 'fixed', 'absolute', 'relative' ], positionQuery ) < 0) {
+          this.$el.addClass('gjs-positioning-fix');
         }
-
-        applicable = applicable && this.isVisible();
       }
 
-      if (applicable) {
-        this.$el
-          .toggleClass('no-highlight', !applicable)
-          .toggleClass(KLASS_TARGET,    applicable);
-      }
+      this.$el
+        .toggleClass('no-highlight', !applicable)
+        .toggleClass(KLASS_TARGET,    applicable);
 
-      return this;
+      return true;
     },
 
     /**
@@ -1444,16 +1482,22 @@
     dehighlight: function(options) {
       if ((options||{}).force ||
           !this.tour.getOptions().alwaysHighlight) {
-        this.$el.removeClass(KLASS_TARGET);
+
+        this.$el.removeClass([
+          KLASS_TARGET,
+          'gjs-positioning-fix'
+        ].join(' '));
+
+        return true;
       }
 
-      return this;
+      return false;
     },
 
     /**
      * Apply a CSS class to indicate that the spot is focused, and scroll it
      * into view if #autoScroll is enabled. The spot will also be implicitly
-     * {@link highlight highlighted}.
+     * {@link #highlight highlighted}.
      *
      * @fires focus_gjs
      */
@@ -1462,8 +1506,9 @@
           callback  = this.options.onDefocus,
           $scroller = this.$scrollAnchor;
 
+      this.highlight();
+
       this
-        .highlight()
         .$el
           .addClass(KLASS_FOCUSED)
           /**
@@ -1502,8 +1547,9 @@
 
       this.dehighlight();
 
-      this.$el.removeClass(KLASS_FOCUSED);
-      this.$el.triggerHandler('defocus.gjs', next_spot);
+      this.$el
+        .removeClass(KLASS_FOCUSED)
+        .triggerHandler('defocus.gjs', next_spot);
 
       if (callback && _.isFunction(callback)) {
         callback.apply(this, arguments);
@@ -1513,8 +1559,11 @@
     },
 
     remove: function() {
+      this.$.triggerHandler('remove');
+      guide.$.triggerHandler('remove.spots', [ this ]);
+
       this.$el
-        .removeData('gjs_spot')
+        .removeData('gjs-spot')
         .removeClass([
           'no-highlight',
           KLASS_TARGET,
@@ -1527,7 +1576,24 @@
         return this.defocus().focus();
       }
 
-      return this.dehighlight().highlight();
+      this.dehighlight();
+      this.highlight();
+
+      return this;
+    },
+
+    /**
+     * @private
+     */
+    __refreshTarget: function() {
+      this.$el = $(this.$el.selector);
+
+      if (!this.$scrollAnchor ||
+        // Could be set by an extension, like Markers, to something other than
+        // the target $el, don't override it.
+        !this.$scrollAnchor.length) {
+        this.$scrollAnchor = this.$el;
+      }
     },
 
     setScrollAnchor: function($el) {
@@ -1881,8 +1947,6 @@
         guide.tour.addOption('alwaysMark', true);
       }
 
-      this.$container = guide.$el;
-
       guide.$
         .on('add', _.bind(this.addMarker, this))
         .on('focus', function(e, spot) {
@@ -1933,11 +1997,11 @@
         return;
       }
 
-      $(window).off('resize.gjs_markers');
-      $(window).on('resize.gjs_markers',
-        _.throttle(
-          _.bind(this.repositionMarkers, this),
-          this.getOptions().refreshFrequency));
+      // $(window).off('resize.gjs_markers');
+      // $(window).on('resize.gjs_markers',
+      //   _.throttle(
+      //     _.bind(this.repositionMarkers, this),
+      //     this.getOptions().refreshFrequency));
 
       // this.onGuideHide();
 
@@ -1965,13 +2029,13 @@
      * @see #repositionMarkers
      */
     onGuideShow: function() {
-      $(window).on('resize.gjs_markers',
-        _.throttle(
-          _.bind(this.repositionMarkers, this),
-          this.options.refreshFrequency));
+      // $(window).on('resize.gjs_markers',
+      //   _.throttle(
+      //     _.bind(this.repositionMarkers, this),
+      //     this.options.refreshFrequency));
 
-      $(document.body).on('click.gjs_markers', '.gjs-marker', function(e) {
-        var marker = $(this).data('gjs');
+      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
+        var marker = $(this).data('gjs-marker');
 
         if (marker) {
           marker.spot.tour.focus(marker.spot);
@@ -1986,8 +2050,8 @@
     },
 
     onGuideHide: function() {
-      $(window).off('resize.gjs_markers');
-      $(document.body).off('click.gjs_markers');
+      // $(window).off('resize.gjs_markers');
+      $(document.body).off(this.nsEvent('click'));
 
       // return this.onTourStop(guide.tour);
     },
@@ -1998,8 +2062,6 @@
       if (!this.isEnabled(tour)) {
         return this;
       }
-
-      console.log('guide.js', '[markers] showing markers for tour ', tour.id);
 
       // show markers for this tour
       //
@@ -2020,8 +2082,6 @@
     },
 
     onTourStop: function(tour) {
-      console.log('[markers] hiding markers for tour ', tour.id);
-
       _.each(tour.spots, function(spot) {
         if (spot.marker) {
           spot.marker.hide();
@@ -2029,14 +2089,6 @@
       });
 
       tour.$.off(this.nsEvent('refresh'));
-    },
-
-    onTourReset: function(tour) {
-      _.each(tour.spots, function(spot) {
-        if (spot.marker) {
-          spot.marker.remove();
-        }
-      });
     },
 
     rebuildMarkers: function(/*tour*/) {
@@ -2069,7 +2121,7 @@
       console.log('[markers] repositioning markers for tour ', tour.id);
 
       _.each(tour.spots, function(spot) {
-        if (spot.marker) {
+        if (spot.marker && spot.marker.placement === PMT_OVERLAY) {
           spot.marker.place();
         }
       });
@@ -2150,13 +2202,17 @@
       this.options = _.extend(
         {},
         // lowest priority: our defaults
-        this.options || this.defaults,
+        this.defaults,
+
+        (attributes || {}).options,
         // then, guide's global marker options,
         guide.getOptions().marker,
         // then, the spot's tour options,
         spot.tour.getOptions().marker,
         // and highest priority: the spot's options
         spot.getOptions().marker);
+
+      this.spot.$.on('remove', _.bind(this.remove, this));
 
       return this.build();
     },
@@ -2265,7 +2321,7 @@
         // Attach the marker to the jQuery object, necessary for handling events
         //
         // See Extension#onGuideShow
-        .data('gjs', this);
+        .data('gjs-marker', this);
 
       // In Sibling placement mode, we need to construct a container element
       // that will be the parent of the spot target and the marker element.
@@ -2303,7 +2359,7 @@
                       // already wrapped so that we will properly clean up
                       //
                       // See #isWrapped and #remove.
-                      .data('gjs_container', true)
+                      .data('gjs-container', true)
 
                       // Position the container right where the target is, and
                       // move the target and the marker inside of it.
@@ -2316,6 +2372,8 @@
           $container = $spot.parent();
           $container.append($el);
         }
+
+        this.$container = $container;
 
         // We'll need the left and right margins for proper positioning.
         //
@@ -2348,21 +2406,22 @@
     },
 
     remove: function() {
-      var $container;
-
       this.hide();
 
       if (this.$el) {
         this.$el.remove();
+        this.$el = null;
       }
 
       // Return the target back to its place by completely removing the
       // sibling container we created
       if (this.isWrapped()) {
-        $container = this.spot.$el.parent();
+        if (this.spot.$el.parent().is(this.$container)) {
+          this.$container.replaceWith(this.spot.$el);
+        }
 
-        $container.replaceWith(this.spot.$el);
-        $container.remove();
+        this.$container.remove();
+        this.$container = null;
       }
     },
 
@@ -2440,7 +2499,7 @@
         return false;
       }
 
-      if (!spot.$el.length || !spot.$el.is(':visible')) {
+      if (!spot.isVisible()) {
         return false;
       }
 
@@ -2619,17 +2678,16 @@
     },
 
     isWrapped: function() {
-      var $container;
+      var $container = this.$container;
 
-      if (!this.spot.$el.length) { return false; }
+      // if (!this.spot.$el.length) { return false; }
 
-      $container = this.spot.$el.parent();
+      // $container = this.spot.$el.parent();
 
-      if ($container.length && $container.data('gjs_container')) {
+      if ($container && $container.length && $container.data('gjs-container')) {
         return true;
       }
-    },
-
+    }
 
   });
 
