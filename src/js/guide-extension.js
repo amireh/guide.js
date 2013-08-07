@@ -2,6 +2,14 @@
   'use strict';
 
   var Extension = _.extend({}, guide.Optionable, {
+    /**
+     * @cfg {Boolean} [attachable=false]
+     *
+     * If this extension has elements that are displayed when guide.js launches
+     * a tour, turning this setting on will internally
+     */
+    attachable: false,
+
     __initExtension: function() {
       var that = this;
 
@@ -20,9 +28,18 @@
             that.onGuideShow();
           }
         })
+        .on(this.nsEvent('showing'), function() {
+          if (that.attachable) {
+            that.show();
+          }
+        })
         .on(this.nsEvent('hide'), function() {
           if (that.onGuideHide && that.isEnabled()) {
             that.onGuideHide();
+          }
+
+          if (that.attachable) {
+            that.hide();
           }
         })
         .on(this.nsEvent('start.tours'), function(e, tour) {

@@ -38,6 +38,8 @@
       inTutor:    false
     },
 
+    attachable: true,
+
     id: 'controls',
 
     constructor: function() {
@@ -51,8 +53,6 @@
       // this.refresh();
 
       guide.$
-      .on('show', _.bind(this.show, this))
-      .on('hide', _.bind(this.hide, this))
       .on('dismiss', _.bind(this.remove, this))
       .on('focus', function(/*e, spot*/) {
         that.refreshControls();

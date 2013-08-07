@@ -34,6 +34,8 @@
       spanner: false
     },
 
+    attachable: true,
+
     constructor: function() {
       this.$container = guide.$el;
 
@@ -53,8 +55,6 @@
       });
 
       guide.$
-        .on('show', _.bind(this.show, this))
-        .on('hide', _.bind(this.hide, this))
         .on('dismiss', _.bind(this.remove, this))
         .on('focus', _.bind(this.focus, this));
 
@@ -103,14 +103,6 @@
 
       this.$el.toggleClass('spanner', options.spanner);
       this.focus(null, guide.tour.current, guide.tour);
-    },
-
-    onGuideStart: function() {
-      this.show();
-    },
-
-    onGuideStop: function() {
-      this.hide();
     },
 
     onTourStart: function(/*tour*/) {
