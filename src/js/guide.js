@@ -220,6 +220,14 @@
       var that = this,
           $container = $(selector_or_container || 'body');
 
+      $container.find('[data-guide-tour]').add($container).each(function() {
+        var id = $(this).attr('data-guide-tour');
+
+        if (id) {
+          that.defineTour(id);
+        }
+      });
+
       $container.find('[data-guide]').each(function() {
         var $target = $(this);
 
@@ -236,11 +244,13 @@
       // The reference node will be detached and no longer available in the DOM.
       $container.find('[data-guide-spot]').each(function() {
         var $ref    = $(this),
-            $target = $($ref.attr('data-guide-spot')),
+            $tour   = $ref.parents('[data-guide-tour]:first'),
+            $target = $($ref.detach().attr('data-guide-spot')),
             options = _.parseOptions($ref.attr('data-guide-options'));
 
         that.fromNode($target, _.extend(options, {
-          text: $ref.detach().attr('data-guide-spot', null)[0].outerHTML
+          text: $ref.attr('data-guide-spot', null)[0].outerHTML,
+          tour: $tour.attr('data-guide-tour')
         }));
       });
 
@@ -251,12 +261,12 @@
       var
       $this = $node,
       $tour,
-      options = _.extend(
-        inOptions || {},
-        _.parseOptions($this.attr('data-guide-options')), {
-        caption:  $this.attr('data-guide-caption'),
-        tour:     $this.attr('data-guide-tour')
-      });
+      options = _.extend({
+          caption:  $this.attr('data-guide-caption'),
+          tour:     inOptions.tour || $this.attr('data-guide-tour')
+        },
+        _.parseOptions($this.attr('data-guide-options')),
+        inOptions);
 
       // if no tour is specified, take a look at the ancestry tree, perhaps
       // an element has a tour defined in [data-guide-tour]
@@ -295,7 +305,7 @@
       this.toggleOverlayMode();
 
       this.$el.appendTo(this.$container);
-      this.$el.show(animeMs, function() {
+      this.$el.animate({ opacity: 'show' }, animeMs, function() {
         that.$.triggerHandler('show');
 
         if (!options.noAutorun) {
@@ -333,7 +343,7 @@
 
       that.$.triggerHandler('hiding');
 
-      that.$el.hide(animeMs, function() {
+      that.$el.animate({ opacity: 'hide' }, animeMs, function() {
         if (that.tour) {
           that.tour.stop();
         }
@@ -395,11 +405,17 @@
      *
      */
     toggleOverlayMode: function(doToggle) {
+      var option = this.options.withOverlay;
+
       if (doToggle) {
         this.options.withOverlay = !this.options.withOverlay;
       }
 
-      if (this.options.withOverlay) {
+      if (this.tour && this.tour.hasOption('withOverlay')) {
+        option = this.tour.getOptions().withOverlay;
+      }
+
+      if (option) {
         this.$container.addClass(KLASS_OVERLAYED).removeClass(KLASS_NOT_OVERLAYED);
       }
       else {
