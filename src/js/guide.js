@@ -126,6 +126,26 @@
         _.find(this.tours || [], id);
     },
 
+    /**
+     * Find the default tour which might be explicitly set by the user, or
+     * the first one otherwise.
+     *
+     * See Tour#isDefault for more information.
+     */
+    defaultTour: function() {
+      var i, tour;
+
+      for (i = 0; i !== this.tours.length; ++i) {
+        tour = this.tours[i];
+
+        if (tour.options.isDefault) {
+          return tour;
+        }
+      }
+
+      return this.tour || this.tours[0];
+    },
+
     /** @private */
     inactiveTours: function() {
       return _.without(this.tours, this.tour);
@@ -309,7 +329,7 @@
         that.$.triggerHandler('show');
 
         if (!options.noAutorun) {
-          that.runTour(options.tour || that.tour || that.tours[0]);
+          that.runTour(options.tour || that.defaultTour());
         }
 
         if (inCallback && _.isFunction(inCallback)) {

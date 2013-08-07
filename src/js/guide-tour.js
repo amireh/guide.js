@@ -19,7 +19,14 @@
        * Highlight all spots while the tour is active, as opposed to highlighting
        * only the focused spot.
        */
-      alwaysHighlight: true
+      alwaysHighlight: true,
+
+      /**
+       * @cfg {Boolean} [isDefault=false]
+       * guide.js will run the default tour if no tour is specified, and falls
+       * back to a blank 'Default Tour' if no tour has #isDefault specified.
+       */
+      isDefault: false
     },
 
     constructor: function(label) {
