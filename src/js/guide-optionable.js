@@ -64,6 +64,10 @@
       return _.extend({}, this.options);
     },
 
+    hasOption: function(key) {
+      return _.dotGet(key, this.getOptions()) !== void 0;
+    },
+
     /**
      * Define a new option that the object will understand from now on.
      *

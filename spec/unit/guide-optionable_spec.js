@@ -72,5 +72,18 @@ describe("guide", function() {
         expect(o.getOptions()).toEqual({ foo: true });
       });
     });
+
+    it('#hasOption', function() {
+      o.options = {
+        foo: true,
+        a: {
+          b: 'xyz'
+        }
+      }
+
+      expect(o.hasOption('foo')).toBeTruthy();
+      expect(o.hasOption('a.b')).toBeTruthy();
+      expect(o.hasOption('foo.bar')).toBeFalsy();
+    })
   });
 })
