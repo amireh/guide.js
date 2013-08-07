@@ -64,6 +64,28 @@
     return o;
   };
 
+  _.dotGet = function(k, in_o, delim) {
+    var path_tokens = k.toString().split(delim || '.'),
+        pathsz      = path_tokens.length,
+        o           = in_o || {},
+        token,
+        i;
+
+    if (pathsz <= 1) {
+      return o[k];
+    }
+
+    for (i = 0; i < pathsz; ++i) {
+      token = path_tokens[i];
+
+      o = o[token];
+
+      if (!o) { return undefined; }
+    }
+
+    return o;
+  };
+
   // var strOptionsSeparator = new RegExp('[:|,]'),
   var
   strOptionsSeparator = /[:|,]/,
