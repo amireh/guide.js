@@ -41,7 +41,14 @@
        *
        * See jQuery#in_viewport for testing the element's visibility.
        */
-      autoScroll: true
+      autoScroll: true,
+
+      /**
+       * @cfg {Boolean} [noPositioningFix=false]
+       * Do not force 'relative' positioning on elements that are statically
+       * positioned.
+       */
+      noPositioningFix: false
     },
 
     /**
@@ -204,7 +211,9 @@
       // to be able to properly highlight the target, it must be positioned
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
-      if (!this.options.noPositioningFix) {
+      if (!this.options.noPositioningFix &&
+          !this.tour.hasOption('spots.noPositioningFix')) {
+
         positionQuery = this.$el.css('position');
 
         if (_.indexOf( [ 'fixed', 'absolute', 'relative' ], positionQuery ) < 0) {
