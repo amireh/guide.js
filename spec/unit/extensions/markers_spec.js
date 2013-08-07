@@ -3,7 +3,7 @@ describe("Extensions", function() {
     var ext = guide.getExtension('markers');
 
     describe("Marker", function() {
-      var spot, marker;
+      var spot, tour, marker;
 
       afterEach(function() {
         if (spot) { spot.remove(); spot.$el.remove(); }
@@ -31,6 +31,7 @@ describe("Extensions", function() {
         var klasses = spot.$el[0].className;
 
         marker = ext.addMarker(null, spot);
+        marker.options.smart = false;
 
         expect(spot.$el[0].className).toEqual(klasses);
 
@@ -63,6 +64,35 @@ describe("Extensions", function() {
           expect(marker.options.placement).toEqual('sibling');
         });
 
+        it('should respect the @placement option from the spot', function() {
+          spot = mkSpot();
+
+          spot.setOptions('marker.placement: inline');
+          marker = ext.addMarker(null, spot);
+          expect(marker.options.placement).toEqual('inline');
+
+          marker.remove();
+
+          spot.setOptions('marker.placement: sibling');
+          marker = ext.addMarker(null, spot);
+          expect(marker.options.placement).toEqual('sibling');
+        });
+
+        it('should respect the @placement option from the tour', function() {
+          spot = mkSpot();
+          tour = spot.tour;
+
+          tour.setOptions('marker.placement: inline');
+          marker = ext.addMarker(null, spot);
+          expect(marker.options.placement).toEqual('inline');
+
+          marker.remove();
+
+          tour.setOptions('marker.placement: sibling');
+          marker = ext.addMarker(null, spot);
+          expect(marker.options.placement).toEqual('sibling');
+        });
+
         it(':inline', function() {
           spot = mkVisibleSpot();
 
@@ -71,7 +101,6 @@ describe("Extensions", function() {
               placement: 'inline'
             }
           });
-
 
           expect(marker.options.placement).toEqual('inline');
           expect(marker.isWrapped()).toBeFalsy();

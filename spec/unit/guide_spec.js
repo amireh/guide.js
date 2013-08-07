@@ -101,6 +101,66 @@ describe("guide", function() {
 
       $elements.remove();
     });
+
+    it('should define a tour', function() {
+      var $container = $('<div data-guide-tour="Foobar" />'),
+          nrTours    = guide.tours.length;
+
+      guide.fromDOM($container);
+      expect(guide.tours.length).toEqual(nrTours + 1);
+
+      $container.remove();
+    });
+
+    it('should attach spots to a custom tour', function() {
+      var $container = $('<div data-guide-tour="Foobar" />');
+
+      $container.affix('div[data-guide="Something"]');
+      $container.affix('div#foo');
+      $container.append('<p data-guide-spot="#foo">Hello world.</p>');
+
+      guide.fromDOM($container);
+
+      expect(guide.getTour('Foobar').spots.length).toEqual(2);
+
+      $container.remove();
+    });
+
+    it('should build a tour from a detached element', function() {
+      var $container = $([
+        '<div data-guide-tour="Some Tour">',
+        '  <div data-guide-spot="#navbar_links" data-guide-options="marker.position:right">',
+        '    <p>This is the navigation bar that allows you to take actions and',
+        '      navigate around Pibi.',
+        '    </p>',
+        '',
+        '    <p>This bar doesnt change no matter where you are in Pibi.</p>',
+        '  </div>',
+        '',
+        '  <div data-guide-spot="#new_withdrawal" data-guide-options="marker.position:right">',
+        '    <p>',
+        '      Start tracking expenses by clicking this button to',
+        '      show the transaction editor. Try it!',
+        '    </p>',
+        '  </div>',
+        '  <div data-guide-spot="#new_deposit" data-guide-options="marker.position:right">',
+        '    Here is the second item description. The number will appear to the right of the element.',
+        '  </div>',
+        '  <div data-guide-spot="#sidebar #save" data-guide-options="marker.position:top">',
+        '    Save the transaction.',
+        '  </div>',
+        '</div>'
+      ].join(''));
+
+      guide.fromDOM($container);
+
+      expect(guide.tours.length).toEqual(2);
+      expect(guide.getTour('Some Tour')).toBeTruthy();
+      expect(guide.getTour('Some Tour').spots.length).toEqual(4);
+
+      $container.remove();
+    });
+
   });
 
   describe('#fromJSON', function() {

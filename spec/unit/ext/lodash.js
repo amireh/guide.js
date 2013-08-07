@@ -11,6 +11,23 @@ describe("lodash", function() {
     });
   });
 
+  it('_#dotGet', function() {
+    var o = {
+      foo: 'bar',
+      a: {
+        b: {
+          c: true,
+          d: 123
+        }
+      }
+    };
+
+    expect(_.dotGet('foo', o)).toEqual('bar');
+    expect(_.dotGet('a.b', o)).toEqual(o.a.b);
+    expect(_.dotGet('a.b.c', o)).toEqual(true);
+    expect(_.dotGet('a.b.xyz', o)).toEqual(undefined);
+  });
+
   it("_#dotAssign should implicitly create an object", function() {
     expect(_.dotAssign('foo.bar', 123, undefined)).toEqual({
       foo: { bar: 123 }
