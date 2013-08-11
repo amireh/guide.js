@@ -611,6 +611,7 @@
         case PMT_SIBLING:
           if (!this.$container.is(':visible')) {
             this.wrap();
+            this.attach();
           }
 
           this.negateMargins($marker,
