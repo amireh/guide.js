@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, guide, undefined) {
   'use strict';
 
   var
@@ -44,7 +44,9 @@
         previous: null,
 
         // a shortcut to the current spot's index
-        cursor: -1
+        cursor: -1,
+
+        active: false
       });
 
       // console.log('guide.js: tour defined: ', this.id);
@@ -59,19 +61,23 @@
      * @fires start_tours
      * @fires start
      */
-    start: function() {
+    start: function(options) {
       var callback    = this.options.onStart,
           spotToFocus = this.current || this.spots[0];
 
       if (!guide.isShown()) {
-        guide.runTour(this);
+        guide.runTour(this, options);
 
         return this;
       }
 
-      _.each(this.spots, function(spot) {
-        spot.highlight();
-      });
+      _.invoke(this.spots, 'highlight');
+
+      if ((options||{}.spot) !== undefined) {
+        spotToFocus = this.getSpot(options.spot);
+      }
+
+      this.active = true;
 
       if (spotToFocus) {
         this.focus(spotToFocus);
@@ -114,9 +120,9 @@
     stop: function() {
       var callback  = this.options.onStop;
 
-      _.each(this.spots, function(spot) {
-        spot.dehighlight({ force: true });
-      });
+      _.invoke(this.spots, 'dehighlight', { force: true });
+
+      this.active = false;
 
       /**
        * @event stop_tours
@@ -179,7 +185,7 @@
      * Whether the user is currently taking this tour.
      */
     isActive: function() {
-      return this === guide.tour && guide.isShown();
+      return this.active;
     },
 
     /**
@@ -202,11 +208,13 @@
      * @fires add
      *
      * @return {Spot} The newly created tour spot.
-     *
-     * Look at Guide.Tour#addSpot for defining spots on a specific tour directly.
      */
     addSpot: function($el, options) {
       var spot;
+
+      if (_.isString($el)) {
+        $el = $($el);
+      }
 
       if (!($el instanceof jQuery)) {
         throw 'guide.js: bad Spot target, expected a jQuery object ' +
@@ -299,35 +307,59 @@
       var spot  = this.getSpot(index),
           i; // spot iterator
 
+
       if (!this.isActive()) {
         return false;
       }
+
+      guide.log('tour: focusing spot', index);
 
       if (!spot) {
         throw 'guide.js: bad spot @ ' + index + ' to focus';
       }
       else if (spot.isFocused()) {
+        spot.refresh();
+
         return false;
       }
-      else if (!spot.isVisible()) {
-        console.log('guide.js', 'spot', spot.index, 'isnt visible, looking for another one');
 
-        // look for any spot that's visible and focus it instead
-        for (i = 0; i < this.spots.length; ++i) {
-          spot = this.spots[i];
+      // de-focus the last spot
+      if (this.current) {
+        this.current.defocus(spot);
+        guide.$.triggerHandler('defocus', [ this.current, spot, this ]);
+        this.$.triggerHandler('defocus', [ this.current, spot ]);
+      }
 
-          if (spot.isVisible()) {
-            this.cursor = i;
-            break;
+      if (_.isFunction(spot.options.preFocus)) {
+        spot.options.preFocus.apply(spot, []);
+      }
+
+      guide.$.triggerHandler('pre-focus', [ spot, this ]);
+      this.$.triggerHandler('pre-focus', [ spot ]);
+
+      // If the spot target isn't currently visible, we'll try to refresh
+      // the selector in case the element has just been created, and if it still
+      // isn't visible, we'll try finding any visible spot to focus instead.
+      if (!spot.isVisible()) {
+        if (!spot.__refreshTarget() || !spot.isVisible()) {
+          guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
+
+          for (i = 0; i < this.spots.length; ++i) {
+            spot = this.spots[i];
+
+            if (spot.isVisible()) {
+              guide.log('tour: \tfound one:', spot.index);
+              this.cursor = i;
+              break;
+            }
+            else {
+              spot = null;
+            }
           }
-          else {
-            spot = null;
-          }
-        }
 
-        if (!spot) {
-          console.log('guide.js', 'no visible spot to focus, aborting');
-          return false;
+          if (!spot) {
+            return false;
+          }
         }
       }
 
@@ -335,13 +367,6 @@
       this.current = spot;
       this.cursor  = spot.index;
 
-      // de-focus the last spot
-      if (this.previous) {
-        this.previous.defocus(spot);
-        guide.$.triggerHandler('defocus', [ this.previous, this.current, this ]);
-      }
-
-      guide.$.triggerHandler('pre-focus', [ spot, this ]);
       spot.focus(this.previous);
 
       /**
@@ -356,8 +381,9 @@
        *  The spot that was previously focused, if any.
        */
       guide.$.triggerHandler('focus', [ spot, this ]);
+      this.$.triggerHandler('focus', [ spot ]);
 
-      // console.log('guide.js: visiting tour spot #', spot.index);
+      console.log('guide.js: visiting tour spot #', spot.index);
 
       return true;
     },
