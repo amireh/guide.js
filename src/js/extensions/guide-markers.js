@@ -69,25 +69,19 @@
 
     constructor: function() {
       guide.Tour.prototype.addOption('alwaysMark', true);
+      guide.Tour.prototype.getMarkers = function() {
+        return _.pluck(_.filter(this.spots, function(spot) {
+            return !!spot.marker;
+          }), 'marker');
+      };
 
-      // we must manually assign the options to the default tour as it has
-      // already been created
+      // We must manually assign the options to the default tour as it has
+      // already been created.
       if (guide.tour) {
         guide.tour.addOption('alwaysMark', true);
       }
 
-      guide.$
-        .on('add', _.bind(this.addMarker, this))
-        .on('focus', function(e, spot) {
-          if (spot.marker) {
-            spot.marker.highlight();
-          }
-        })
-        .on('defocus', function(e, spot) {
-          if (spot.marker) {
-            spot.marker.dehighlight();
-          }
-        });
+      guide.$.on('add', _.bind(this.addMarker, this));
 
       return this;
     },
@@ -102,53 +96,32 @@
         return null;
       }
 
-      // console.log('guide.js', 'markers', 'adding marker for spot', spot.toString());
-
       marker = new Marker(spot, attributes || {});
 
-      if (guide.isShown() && spot.tour.isActive()) {
+      if (marker.canShow()) {
         marker.show();
-      }
-      else {
-        marker.hide();
       }
 
       return marker;
     },
 
     refresh: function() {
-      var tour = guide.tour;
-
       if (!guide.isShown()) {
         return;
       }
-      else if (!this.isEnabled()) {
+
+      this.onGuideHide();
+
+      if (!this.isEnabled()) {
         return;
       }
 
-      // $(window).off('resize.gjs_markers');
-      // $(window).on('resize.gjs_markers',
-      //   _.throttle(
-      //     _.bind(this.repositionMarkers, this),
-      //     this.getOptions().refreshFrequency));
+      this.onGuideShow();
 
-      // this.onGuideHide();
-
-      // this.rebuildMarkers(tour);
-
-      _.each(tour.spots, function(spot) {
-        if (spot.marker) {
-          if (spot.tour.getOptions().alwaysMark) {
-            spot.marker.show();
-          } else {
-            if (!spot.isFocused()) {
-              spot.marker.hide();
-            }
-          }
-        }
-      });
-
-      // this.onGuideShow();
+      if (guide.tour) {
+        this.onTourStop(guide.tour);
+        this.onTourStart(guide.tour);
+      }
     },
 
     /**
@@ -158,11 +131,6 @@
      * @see #repositionMarkers
      */
     onGuideShow: function() {
-      // $(window).on('resize.gjs_markers',
-      //   _.throttle(
-      //     _.bind(this.repositionMarkers, this),
-      //     this.options.refreshFrequency));
-
       $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
         var marker = $(this).data('gjs-marker');
 
@@ -175,69 +143,32 @@
         return true;
       });
 
-      // return this.onTourStart(guide.tour);
+      // Install a resize handler to reposition overlay placed markers
+      $(window).on(this.nsEvent('resize'),
+        _.throttle(
+          _.bind(this.repositionMarkers, this),
+          this.options.refreshFrequency));
     },
 
     onGuideHide: function() {
-      // $(window).off('resize.gjs_markers');
+      $(window).off(this.nsEvent('resize'));
       $(document.body).off(this.nsEvent('click'));
-
-      // return this.onTourStop(guide.tour);
     },
 
     onTourStart: function(tour) {
-      var that = this;
-
-      if (!this.isEnabled(tour)) {
-        return this;
+      // Show all markers for this tour if the option is enabled
+      if (tour.options.alwaysMark) {
+        _.invoke(tour.getMarkers(), 'show');
       }
 
-      // show markers for this tour
-      //
-      // we need to defer in order to correctly calculate the offset of targets
-      // as they might still be populating their content at this stage
-      _.defer(function() {
-        _.each(tour.spots, function(spot) {
-          if (spot.marker) {
-            spot.marker.show();
-          }
-        });
-      });
-
       // listen to its option changes
-      tour.$.on(this.nsEvent('refresh'), function(/*e, options*/) {
-        that.refresh();
-      });
+      // tour.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
     },
 
     onTourStop: function(tour) {
-      _.each(tour.spots, function(spot) {
-        if (spot.marker) {
-          spot.marker.hide();
-        }
-      });
+      // tour.$.off(this.nsEvent('refresh'));
 
-      tour.$.off(this.nsEvent('refresh'));
-    },
-
-    rebuildMarkers: function(/*tour*/) {
-      // var that = this,
-      //     $container,
-      //     marker;
-
-      // console.log('[markers] rebuilding markers for tour ', tour.id);
-
-      // _.each(tour.spots, function(spot) {
-      //   if (spot.marker) {
-      //     $container = spot.marker.$container;
-      //     spot.marker.remove();
-      //     marker = that.addMarker(null, spot, { $container: $container });
-      //   }
-      // });
-
-      // if (tour.current && tour.current.marker) {
-      //   tour.current.marker.highlight();
-      // }
+      _.invoke(tour.getMarkers(), 'hide');
     },
 
     repositionMarkers: function() {
@@ -249,11 +180,9 @@
 
       console.log('[markers] repositioning markers for tour ', tour.id);
 
-      _.each(tour.spots, function(spot) {
-        if (spot.marker && spot.marker.placement === PMT_OVERLAY) {
-          spot.marker.place();
-        }
-      });
+      _.invoke(_.filter(tour.getMarkers(), function(marker) {
+        return marker.placement === PMT_OVERLAY;
+      }), 'snapToSpot');
 
       return true;
     }
@@ -318,7 +247,13 @@
        *
        * @cfg
        */
-      width:      'auto'
+      width:      'auto',
+
+      smart: true,
+
+      noClone: true,
+
+      margin: 15
     },
 
     constructor: function(spot, attributes) {
@@ -341,9 +276,14 @@
         // and highest priority: the spot's options
         spot.getOptions().marker);
 
-      this.spot.$.on('remove', _.bind(this.remove, this));
+      this.spot.$
+        .on('focus', _.bind(this.highlight, this))
+        .on('defocus', _.bind(this.dehighlight, this))
+        .on('remove', _.bind(this.remove, this));
 
-      return this.build();
+      this.build();
+
+      return this;
     },
 
     /**
@@ -354,18 +294,16 @@
     build: function() {
       var
       $el,
-      $container, // used for sibling placement, see below
       template,
-      spot      = this.spot,
-      $spot     = spot.$el;
+      spot      = this.spot;
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
       if (!spot.isVisible()) {
-        return this;
+        return false;
       }
       // Already built? no-op at the moment, we don't support re-building
       else if (this.$el) {
-        return this;
+        return false;
       }
 
       // If spot has explicitly asked for no text, or doesn't have
@@ -454,109 +392,54 @@
 
       // In Sibling placement mode, we need to construct a container element
       // that will be the parent of the spot target and the marker element.
-      //
-      // While there's high portion of hackery involved here, it is only so in
-      // order to be as transparent as possible, and not to break the page's
-      // layout.
       if (this.placement === PMT_SIBLING) {
-        if (!this.isWrapped()) {
-          // Build the container:
-          //
-          // Instead of building a plain `<div/>`, we'll try to replicate the
-          // target element, so we won't break any CSS/JS that uses the tag as
-          // an identifier, we'll do that by cloning the tag and stripping
-          // some properties from it.
-          $container = $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
-                      // Empty it, we only need the tag and its structure
-                      .html('')
-                      .attr({
-                        'id': null,
-
-                        // Remove any gjs- related classes from the container
-                        'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
-                      })
-                      .css({
-                        // Try to mimic the alignment of the target element
-                        display: $spot.css('display'),
-
-                        // The container must be relatively positioned, since
-                        // we're positioning the marker using margins.
-                        position: 'relative'
-                      })
-
-                      // Set a flag so we can tell whether the spot target is
-                      // already wrapped so that we will properly clean up
-                      //
-                      // See #isWrapped and #remove.
-                      .data('gjs-container', true)
-
-                      // Position the container right where the target is, and
-                      // move the target and the marker inside of it.
-                      .insertBefore($spot)
-                      .append($spot)
-                      .append($el);
-        } else {
-          // Container already built, we just need to place the marker element
-          // inside of it:
-          $container = $spot.parent();
-          $container.append($el);
-        }
-
-        this.$container = $container;
+        this.wrap();
 
         // We'll need the left and right margins for proper positioning.
         //
         // See #negateMargins for more info.
-        this.margin_right = parseInt($el.css('margin-right'), 10);
-        this.margin_left  = parseInt($el.css('margin-left'), 10);
+        this.rightMargin = parseInt($el.css('margin-right'), 10);
+        this.leftMargin  = parseInt($el.css('margin-left'), 10);
       }
 
-      return this;
+      return true;
     },
 
     show: function() {
-      if (!this.canShow()) {
-        return this;
+      if (!this.$el && !this.build()) {
+        return false;
       }
 
       // Mark the spot as being highlighted by a marker
       this.spot.$el.addClass(this.spot_klasses);
 
-      // Attach and position the marker
+      this.attach();
       this.place();
     },
 
     hide: function() {
+      var $el = this.$el;
+
       this.spot.$el.removeClass(this.spot_klasses);
 
-      if (this.$el) {
-        this.$el.detach();
+      if ($el) {
+        $el.detach();
       }
     },
 
     remove: function() {
       this.hide();
+      this.unwrap();
 
       if (this.$el) {
         this.$el.remove();
         this.$el = null;
       }
-
-      // Return the target back to its place by completely removing the
-      // sibling container we created
-      if (this.isWrapped()) {
-        if (this.spot.$el.parent().is(this.$container)) {
-          this.$container.replaceWith(this.spot.$el);
-        }
-
-        this.$container.remove();
-        this.$container = null;
-      }
     },
 
     highlight: function() {
-      if (!this.$el) {
-        this.build();
+      if (!this.$el && !this.build()) {
+        return false;
       }
 
       guide.$.triggerHandler('marking.gjs_markers', [ this ]);
@@ -575,10 +458,12 @@
 
       this.show();
 
+      guide.log('marker highlighted for spot', this.spot.toString());
+
       guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
-    dehighlight: function(/*spot*/) {
+    dehighlight: function() {
       if (!this.$el) {
         return;
       }
@@ -597,7 +482,7 @@
         });
       }
 
-      if (!this.spot.tour.getOptions().alwaysMark) {
+      if (!this.spot.tour.options.alwaysMark) {
         this.hide();
       }
       else {
@@ -624,7 +509,11 @@
         return false;
       }
 
-      if (!spot.tour.getOptions().alwaysMark && !spot.isFocused()) {
+      if (!spot.tour.isActive()) {
+        return false;
+      }
+
+      if (!spot.tour.options.alwaysMark && !spot.isFocused()) {
         return false;
       }
 
@@ -635,34 +524,112 @@
       return true;
     },
 
-    place: function() {
+    fitsIn: function(p) {
+      var mo = this.spot.$el.offset(),
+          sw = this.spot.$el.outerWidth(),
+          mw = this.$el.outerWidth(),
+          mh = this.$el.outerHeight(),
+          vw = $(window).width() - 20;
+
+      if ( _.contains([ POS_TL, POS_L, POS_BL ], p) ) {
+        if (mo.left - mw < 0) {
+          return 1;
+        }
+      }
+
+      if ( _.contains([ POS_TR, POS_R, POS_BR ], p) ) {
+        if (mo.left + sw + mw > vw) {
+          return 2;
+        }
+      }
+
+      if ( _.contains([ POS_TL, POS_T, POS_TR ], p) ) {
+        if (mo.top - mh < 0) {
+          return 3;
+        }
+      }
+
+      return 0;
+    },
+
+    beSmart: function() {
+      var //s,
+          p = -1,
+          np;
+
+      if ((np = this.fitsIn(this.position)) !== 0) {
+        if (np === 1) {
+          p = POS_L;
+        }
+        else if (np === 2) {
+          p = POS_L;
+        }
+        else if (np === 3) {
+          p = POS_B;
+        }
+      }
+
+      // if (p > -1) {
+      //   p = np+1;
+      //   s = this.positionToString(p);
+      //   console.log('marker: position ', this.position, ' doesnt fit, trying: ', s);
+      //   console.log('query: ', mo.top, mo.left, mw,mh, vw, vh);
+
+      //   this.$el
+      //     .removeClass(this.positionToString(this.position))
+      //     .addClass(s);
+
+      //   this.spot.$el
+      //     .removeClass('gjs-spot-' + this.positionToString(this.position))
+      //     .addClass('gjs-spot-' + s);
+
+      //   this.position = p;
+      //   this.place(true);
+      // }
+    },
+
+    place: function(/*dontBeSmart*/) {
       var $spot = this.spot.$el,
           $marker = this.$el;
 
-      if (!this.canShow()) {
-        return this.hide();
-      }
+      this.query = {
+        w: $marker.outerWidth(),
+        h: $marker.outerHeight(),
 
-      this.attach();
+        o:  $spot.offset(),
+        sw: $spot.outerWidth(),
+        sh: $spot.outerHeight(),
+
+        vw: $(window).width()   - 20,
+        vh: $(window).height()  - 20
+      };
 
       switch(this.placement) {
         case PMT_INLINE:
-          this.hvCenter($marker, this.position);
+          this.hvCenter();
         break;
         case PMT_SIBLING:
+          if (!this.$container.is(':visible')) {
+            this.wrap();
+          }
+
           this.negateMargins($marker,
                         $spot,
                         this.position,
-                        this.margin_left,
-                        this.margin_right,
+                        this.leftMargin,
+                        this.rightMargin,
                         15);
 
-          this.hvCenter($marker, this.position);
+          this.hvCenter();
         break;
         case PMT_OVERLAY:
-          this.snapTo($marker, $spot, this.position);
+          this.snapToSpot();
         break;
       }
+
+      // if (this.options.smart && !dontBeSmart) {
+        // this.beSmart();
+      // }
     },
 
     // insert our DOM node at the appropriate position
@@ -675,10 +642,10 @@
         break;
         case PMT_SIBLING:
           method  = (this.position >= POS_TR && this.position <= POS_BR) ?
-            'after' :
-            'before';
+            'append' :
+            'prepend';
 
-          this.spot.$el[method](this.$el);
+          this.$container[method](this.$el);
         break;
         case PMT_OVERLAY:
           guide.$el.append(this.$el);
@@ -699,123 +666,249 @@
      *
      * @return null
      */
-    hvCenter: function($node, pos) {
-      var margin = 0, dir;
+    hvCenter: function() {
+      var dir, center,
+          $marker = this.$el,
+          margin  = 0,
+          query   = this.query;
 
-      switch(pos) {
+      switch(this.position) {
         case POS_T:
         case POS_B:
           dir = 'left';
-          margin = -1 * ($node.outerWidth() / 2);
+          center = ($marker.outerWidth() / 2);
+          margin = -1 * center;
+
+          if (query.o.left < center) {
+            margin = -1 * (center - query.o.left) / 2;
+          }
+          else if (query.o.left + query.w > query.vw) {
+            margin = -1 * (query.o.left + query.w - query.vw);
+          }
+
         break;
 
         case POS_R:
         case POS_L:
           dir = 'top';
-          margin = -1 * ($node.outerHeight() / 2);
+          center = ($marker.outerHeight() / 2);
+          margin = -1 * center;
         break;
       }
 
-      $node.css('margin-' + dir, margin);
+      $marker.css('margin-' + dir, margin);
     },
 
-    negateMargins: function($node, $anchor, pos, ml, mr) {
+    negateMargins: function() {
       // we must account for the spot node's margin-[right,left] values;
       // ie, in any of the right positions, if the spot has any margin-right
       // we must deduct enough of it to place the marker next to it, we do so
       // by applying negative margin-left by the computed amount
       //
       // same applies to left positions but in the opposite direction (margin-left)
-      var delta = 0, dir, t_m;
+      var
+      // The direction of the negation; left or right
+      dir,
 
-      switch(pos) {
+      // The margin value of the anchor node (ie, margin-left, or margin-right)
+      anchorMargin,
+
+      // Number of pixels to negate the margin by
+      delta = 0,
+
+      // Our marker element whose margin property will be negated
+      $marker = this.$el,
+
+      // The spot's element whose margin value will be taken into account
+      $anchor = this.spot.$el;
+
+      switch(this.position) {
+        // Right row
         case POS_TR:
         case POS_R:
         case POS_BR:
-          t_m = parseInt($anchor.css('margin-right'), 10);
+          anchorMargin = parseInt($anchor.css('margin-right'), 10);
 
-          if (t_m > 0) {
+          if (anchorMargin > 0) {
             // offset is the spot margin without the marker margin
-            delta = -1 * t_m + ml;
+            delta = -1 * anchorMargin + this.leftMargin;
             dir = 'left';
           }
         break;
 
+        // Left row
         case POS_TL:
         case POS_L:
         case POS_BL:
-          t_m = parseInt($anchor.css('margin-left'), 10);
+          anchorMargin = parseInt($anchor.css('margin-left'), 10);
 
-          if (t_m > 0) {
+          if (anchorMargin > 0) {
             // offset is spot margin without marker margin (arrow dimension)
-            delta = -1 * (t_m - mr);
+            delta = -1 * (anchorMargin - this.rightMargin);
             dir = 'right';
           }
         break;
       }
 
       if (delta !== 0) {
-        $node.css('margin-' + dir, delta);
+        $marker.css('margin-' + dir, delta);
       }
 
       return delta;
     },
 
-    snapTo: function($node, $anchor, pos, margin) {
-      var
-      offset  = $anchor.offset(),
-      a_w     = $anchor.outerWidth(),
-      a_h     = $anchor.outerHeight(),
-      n_h     = $node.outerHeight(),
-      n_w     = $node.outerWidth(),
-      m       = margin || 0;
+    /**
+     * Position the marker by means of #offset by querying the spot element's
+     * offset and applying a correction to the top/left coords based on the
+     * position of the marker, its dimensions, and the target's dimensions.
+     */
+    snapToSpot: function() {
+      var markerWidth, markerHeight,
+      offset        = this.spot.$el.offset(),
+      anchorWidth   = this.spot.$el.outerWidth(),
+      anchorHeight  = this.spot.$el.outerHeight(),
+      margin        = this.options.margin;
 
-      switch(pos) {
+      // We must explicitly reset the marker element's offset before querying
+      // its dimensions.
+      this.$el.offset({
+        top: 0,
+        left: 0
+      });
+      markerWidth   = this.$el.outerWidth();
+      markerHeight  = this.$el.outerHeight();
+
+      switch(this.position) {
         case POS_TL:
-          offset.top  -= n_h + m;
+          offset.top  -= markerHeight + margin;
         break;
         case POS_T:
-          offset.top  -= n_h + m;
-          offset.left += a_w / 2 - n_w / 2;
+          offset.top  -= markerHeight + margin;
+          offset.left += anchorWidth / 2 - markerWidth / 2;
         break;
         case POS_TR:
-          offset.top  -= n_h + m;
-          offset.left += a_w - n_w;
+          offset.top  -= markerHeight + margin;
+          offset.left += anchorWidth - markerWidth;
         break;
         case POS_R:
-          offset.top  += a_h / 2 - (n_h/2);
-          offset.left += a_w + m;
+          offset.top  += anchorHeight / 2 - (markerHeight/2);
+          offset.left += anchorWidth + margin;
         break;
         case POS_BR:
-          offset.top  += a_h + m;
-          offset.left += a_w - n_w;
+          offset.top  += anchorHeight + margin;
+          offset.left += anchorWidth - markerWidth;
         break;
         case POS_B:
-          offset.top  += a_h + m;
-          offset.left += a_w / 2 - n_w / 2;
+          offset.top  += anchorHeight + margin;
+          offset.left += anchorWidth / 2 - markerWidth / 2;
         break;
         case POS_BL:
-          offset.top  += a_h + m;
+          offset.top  += anchorHeight + margin;
         break;
         case POS_L:
-          offset.top  += (a_h / 2) - (n_h/2);
-          offset.left -= n_w + m;
+          offset.top  += (anchorHeight / 2) - (markerHeight/2);
+          offset.left -= markerWidth + margin;
         break;
       }
 
-      $node.offset(offset);
+      this.$el.offset(offset);
+    },
+
+    /**
+     * Wrap the marker's element and its spot's element in a container
+     * so they can be siblings.
+     *
+     * While there's high portion of hackery involved here, it is only so in
+     * order to be as transparent as possible, and not to break the page's
+     * layout.
+     */
+    wrap: function() {
+      var $spot = this.spot.$el;
+
+      if (this.$container) {
+        this.unwrap();
+      }
+
+      // Build the container:
+      this.$container =
+        $(this.options.noClone ?
+            '<div />' :
+            // Instead of building a plain `<div/>`, we'll try to replicate the
+            // target element, so we won't break any CSS/JS that uses the tag as
+            // an identifier, we'll do that by cloning the tag and stripping
+            // some properties from it.
+            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ')
+        )
+        // Empty it, we only need the tag and its structure
+        .html('')
+        .attr({
+          'id': null,
+
+          // Remove any gjs- related classes from the container
+          'class': this.options.noClone ?
+                   '' :
+                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+        })
+        .css({
+          // Try to mimic the alignment of the target element
+          display: $spot.css('display'),
+
+          // The container must be relatively positioned, since
+          // we're positioning the marker using margins.
+          position: 'relative'
+        })
+
+        // Set a flag so we can tell whether the spot target is
+        // already wrapped so that we will properly clean up
+        //
+        // See #isWrapped and #remove.
+        .data('gjs-container', true)
+
+        // Position the container right where the target is, and
+        // move the target and the marker inside of it.
+        .insertBefore($spot)
+        .append($spot);
+
+      guide.log('wrapped');
+    },
+
+    /**
+     * Undo what #wrap did by detaching our element, restoring the spot element
+     * back to its original position, and removing the container.
+     */
+    unwrap: function() {
+      if (this.$container) {
+        guide.log('unwrapping');
+        this.$el.detach();
+
+        if (this.spot.$el.parent().is(this.$container)) {
+          this.$container.replaceWith(this.spot.$el);
+        }
+
+        this.$container.remove();
+        this.$container = null;
+      }
     },
 
     isWrapped: function() {
-      var $container = this.$container;
+      return !!this.$container;
+    },
 
-      // if (!this.spot.$el.length) { return false; }
+    positionToString: function(p) {
+      var s;
 
-      // $container = this.spot.$el.parent();
-
-      if ($container && $container.length && $container.data('gjs-container')) {
-        return true;
+      switch(p) {
+        case POS_TL:  s = 'topleft'     ; break;
+        case POS_T:   s = 'top'         ; break;
+        case POS_TR:  s = 'topright'    ; break;
+        case POS_R:   s = 'right'       ; break;
+        case POS_BR:  s = 'bottomright' ; break;
+        case POS_B:   s = 'bottom'      ; break;
+        case POS_BL:  s = 'bottomleft'  ; break;
+        case POS_L:   s = 'left'        ; break;
       }
+
+      return s;
     }
 
   });
