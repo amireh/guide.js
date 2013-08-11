@@ -251,7 +251,8 @@
 
       smart: true,
 
-      noClone: true,
+      mimic: false,
+      mimicDisplay: true,
 
       margin: 15
     },
@@ -832,13 +833,13 @@
 
       // Build the container:
       this.$container =
-        $(this.options.noClone ?
-            '<div />' :
+        $(this.options.mimic ?
             // Instead of building a plain `<div/>`, we'll try to replicate the
             // target element, so we won't break any CSS/JS that uses the tag as
             // an identifier, we'll do that by cloning the tag and stripping
             // some properties from it.
-            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ')
+            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ') :
+            '<div />'
         )
         // Empty it, we only need the tag and its structure
         .html('')
@@ -846,18 +847,20 @@
           'id': null,
 
           // Remove any gjs- related classes from the container
-          'class': this.options.noClone ?
-                   '' :
-                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+          'class': this.options.mimic ?
+                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim() :
+                   ''
         })
         .css({
           // Try to mimic the alignment of the target element
-          display: $spot.css('display'),
+          display: this.options.mimicDisplay ? $spot.css('display') : 'inherit',
 
           // The container must be relatively positioned, since
           // we're positioning the marker using margins.
           position: 'relative'
         })
+
+        .addClass('gjs-container-' + (this.spot.index+1))
 
         // Set a flag so we can tell whether the spot target is
         // already wrapped so that we will properly clean up
