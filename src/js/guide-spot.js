@@ -132,6 +132,10 @@
      * Whether the spot is the current one being visited by the user.
      */
     isFocused: function() {
+      return this.$el.hasClass(KLASS_FOCUSED);
+    },
+
+    isCurrent: function() {
       return this.tour.current === this;
     },
 
@@ -178,19 +182,15 @@
      *
      * The spot will be highlighted if all of the following conditions are met:
      *
-     * 1. The #highlight option is enabled
+     * 1. The Spot#highlight option is enabled, and if it is, then Tour#alwaysHighlight
+     *    or Spot#isCurrent must be on to proceed.
      * 2. The target #$el is valid and is visible, see #isVisible, otherwise the selector
-     * is refreshed in hopes of the target becoming available now
+     *    is refreshed in hopes of the target becoming available now
      */
     highlight: function() {
       var
-      positionQuery,
-      applicable =
-        // The spot-scoped option takes precedence over the tour one.
-        this.options.highlight &&
-        ( this.tour.getOptions().alwaysHighlight ||
-          this.isFocused()
-        );
+      klasses = [ KLASS_TARGET ],
+      positionQuery;
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
       // the selector to see if it's now available, otherwise we can't highlight.
@@ -199,11 +199,11 @@
       }
 
       // Still not visible? Abort highlighting
-      if (!this.isVisible()) {
-        applicable = false;
+      if (!this.isVisible() || !this.options.highlight) {
+        return false;
       }
 
-      if (!applicable) {
+      if (!this.tour.getOptions().alwaysHighlight && !this.isCurrent()) {
         return false;
       }
 
@@ -212,18 +212,17 @@
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
       if (!this.options.noPositioningFix &&
-          !this.tour.hasOption('spots.noPositioningFix')) {
+          !this.tour.hasOption('spots.noPositioningFix') &&
+          !guide.hasOption('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
-        if (_.indexOf( [ 'fixed', 'absolute', 'relative' ], positionQuery ) < 0) {
-          this.$el.addClass('gjs-positioning-fix');
+        if (!_.contains([ 'fixed', 'absolute', 'relative' ], positionQuery)) {
+          klasses.push('gjs-positioning-fix');
         }
       }
 
-      this.$el
-        .toggleClass('no-highlight', !applicable)
-        .toggleClass(KLASS_TARGET,    applicable);
+      this.$el.addClass(klasses.join(' '));
 
       return true;
     },
@@ -261,7 +260,7 @@
      */
     focus: function(prev_spot) {
       var that      = this,
-          callback  = this.options.onDefocus,
+          callback  = this.options.onFocus,
           $scroller = this.$scrollAnchor;
 
       this.highlight();
@@ -282,12 +281,14 @@
            */
           .triggerHandler('focus.gjs', prev_spot);
 
+      this.$.triggerHandler('focus');
+
       if (callback && _.isFunction(callback)) {
         callback.apply(this, arguments);
       }
 
       _.defer(function() {
-        if (that.options.autoScroll && !$scroller.is(':in_viewport')) {
+        if (that.options.autoScroll && $scroller.length && !$scroller.is(':in_viewport')) {
           $('html,body').animate({
             scrollTop: $scroller.offset().top * 0.9
           }, 250);
@@ -313,6 +314,8 @@
         callback.apply(this, arguments);
       }
 
+      this.$.triggerHandler('defocus');
+
       return this;
     },
 
@@ -330,6 +333,10 @@
     },
 
     refresh: function() {
+      if (!this.isVisible()) {
+        this.__refreshTarget();
+      }
+
       if (this.isFocused()) {
         return this.defocus().focus();
       }
@@ -352,6 +359,8 @@
         !this.$scrollAnchor.length) {
         this.$scrollAnchor = this.$el;
       }
+
+      return this.isAvailable();
     },
 
     setScrollAnchor: function($el) {
@@ -360,7 +369,8 @@
 
     toString: function() {
       return this.tour.id + '#' + this.index;
-    }
+    },
+
   });
 
   guide.Spot = Spot;
