@@ -1,4 +1,4 @@
-(function(_, $) {
+(function(root, _, $, undefined) {
   'use strict';
 
   if (!$) {
@@ -6,7 +6,6 @@
   }
 
   var
-  root = this,
   module,
   exports,
 
@@ -50,7 +49,9 @@
        * @cfg {Boolean} [animeDuration=500]
        * How long the animations should take.
        */
-      animeDuration: 500
+      animeDuration: 500,
+
+      debug: true
     },
 
     constructor: function() {
@@ -126,6 +127,10 @@
         _.find(this.tours || [], id);
     },
 
+    allTours: function() {
+      return _.reject(this.tours, function(tour) { return !tour.spots.length; });
+    },
+
     /**
      * Find the default tour which might be explicitly set by the user, or
      * the first one otherwise.
@@ -157,7 +162,7 @@
      * @param {Tour/String} id The Tour to start.
      * @async
      */
-    runTour: function(id) {
+    runTour: function(id, options) {
       var current = this.tour,
           tour;
 
@@ -167,7 +172,7 @@
 
       // Must show first then start the tour.
       if (!this.isShown()) {
-        this.$.one('show', _.bind(this.runTour, this, tour.id ));
+        this.$.one('show', _.bind(this.runTour, this, tour.id, options ));
         this.show({ noAutorun: true });
 
         return false;
@@ -175,11 +180,11 @@
 
       // Must stop the current tour first, wait for it to clean up, then start
       // the new one.
-      if (current) {
+      if (current && current.isActive()) {
         // Kill the active tour reference, otherwise we're stuck in a loop.
         this.tour = null;
 
-        current.$.one('stop', _.bind(this.runTour, this, tour.id ));
+        current.$.one('stop', _.bind(this.runTour, this, tour.id, options ));
         current.stop();
 
         return false;
@@ -188,7 +193,7 @@
       console.log('guide.js: touring "' + tour.id + '"');
 
       this.tour = tour;
-      this.tour.start();
+      this.tour.start(options);
 
       return true;
     },
@@ -241,37 +246,35 @@
           $container = $(selector_or_container || 'body');
 
       $container.find('[data-guide-tour]').add($container).each(function() {
-        var id = $(this).attr('data-guide-tour');
+        var id      = $(this).attr('data-guide-tour'),
+            options = $(this).attr('data-guide-options'),
+            tour;
 
         if (id) {
-          that.defineTour(id);
+          tour = that.defineTour(id);
+          if (options) {
+            tour.setOptions(options);
+          }
         }
       });
 
-      $container.find('[data-guide]').each(function() {
+      $container.find('[data-guide], [data-guide-spot]').each(function() {
         var $target = $(this);
 
-        that.fromNode($target, {
-          text: $target.attr('data-guide')
-        });
-      });
-
-      // Elements with [data-guide-spot] are "references" since they point
-      // to a target that will be used as a spot, while they act as the
-      // content of that spot.
-      //
-      // Side-effect:
-      // The reference node will be detached and no longer available in the DOM.
-      $container.find('[data-guide-spot]').each(function() {
-        var $ref    = $(this),
-            $tour   = $ref.parents('[data-guide-tour]:first'),
-            $target = $($ref.detach().attr('data-guide-spot')),
-            options = _.parseOptions($ref.attr('data-guide-options'));
-
-        that.fromNode($target, _.extend(options, {
-          text: $ref.attr('data-guide-spot', null)[0].outerHTML,
-          tour: $tour.attr('data-guide-tour')
-        }));
+        // Elements with [data-guide-spot] are "references" since they point
+        // to a target that will be used as a spot, while they act as the
+        // content of that spot.
+        //
+        // Side-effect:
+        // The reference node will be detached and no longer available in the DOM.
+        if ($(this).is('[data-guide-spot]')) {
+          that.fromReferenceNode($target);
+        }
+        else {
+          that.fromNode($target, {
+            text: $target.attr('data-guide')
+          });
+        }
       });
 
       return this;
@@ -305,6 +308,18 @@
       });
 
       return this.addSpot($this, options);
+    },
+
+    fromReferenceNode: function($ref) {
+      var
+      $tour   = $ref.parents('[data-guide-tour]:first'),
+      $target = $($ref.detach().attr('data-guide-spot')),
+      options = _.parseOptions($ref.attr('data-guide-options'));
+
+      this.fromNode($target, _.extend(options, {
+        text: $ref.attr('data-guide-spot', null)[0].outerHTML,
+        tour: $tour.attr('data-guide-tour')
+      }));
     },
 
     show: function(inOptions, inCallback) {
@@ -389,7 +404,9 @@
         this.tour.refresh();
       }
 
-      this.toggleOverlayMode();
+      if (this.isShown()) {
+        this.toggleOverlayMode();
+      }
 
       return this;
     },
@@ -481,6 +498,12 @@
 
     getExtension: function(id) {
       return _.find(this.extensions, { id: id });
+    },
+
+    log: function() {
+      if (this.options.debug) {
+        console.log.apply(console, arguments);
+      }
     }
 
   }); // guide.prototype
@@ -497,4 +520,4 @@
   } else {
     root.guide = Guide;
   }
-}).call(this, _, jQuery);
+})(this, _, jQuery);
