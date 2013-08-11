@@ -7,7 +7,7 @@
   },
 
   JST_TUTOR = _.template([
-    '<div>',
+    '<div id="gjs_tutor">',
     '<div class="tutor-navigation">',
       '<button class="bwd"></button>',
       '<span></span>',
@@ -34,15 +34,12 @@
       spanner: false
     },
 
-    attachable: true,
-
     constructor: function() {
       this.$container = guide.$el;
 
       this.$el = $(JST_TUTOR({}));
 
       this.$el.attr({
-        'id': 'gjs_tutor',
         'class': guide.entityKlass()
       });
 
@@ -54,28 +51,12 @@
         $fwd: this.$el.find('.fwd')
       });
 
-      guide.$
-        .on('dismiss', _.bind(this.remove, this))
-        .on('focus', _.bind(this.focus, this));
-
-      // this.$close_btn.on('click', _.bind(guide.hide, guide));
-
-      this.$nav
-        .on('click','.bwd', function() {
-          guide.tour.prev();
-        })
-        .on('click','.fwd', function() {
-          guide.tour.next();
-        });
+      guide.$.on('dismiss', _.bind(this.remove, this));
 
       return this;
     },
 
     show: function() {
-      if (!this.isEnabled()) {
-        return this;
-      }
-
       this.$el.appendTo(this.$container);
 
       return this;
@@ -92,41 +73,48 @@
     },
 
     refresh: function() {
-      var options = this.getOptions();
-
-      if (!this.isEnabled()) {
-        return this.hide();
-      }
-      else if (!this.$el.parent().length /* not attached yet? */) {
-        this.show();
-      }
+      var tour = guide.tour,
+          options = this.getOptions();
 
       this.$el.toggleClass('spanner', options.spanner);
-      this.focus(null, guide.tour.current, guide.tour);
+
+      if (tour && tour.isActive() && tour.current) {
+        this.focus(null, tour.current);
+      }
     },
 
-    onTourStart: function(/*tour*/) {
+    onTourStart: function(tour) {
       this.refresh();
+
+      tour.$.on(this.nsEvent('focus'), _.bind(this.focus, this));
+
+      this.$nav
+        .on('click','.bwd', _.bind(tour.prev, tour))
+        .on('click','.fwd', _.bind(tour.next, tour));
+
+      this.show();
     },
 
-    onTourStop: function() {
+    onTourStop: function(tour) {
       this.hide();
+
+      this.$nav.off('click');
+      tour.$.off(this.nsEvent('focus'));
     },
 
-    focus: function(e, spot, tour) {
-      var left = tour.previous && tour.previous.index > tour.cursor,
+    focus: function(e, spot) {
+      var tour = spot.tour,
+          left = tour.previous && tour.previous.index > tour.cursor,
           anim_dur = 'fast', // animation duration
           anim_offset = '50px',
           $number;
 
-      if (!spot || !spot.$el.is(':visible')) {
-        return this.hide();
-      }
-
-      this.show();
-
       if (spot === this.spot) {
         return;
+      }
+
+      if (!spot) {
+        throw 'guide.js: no spot?';
       }
 
       this.$content.html(JST_SPOT(spot));
