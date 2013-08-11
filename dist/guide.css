@@ -159,11 +159,11 @@
 
   /*.gjs-transition(background-color; 0.25s; ease-in);*/
 
-  -webkit-transition: background-color 0.25s ease-in, top 0.25s ease-in, left 0.25s ease-in;
-  -moz-transition: background-color 0.25s ease-in, top 0.25s ease-in, left 0.25s ease-in;
-  -o-transition: background-color 0.25s ease-in, top 0.25s ease-in, left 0.25s ease-in;
-  -ms-transition: background-color 0.25s ease-in, top 0.25s ease-in, left 0.25s ease-in;
-  transition: background-color 0.25s ease-in, top 0.25s ease-in, left 0.25s ease-in;
+  -webkit-transition: background-color 0.25s ease-in;
+  -moz-transition: background-color 0.25s ease-in;
+  -o-transition: background-color 0.25s ease-in;
+  -ms-transition: background-color 0.25s ease-in;
+  transition: background-color 0.25s ease-in;
   cursor: pointer;
   padding: 10px;
   display: inline-block;
@@ -195,7 +195,7 @@
   background: rgba(51, 181, 229, 0.95);
 }
 .gjs-marker.focused {
-  cursor: inherit;
+  cursor: auto;
 }
 .gjs-marker.inline-marker {
   position: absolute;
@@ -585,7 +585,10 @@
 }
 .gjs-with-overlay p.gjs-spot-focused:not(.no-highlight),
 .gjs-with-overlay span.gjs-spot-focused:not(.no-highlight),
-.gjs-with-overlay pre.gjs-spot-focused:not(.no-highlight) {
+.gjs-with-overlay pre.gjs-spot-focused:not(.no-highlight),
+.gjs-with-overlay blockquote.gjs-spot-focused:not(.no-highlight),
+.gjs-with-overlay strong.gjs-spot-focused:not(.no-highlight),
+.gjs-with-overlay em.gjs-spot-focused:not(.no-highlight) {
   color: #ffffff;
 }
 .gjs-spot.no-highlight:after {

@@ -5,7 +5,7 @@
   "camelcase"     : false,
   "curly"         : true,
   "eqeqeq"        : true,
-  "forin"         : true,
+  "forin"         : false,
   "immed"         : false,
   "indent"        : false,
   "latedef"       : true,
