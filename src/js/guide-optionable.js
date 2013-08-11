@@ -64,8 +64,18 @@
       return _.extend({}, this.options);
     },
 
+    /**
+     * Check if an option is set, regardless of its value.
+     */
     hasOption: function(key) {
       return _.dotGet(key, this.getOptions()) !== void 0;
+    },
+
+    /**
+     * Check if an option is set and evaluates to true.
+     */
+    isOptionOn: function(key) {
+      return !!_.dotGet(key, this.getOptions());
     },
 
     /**
