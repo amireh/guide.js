@@ -10,14 +10,13 @@
       marker: { position: 'top' }
     };
 
-    guide.setOptions({
-      tutor: { enabled: false }
-    });
-
-    guide.tour.setOptions(tour_options);
     guide.tour.setOptions({
+      alwaysHighlight: false,
+      alwaysMark: false,
+      marker: { position: 'top' },
+      tutor: { enabled: false },
       onStart: function() {
-        this.focus(0);
+        this.focus(0)
       }
     });
 
@@ -53,7 +52,11 @@
     tour.setOptions({
       tutor: { enabled: true },
       markers: { enabled: false },
-      controls: { inTutor: true }
+      controls: { inTutor: true },
+
+      onStart: function() {
+        this.focus(0);
+      },
     });
 
     tour.addSpots([
