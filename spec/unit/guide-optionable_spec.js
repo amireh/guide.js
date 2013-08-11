@@ -84,6 +84,17 @@ describe("guide", function() {
       expect(o.hasOption('foo')).toBeTruthy();
       expect(o.hasOption('a.b')).toBeTruthy();
       expect(o.hasOption('foo.bar')).toBeFalsy();
+    });
+
+    it('#isOptionOn', function() {
+      o.options = {
+        foo: true,
+        bar: false
+      }
+
+      expect(o.isOptionOn('foo')).toBeTruthy();
+      expect(o.isOptionOn('bar')).toBeFalsy();
+      expect(o.isOptionOn('x.y.z')).toBeFalsy();
     })
   });
 })

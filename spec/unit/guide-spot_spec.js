@@ -100,7 +100,7 @@ describe("guide", function() {
           highlight: true
         });
 
-        spot.tour.current = spot;
+        tour.start({ spot: spot });
 
         expect(spot.isFocused()).toBeTruthy();
         expect(spot.highlight()).toBeTruthy();

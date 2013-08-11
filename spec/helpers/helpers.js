@@ -1,4 +1,5 @@
 var
+  specCallbacks = this.specCallbacks,
   nr_nodes = 0,
   nr_nodes_sel = ':not(#HTMLReporter, #HTMLReporter *, #specContainer)';
 
@@ -14,6 +15,10 @@ beforeEach(function() {
 });
 
 afterEach(function() {
+  _.each(specCallbacks, function(callback) {
+    callback();
+  });
+
   guide.reset();
   $('[data-spec]').remove();
 

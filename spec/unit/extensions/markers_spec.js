@@ -94,13 +94,15 @@ describe("Extensions", function() {
         });
 
         it(':inline', function() {
-          spot = mkVisibleSpot();
-
-          marker  = ext.addMarker(null, spot, {
-            options: {
+          spot = mkVisibleSpot(null, null, {
+            marker: {
               placement: 'inline'
             }
           });
+
+          marker = spot.marker;
+
+          marker.spot.tour.start();
 
           expect(marker.options.placement).toEqual('inline');
           expect(marker.isWrapped()).toBeFalsy();
@@ -112,14 +114,14 @@ describe("Extensions", function() {
         });
 
         it(':sibling', function() {
-          spot = mkSpot();
-          spot.$el.appendTo($('body'));
-
-          marker  = ext.addMarker(null, spot, {
-            options: {
+          spot = mkVisibleSpot(null, null, {
+            marker: {
               placement: 'sibling'
             }
           });
+
+          marker = spot.marker;
+          marker.spot.tour.start();
 
           expect(marker.isWrapped()).toBeTruthy();
           expect(marker.canShow()).toBeTruthy();
@@ -128,18 +130,17 @@ describe("Extensions", function() {
 
           expect(marker.$container[0]).toEqual(spot.$el.parent()[0]);
           expect(marker.$container[0]).toEqual(marker.$el.parent()[0]);
-
-          spot.remove();
         });
 
         it(':overlay', function() {
-          spot = mkVisibleSpot();
-
-          marker  = ext.addMarker(null, spot, {
-            options: {
+          spot = mkVisibleSpot(null, null, {
+            marker: {
               placement: 'overlay'
             }
           });
+
+          marker = spot.marker;
+          marker.spot.tour.start();
 
           expect(marker.isWrapped()).toBeFalsy();
           expect(marker.canShow()).toBeTruthy();
