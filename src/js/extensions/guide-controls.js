@@ -21,49 +21,30 @@
     '<% _.forEach(tours, function(tour) { %>',
       '<option value="<%= tour.id %>"><%= tour.id %></option>',
     '<% }); %>'
-  ].join('')),
-
-  JST_DEV_CONTORLS = _.template([
-    '<div class="developer-controls">',
-      '<button data-action="guide.toggle">Toggle</button>',
-      '<button data-action="toggleOverlay">Toggle Overlay</button>',
-    '</div>'
   ].join(''));
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
       enabled: true,
-      withDeveloperControls: false,
       inMarkers:  false,
-      inTutor:    false
+      inTutor:    false,
+      withTourSelector: true
     },
-
-    attachable: true,
 
     id: 'controls',
 
     constructor: function() {
-      var that = this;
-
       this.$container = guide.$el;
       this.guide = guide;
-      this.tour  = guide.tour;
-      this.options = this.getOptions();
+      this.tour = null;
 
       // this.refresh();
 
       guide.$
-      .on('dismiss', _.bind(this.remove, this))
-      .on('focus', function(/*e, spot*/) {
-        that.refreshControls();
-      });
+        .on('dismiss',  _.bind(this.remove, this))
+        .on('focus',    _.bind(this.refreshControls, this));
 
       this.$el = $(JST_CONTROLS({}));
-
-      if (this.options.withDeveloperControls) {
-        this.$el.append($(JST_DEV_CONTORLS({})));
-      }
-
       this.$el
         .addClass(guide.entityKlass())
         .on('click', '[data-action]', _.bind(this.delegate, this));
@@ -85,18 +66,18 @@
       this.refresh();
     },
 
+    onTourStop: function() {
+      this.tour = null;
+      this.hide();
+    },
+
     show: function() {
       this.$el.appendTo(this.$container);
       this.refreshControls();
-
-      return this;
     },
 
     hide: function() {
-      // guide.$container.append(this.$el);
       this.$el.detach();
-
-      return this;
     },
 
     remove: function() {
@@ -109,6 +90,10 @@
     },
 
     attachToMarker: function(marker) {
+      if (!marker.$el) {
+        return this.hide();
+      }
+
       this.$container = marker.$el;
       this.$container.addClass('with-controls');
 
@@ -125,16 +110,17 @@
 
     refresh: function() {
       var
+      tour        = guide.tour,
       extTutor    = guide.getExtension('tutor'),
       extMarkers  = guide.getExtension('markers'),
       options     = this.getOptions();
 
       // this.remove();
 
-      if (extMarkers && extMarkers.isEnabled() && options.inMarkers) {
+      if (extMarkers && extMarkers.isEnabled(tour) && options.inMarkers) {
         this.markerMode(extMarkers);
       }
-      else if (extTutor && extTutor.isEnabled() && options.inTutor) {
+      else if (extTutor && extTutor.isEnabled(tour) && options.inTutor) {
         this.tutorMode(extTutor);
       }
       else {
@@ -145,7 +131,7 @@
     },
 
     classicMode: function() {
-      var extTutor = guide.getExtension('tutor'),
+      var extTutor    = guide.getExtension('tutor'),
           extMarkers  = guide.getExtension('markers');
 
       this.$container = guide.$el;
@@ -158,8 +144,8 @@
 
       if (extMarkers) {
         guide.$
-        .off('marking.gjs_markers.gjs_controls')
-        .off('unmarking.gjs_markers.gjs_controls');
+          .off(this.nsEvent('marking.gjs_markers'))
+          .off(this.nsEvent('unmarking.gjs_markers'));
       }
     },
 
@@ -170,23 +156,19 @@
       this.$container = $();
 
       guide.$
-      .on('marking.gjs_markers.gjs_controls', function(e, marker) {
-        that.attachToMarker(marker);
-      })
-      .on('unmarking.gjs_markers.gjs_controls', function(e, marker) {
-        that.detachFromMarker(marker);
-      });
+        .on(this.nsEvent('marking.gjs_markers'), function(e, marker) {
+          that.attachToMarker(marker);
+        })
+        .on(this.nsEvent('unmarking.gjs_markers'), function(e, marker) {
+          that.detachFromMarker(marker);
+        });
 
       // if we're embedding into markers and a spot is currently marked,
       // attach ourselves to the marker
       if (guide.tour && guide.tour.current && guide.tour.current.marker) {
         marker = guide.tour.current.marker;
 
-        _.defer(function() {
-          marker.hide();
-          that.attachToMarker(marker);
-          marker.show();
-        });
+        _.defer(_.bind(this.attachToMarker, this, marker));
       }
     },
 
@@ -222,25 +204,26 @@
       return $.consume(e);
     },
 
-    toggleOverlay: function() {
-      guide.setOptions({
-        withOverlay: !guide.options.withOverlay
-      });
-    },
 
     refreshControls: function() {
-      var tour = this.tour;
+      var tour = guide.tour;
 
       this.$bwd.prop('disabled',    !tour.hasPrev());
       this.$fwd.prop('disabled',    !tour.hasNext());
       this.$first.prop('disabled',  !tour.hasPrev());
       this.$last.prop('disabled',   !tour.hasNext());
-      this.$hide.toggle(            !tour.hasNext());
+      // this.$hide.toggle(            !tour.hasNext());
+      this.$hide.show();
 
-      this.$tour_selector
-        .html(JST_TOUR_LIST({ tours: guide.tours }))
-        .toggle(guide.tours.length > 1)
-        .find('[value="' + tour.id + '"]').prop('selected', true);
+      if (this.getOptions().withTourSelector) {
+        this.$tour_selector
+          .html(JST_TOUR_LIST({ tours: guide.tours }))
+          .toggle(guide.tours.length > 1)
+          .find('[value="' + tour.id + '"]').prop('selected', true);
+      }
+      else {
+        this.$tour_selector.hide();
+      }
     },
 
     switchTour: function() {
