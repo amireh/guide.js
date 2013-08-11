@@ -14,7 +14,7 @@
   /*.gjs-transition(background-color; 0.25s; ease-in);*/
 
   @targs: "0.25s ease-in";
-  .gjs-multiple-transition(~"background-color @{targs}, top @{targs}, left @{targs}");
+  .gjs-multiple-transition(~"background-color @{targs}");
 
   cursor: pointer;
   padding: 10px;
@@ -40,7 +40,7 @@
   }
 
   &.focused {
-    cursor: inherit;
+    cursor: auto;
   }
 
   &.inline-marker {
