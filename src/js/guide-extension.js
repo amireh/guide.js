@@ -2,17 +2,7 @@
   'use strict';
 
   var Extension = _.extend({}, guide.Optionable, {
-    /**
-     * @cfg {Boolean} [attachable=false]
-     *
-     * If this extension has elements that are displayed when guide.js launches
-     * a tour, turning this setting on will internally
-     */
-    attachable: false,
-
     __initExtension: function() {
-      var that = this;
-
       if (!this.id) {
         throw 'guide.js: bad extension, missing #id';
       }
@@ -22,41 +12,34 @@
 
       this.options = _.extend({}, this.defaults, this.options);
 
-      guide.$
-        .on(this.nsEvent('show'), function() {
-          if (that.onGuideShow && that.isEnabled()) {
-            that.onGuideShow();
+      if (this.onGuideShow) {
+        guide.$.on(this.nsEvent('hide'), _.bind(function() {
+          if (this.isEnabled()) {
+            this.onGuideShow();
+            this._shouldHide = true;
           }
-        })
-        .on(this.nsEvent('showing'), function() {
-          if (that.attachable) {
-            that.show();
-          }
-        })
-        .on(this.nsEvent('hide'), function() {
-          if (that.onGuideHide && that.isEnabled()) {
-            that.onGuideHide();
-          }
+        }, this));
+      }
 
-          if (that.attachable) {
-            that.hide();
+      if (this.onGuideHide) {
+        guide.$.on(this.nsEvent('hide'), _.bind(function() {
+          if (this._shouldHide) {
+            this.onGuideHide();
+            this._shouldHide = false;
           }
-        })
-        .on(this.nsEvent('start.tours'), function(e, tour) {
-          if (that.onTourStart && that.isEnabled(tour)) {
-            that.onTourStart(tour);
+        }, this));
+      }
+
+      if (this.onTourStart) {
+        guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
+          // this.refresh();
+
+          if (this.isEnabled(tour)) {
+            this.onTourStart(tour);
+            tour.$.one('stop', _.bind(this.onTourStop, this, tour));
           }
-        })
-        .on(this.nsEvent('stop.tours'), function(e, tour) {
-          if (that.onTourStop && that.isEnabled(tour)) {
-            that.onTourStop(tour);
-          }
-        })
-        .on(this.nsEvent('reset.tours'), function(e, tour) {
-          if (that.onTourReset && that.isEnabled(tour)) {
-            that.onTourReset(tour);
-          }
-        });
+        }, this));
+      }
     },
 
     /**
