@@ -118,7 +118,7 @@
          */
         $scrollAnchor: $el,
 
-        options: _.extend({}, this.defaults, options)
+        options: _.extend({}, this.defaults, tour.options.spots, options)
       });
 
       $el
@@ -265,6 +265,10 @@
 
       this.highlight();
 
+      if (callback && _.isFunction(callback)) {
+        callback.apply(this, arguments);
+      }
+
       this
         .$el
           .addClass(KLASS_FOCUSED)
@@ -282,10 +286,6 @@
           .triggerHandler('focus.gjs', prev_spot);
 
       this.$.triggerHandler('focus');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, arguments);
-      }
 
       _.defer(function() {
         if (that.options.autoScroll && $scroller.length && !$scroller.is(':in_viewport')) {
