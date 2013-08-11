@@ -14,7 +14,13 @@
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
-      enabled: true
+      enabled: true,
+
+      /**
+       * @cfg {Boolean} [resetOnStart=true]
+       * Reset the current tour when the toggler is used to launch guide.js.
+       */
+      resetOnStart: true
     },
 
     id: 'toggler',
@@ -28,7 +34,7 @@
       this.$el.addClass(guide.entityKlass());
       this.$indicator = this.$el.find('button');
 
-      this.$el.on('click', '.show', _.bind(guide.show, guide));
+      this.$el.on('click', '.show', _.bind(this.launchTour, this));
       this.$el.on('click', '.hide', _.bind(guide.hide, guide));
 
       guide.$
@@ -81,6 +87,14 @@
       } else {
         this.show();
       }
+    },
+
+    launchTour: function() {
+      if (this.options.resetOnStart) {
+        guide.tour.reset();
+      }
+
+      guide.show();
     }
 
   }); // tutor.prototype
