@@ -17,15 +17,90 @@ describe("guide", function() {
     });
 
     describe('#addSpot', function() {
-      it('should reject building multiple spots for the same $target', function() {
-        expect(tour.addSpot($target)).toBeTruthy();
+      // it('should reject building multiple spots for the same $target', function() {
+      //   expect(tour.addSpot($target)).toBeTruthy();
 
-        expect(function() {
-          tour.addSpot($target);
-        }).toThrow('guide.js: duplicate spot, see console for more information');
+      //   expect(function() {
+      //     tour.addSpot($target);
+      //   }).toThrow('guide.js: duplicate spot, see console for more information');
 
-        expect(guide.tour.spots.length).toEqual(1);
+      //   expect(guide.tour.spots.length).toEqual(1);
+      // });
+    });
+
+    describe('Focusing', function() {
+    })
+
+    describe('#closest', function() {
+      it('should go #backwards', function() {
+        var alt, anchor;
+
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+
+        anchor = tour.spots[3];
+        alt    = tour.closest(anchor);
+
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(2);
+
+        anchor = tour.spots[2];
+        anchor.options.fallback = 'backwards';
+        alt    = tour.closest(anchor);
+
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(1);
+
+        anchor = tour.spots[0];
+        anchor.options.fallback = 'backwards';
+        alt = tour.closest(anchor);
+
+        expect( alt ).toBeFalsy();
+
+        delete anchor.options.fallback;
+
+        alt = tour.closest(anchor);
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(1);
       });
+
+      it('should go #forwards', function() {
+        var alt, anchor;
+
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+
+        anchor = tour.spots[0];
+        alt    = tour.closest(anchor);
+
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(1);
+
+        anchor = tour.spots[2];
+        anchor.options.fallback = 'forwards';
+        alt    = tour.closest(anchor);
+
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(3);
+
+        anchor = tour.spots[3];
+        anchor.options.fallback = 'forwards';
+        alt = tour.closest(anchor);
+
+        expect( alt ).toBeFalsy();
+
+        delete anchor.options.fallback;
+
+        alt = tour.closest(anchor);
+        expect( alt ).toBeTruthy();
+        expect( alt.index ).toEqual(2);
+      });
+
+
     });
 
     describe('Navigation', function() {

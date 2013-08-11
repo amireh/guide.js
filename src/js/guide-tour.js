@@ -222,9 +222,9 @@
       }
 
       // has the spot been already defined? we can not handle duplicates
-      if ($el.data('gjs-spot')) {
-        throw 'guide.js: duplicate spot, see console for more information';
-      }
+      // if ($el.data('gjs-spot')) {
+        // throw 'guide.js: duplicate spot, see console for more information';
+      // }
 
       spot = new guide.Spot($el, this, this.spots.length, options);
 
@@ -304,9 +304,7 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot  = this.getSpot(index),
-          i; // spot iterator
-
+      var spot = this.getSpot(index);
 
       if (!this.isActive()) {
         return false;
@@ -328,6 +326,9 @@
         this.current.defocus(spot);
         guide.$.triggerHandler('defocus', [ this.current, spot, this ]);
         this.$.triggerHandler('defocus', [ this.current, spot ]);
+
+        this.previous = this.current;
+        this.current = null;
       }
 
       if (_.isFunction(spot.options.preFocus)) {
@@ -344,26 +345,16 @@
         if (!spot.__refreshTarget() || !spot.isVisible()) {
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
-          for (i = 0; i < this.spots.length; ++i) {
-            spot = this.spots[i];
-
-            if (spot.isVisible()) {
-              guide.log('tour: \tfound one:', spot.index);
-              this.cursor = i;
-              break;
-            }
-            else {
-              spot = null;
-            }
-          }
+          spot = this.closest(spot);
 
           if (!spot) {
             return false;
           }
+
+          return this.focus(spot);
         }
       }
 
-      this.previous = this.current;
       this.current = spot;
       this.cursor  = spot.index;
 
@@ -386,6 +377,54 @@
       console.log('guide.js: visiting tour spot #', spot.index);
 
       return true;
+    },
+
+    closest: function(inSpot) {
+      var
+      anchor = inSpot.index,
+      spot,
+      seek = _.bind(function(direction) {
+        var i, spot;
+
+        if (direction === 'backwards') {
+          for (i = anchor-1; i >= 0; --i) {
+            spot = this.spots[i];
+
+            if (spot.isVisible()) {
+              return spot;
+            }
+          }
+        }
+        else {
+          for (i = anchor+1; i < this.spots.length; ++i) {
+            spot = this.spots[i];
+
+            if (spot.isVisible()) {
+              return spot;
+            }
+          }
+        }
+
+        return null;
+      }, this);
+
+      if (this.spots.length <= 1) {
+        return null;
+      }
+
+      if (_.contains([ 'forwards', 'backwards' ], inSpot.options.fallback)) {
+        return seek(inSpot.options.fallback);
+      } else {
+        if (this.spots.length > anchor && (spot = seek('forwards'))) {
+          return spot;
+        }
+
+        if (anchor > 0 && (spot = seek('backwards'))) {
+          return spot;
+        }
+      }
+
+      return null;
     },
 
     getSpot: function(index) {
