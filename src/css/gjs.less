@@ -8,11 +8,8 @@
  * gjs.js Skin
  */
 .gjs-spot {
-  /*position: relative;*/
-
   &:after {
     .gjs-fullscreen(-5px);
-    /*.gjs-box-shadow(0, 0, 1px, 1px, lighten(@gjs-highlight-bg, 10%));*/
     background-color: fade(@gjs-highlight-bg, 10%);
   }
 }
@@ -21,13 +18,94 @@
   position: relative;
 }
 
-.gjs-spot-inline {
-  /*position: relative;*/
-}
-
 .gjs-spot-focused {
   &:after {
     background-color: fade(@gjs-highlight-bg, 20%);
+  }
+}
+
+.gjs-spot-disco {
+  @dim: 6px;
+  @from: -1 * (@dim);
+  @to: 100%;
+
+  display: block;
+  position: absolute;
+  width:  @dim;
+  height: @dim;
+  overflow: hidden;
+  background: rgba(0,0,0, 0.15);
+  z-index: 1;
+
+  @keyframes gjs-disco {
+    0%   { top: @from;  left: @from;  }
+    25%  { top: @from;  left: @to;    }
+    50%  { top: @to;    left: @to;    }
+    75%  { top: @to;    left: @from;  }
+    100% { top: @from;  left: @from;  }
+  }
+
+  @-webkit-keyframes gjs-disco {
+    0%   { top: @from;  left: @from;  }
+    25%  { top: @from;  left: @to;    }
+    50%  { top: @to;    left: @to;    }
+    75%  { top: @to;    left: @from;  }
+    100% { top: @from;  left: @from;  }
+  }
+
+  @-moz-keyframes gjs-disco {
+    0%   { top: @from;  left: @from;  }
+    25%  { top: @from;  left: @to;    }
+    50%  { top: @to;    left: @to;    }
+    75%  { top: @to;    left: @from;  }
+    100% { top: @from;  left: @from;  }
+  }
+
+  @-o-keyframes gjs-disco {
+    0%   { top: @from;  left: @from;  }
+    25%  { top: @from;  left: @to;    }
+    50%  { top: @to;    left: @to;    }
+    75%  { top: @to;    left: @from;  }
+    100% { top: @from;  left: @from;  }
+  }
+
+  .gjs-animate('disco'; 0.5s linear infinite);
+}
+.gjs-spot-flashy {
+  .gjs-fullscreen(0);
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.5;
+
+  @keyframes gjs-flashy {
+    0%   { }
+    100% { }
+  }
+
+  @-webkit-keyframes gjs-flashy {
+    0%   { background: red;  }
+    50%  { background: red; }
+    100% { background: transparent;    }
+  }
+
+  @-moz-keyframes gjs-flashy {
+    0%   { }
+    100% { }
+  }
+
+  @-o-keyframes gjs-flashy {
+    0%   {  }
+    100% {  }
+  }
+
+  .gjs-animate('flashy'; 1s cubic-bezier(.175,.885,.32,1.275) alternate infinite);
+
+  &.flash-once {
+    -webkit-animation-iteration-count:  2;
+    -moz-animation-iteration-count:     2;
+    -ms-animation-iteration-count:      2;
+    -o-animation-iteration-count:       2;
+    animation-iteration-count:          2;
   }
 }
 
@@ -81,3 +159,4 @@
   .gjs-border-bottom();
   .gjs-box-sizing(content-box);
 }
+

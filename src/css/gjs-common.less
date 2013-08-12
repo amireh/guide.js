@@ -124,3 +124,11 @@
   border-bottom: 1px solid rgba(255,255,255,0.15);
   box-shadow: 0 1px 0 darken(@gjs-highlight-bg, 1%);
 }
+
+.gjs-animate(@name; @rest...) {
+  -webkit-animation:  ~"gjs-@{name}" @rest;
+  -moz-animation:     ~"gjs-@{name}" @rest;
+  -ms-animation:      ~"gjs-@{name}" @rest;
+  -o-animation:       ~"gjs-@{name}" @rest;
+  animation:          ~"gjs-@{name}" @rest;
+}
