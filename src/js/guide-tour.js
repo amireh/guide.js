@@ -29,6 +29,16 @@
       isDefault: false,
 
       /**
+       * @cfg {Number} [refreshInterval=10]
+       *
+       * Milliseconds to wait for a spot's element that's not visible to show up
+       * before looking for an alternative spot to focus.
+       *
+       * See Spot#dynamic and Tour#focus for more details on this behaviour.
+       */
+      refreshInterval: 10,
+
+      /**
        * @cfg {Function} [onStart=null]
        * A chance to prepare any elements, install event handlers, or context
        * needed for this tour.
@@ -154,6 +164,10 @@
     stop: function() {
       if (!this.isActive()) {
         return false;
+      }
+
+      if (this.current) {
+        this.current.defocus();
       }
 
       _.invoke(this.spots, 'dehighlight', { force: true });
@@ -335,8 +349,6 @@
         return false;
       }
 
-      guide.log('tour: focusing spot', index);
-
       if (!spot) {
         throw 'guide.js: bad spot @ ' + index + ' to focus';
       }
@@ -348,38 +360,47 @@
 
       // de-focus the last spot
       if (this.current) {
-        this.current.defocus(spot);
-        guide.$.triggerHandler('defocus', [ this.current, spot, this ]);
-        this.$.triggerHandler('defocus', [ this.current, spot ]);
-
-        this.previous = this.current;
-        this.current = null;
+        this.__defocus(spot);
       }
 
-      if (_.isFunction(spot.options.preFocus)) {
-        spot.options.preFocus.apply(spot, []);
-      }
+      if (!this.hasJustRefreshed) {
+        spot.$.triggerHandler('pre-focus', [ spot ]);
+        this.$.triggerHandler('pre-focus', [ spot ]);
+        guide.$.triggerHandler('pre-focus', [ spot, this ]);
 
-      spot.$.triggerHandler('pre-focus');
-      this.$.triggerHandler('pre-focus', [ spot ]);
-      guide.$.triggerHandler('pre-focus', [ spot, this ]);
-
-      // If the spot target isn't currently visible, we'll try to refresh
-      // the selector in case the element has just been created, and if it still
-      // isn't visible, we'll try finding any visible spot to focus instead.
-      if (!spot.isVisible()) {
-        if (!spot.__refreshTarget() || !spot.isVisible()) {
+        // If the spot target isn't currently visible, we'll try to refresh
+        // the selector in case the element has just been created, and if it still
+        // isn't visible, we'll try finding any visible spot to focus instead.
+        //
+        // We'll give the spot a space of 10ms to refresh by default, otherwise
+        // see #refreshInterval.
+        if (spot.options.dynamic && !spot.isVisible()) {
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
-          spot = this.__closest(spot, spot.options.fallback);
+          setTimeout(_.bind(function() {
+            // Refresh...
+            if (spot.__refreshTarget() && spot.isVisible()) {
+              this.hasJustRefreshed = true;
+              this.focus(spot);
+            }
+            // Look for an alternative:
+            else {
+              spot = this.__closest(spot, spot.options.fallback);
 
-          if (!spot) {
-            return false;
-          }
+              if (spot) {
+                this.hasJustRefreshed = false;
+                this.focus(spot);
+              }
 
-          return this.focus(spot);
-        }
-      }
+              // Nothing we can do.
+            }
+          }, this), this.options.refreshInterval);
+
+          return false;
+        } // visibility test
+      } // refreshing block
+
+      this.hasJustRefreshed = false;
 
       this.current = spot;
       this.cursor  = spot.index;
@@ -403,6 +424,19 @@
       console.log('guide.js: visiting tour spot #', spot.index);
 
       return true;
+    },
+
+    /**
+     * @private
+     */
+    __defocus: function(nextSpot) {
+      this.current.defocus(nextSpot);
+
+      this.$.triggerHandler('defocus',  [ this.current, nextSpot ]);
+      guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
+
+      this.previous = this.current;
+      this.current = null;
     },
 
     /**
