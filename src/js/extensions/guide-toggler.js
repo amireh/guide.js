@@ -91,7 +91,9 @@
 
     launchTour: function() {
       if (this.options.resetOnStart) {
-        guide.tour.reset();
+        if (guide.tour) {
+          guide.tour.reset();
+        }
       }
 
       guide.show();
