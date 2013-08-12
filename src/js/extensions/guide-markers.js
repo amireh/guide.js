@@ -536,7 +536,7 @@
         return false;
       }
 
-      if (!spot.tour.isActive() || !spot.options.mark) {
+      if (!spot.tour.isActive() || !spot.options.withMarker) {
         return false;
       }
 
