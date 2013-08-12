@@ -32,7 +32,9 @@
 
       tourList: _.template([
         '<% _.forEach(tours, function(tour) { %>',
-          '<option value="<%= tour.id %>"><%= tour.id %></option>',
+          '<% if (tour.spots.length) { %>',
+            '<option value="<%= tour.id %>"><%= tour.id %></option>',
+          '<% } %>',
         '<% }); %>'
       ].join(''))
     },
