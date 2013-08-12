@@ -1,96 +1,103 @@
 <section>
-  <p>Highlight me</p>
+  <p id="hidden_paragraph">Highlight me</p>
 </section>
 
 <script>
   $(function() {
-    var tour_options = {
-      alwaysHighlight: false,
-      alwaysMark: false,
-      marker: { position: 'top' }
-    };
+    guide.defineTour('Controls')
+      .setOptions({
+        isDefault: true,
+        alwaysHighlight: false,
+        alwaysMark: false,
+        marker: { position: 'top' },
+        tutor: { enabled: false }
+      })
+      .addSpots([
+        {
+          $el: $('#gjs_controls'),
+          text: 'This is the guide.js controls extension, it allows the user to ' +
+                'navigate around the tour.',
+          marker: { placement: 'inline' }
+        },
+        {
+          $el: $('#gjs_controls [data-action*=next]'),
+          text: 'You can go to the next tour spot using this button.',
+          marker: { width: 120 }
+        },
+        {
+          $el: $('#gjs_controls [data-action*=prev]'),
+          text: 'Or go to the previous spot.',
+          marker: { width: 120 }
+        },
+        {
+          $el: $('#gjs_controls select[name="tour"]'),
+          text: 'You can choose the tour you\'d like to take, if guide.js has more ' +
+                'than one tour available.',
+          marker: { width: 120 }
+        }
+      ]);
 
-    guide.tour.setOptions({
-      alwaysHighlight: false,
-      alwaysMark: false,
-      marker: { position: 'top' },
-      tutor: { enabled: false },
-      onStart: function() {
-        this.focus(0)
+    guide.defineTour('Tutor Controls')
+      .setOptions({
+        alwaysHighlight: false,
+
+        spots: {
+          marker: { position: 'top' },
+        },
+
+        tutor: {
+          enabled: true
+        },
+
+        markers: {
+          enabled: false
+        },
+
+        controls: {
+          inTutor: true
+        }
+      })
+    .addSpots([
+      {
+        $el: $('#gjs_controls'),
+        text: 'This is the Controls extension mounted on top of the Tutor extension. ' +
+              '<p>The controls are now nicely embedded with the tutor.</p>',
+        marker: { placement: 'inline', width: '50%' }
       }
-    });
-
-    guide.tour.id = 'Controls';
-
-    guide.addSpots([
-    {
-      $el: $('#gjs_controls'),
-      text: 'This is the guide.js controls extension, it allows the user to ' +
-            'navigate around the tour.',
-      marker: { placement: 'inline' }
-    },
-    {
-      $el: $('#gjs_controls [data-action*=next]'),
-      text: 'You can go to the next tour spot using this button.',
-      marker: { width: 120 }
-    },
-    {
-      $el: $('#gjs_controls [data-action*=prev]'),
-      text: 'Or go to the previous spot.',
-      marker: { width: 120 }
-    },
-    {
-      $el: $('#gjs_controls select[name="tour"]'),
-      text: 'You can choose the tour you\'d like to take, if guide.js has more ' +
-            'than one tour available.',
-      marker: { width: 120 }
-    }
     ]);
 
-    var tour = guide.defineTour('Tutor Controls');
-    tour.setOptions(tour_options);
-    tour.setOptions({
-      tutor: { enabled: true },
-      markers: { enabled: false },
-      controls: { inTutor: true },
+    guide.defineTour('Marker Controls')
+      .setOptions({
+        tutor: {
+          enabled: false
+        },
 
-      onStart: function() {
-        this.focus(0);
-      },
-    });
+        markers: {
+          enabled: true
+        },
 
-    tour.addSpots([
-    {
-      $el: $('#gjs_controls'),
-      text: 'This is the Controls extension mounted on top of the Tutor extension. ' +
-            '<p>The controls are now nicely embedded with the tutor.</p>',
-      marker: { placement: 'inline', width: '50%' }
-    }
-    ]);
+        controls: {
+          inMarkers: true
+        }
+      })
+      .addSpots([{
+          $el: $('#hidden_paragraph'),
+          text: 'This is the Controls extension mounted on top of the Markers extension. ' +
+                '<p>The controls are now nicely embedded inside each Marker.</p>',
+          marker: {
+            placement: 'inline',
+            position: 'bottom'
+          },
 
-    tour = guide.defineTour('Marker Controls');
-    tour.setOptions({
-      tutor: { enabled: false },
-      markers: { enabled: true },
-      controls: { inMarkers: true },
+          preFocus: function() {
+            this.$el.show();
+          },
 
-      onStart: function() {
-        $(".example p").show();
-        this.focus(0);
-      },
-      onStop: function() {
-        $(".example p").hide();
-      }
-    });
-
-    tour.addSpots([
-    {
-      $el: $('.example p'),
-      text: 'This is the Controls extension mounted on top of the Markers extension. ' +
-            '<p>The controls are now nicely embedded inside each Marker.</p>',
-      marker: { placement: 'inline', position: 'bottom' }
-    }
-    ]);
+          onDefocus: function() {
+            this.$el.hide();
+          }
+        }
+      ]);
 
     $(".example p").hide();
 
