@@ -12,6 +12,8 @@
 
       this.options = _.extend({}, this.defaults, this.options);
 
+      guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
+
       if (this.onGuideShow) {
         guide.$.on(this.nsEvent('hide'), _.bind(function() {
           if (this.isEnabled()) {
@@ -116,7 +118,9 @@
      */
     reset: function() {
       this.options = _.clone(this.defaults);
-    }
+    },
+
+    remove: function() {}
   });
 
   guide.Extension = Extension;
