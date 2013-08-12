@@ -26,7 +26,35 @@
        * guide.js will run the default tour if no tour is specified, and falls
        * back to a blank 'Default Tour' if no tour has #isDefault specified.
        */
-      isDefault: false
+      isDefault: false,
+
+      /**
+       * @cfg {Function} [onStart=null]
+       * A chance to prepare any elements, install event handlers, or context
+       * needed for this tour.
+       *
+       * A few usage examples for this callback:
+       *
+       * - Backbone apps can ensure that a certain view or route is active
+       *   prior to starting the tour (ie, its elements reside in that view)
+       * - Listen to events that should advance the tour, stop it, restart it, etc.
+       * - Show a greeting modal or a message to the user to tell them what
+       *   the tour is about
+       *
+       * This callback will be invoked with the tour object being `thisArg`,
+       * and will also receive the tour object as its second parameter.
+       */
+      onStart: null,
+
+      /**
+       * @cfg {Function} [onStop=null]
+       * A chance to clean-up any resources allocated during the tour, or specific
+       * to it. This should basically undo what Tour#onStart did.
+       *
+       * This callback will be invoked with the tour object being `thisArg`,
+       * and will also receive the tour object as its second parameter.
+       */
+      onStop: null
     },
 
     constructor: function(label) {
@@ -35,7 +63,7 @@
       _.extend(this, {
         id: label, // TODO: unique constraints on tour IDs
 
-        options: _.extend({}, this.defaults),
+        options: _.extend({}, guide.options.tours, this.defaults),
 
         spots: [],
 
@@ -51,6 +79,12 @@
 
       // console.log('guide.js: tour defined: ', this.id);
 
+      if (_.isFunction(this.options.onStart)) {
+        this.$.on('start.user', _.bind(this.options.onStart, this));
+      }
+      if (_.isFunction(this.options.onStop)) {
+        this.$.on('stop.user', _.bind(this.options.onStop, this));
+      }
       return this;
     },
 
@@ -62,26 +96,38 @@
      * @fires start
      */
     start: function(options) {
-      var callback    = this.options.onStart,
-          spotToFocus = this.current || this.spots[0];
+      options = _.defaults(options || {}, {
+        // Set a default spot to focus if none was specified, we'll default to
+        // the current one (if resuming) or the first.
+        spot: this.current || this.spots[0]
+      });
 
       if (!guide.isShown()) {
         guide.runTour(this, options);
 
-        return this;
+        return false;
       }
-
-      _.invoke(this.spots, 'highlight');
-
-      if ((options||{}.spot) !== undefined) {
-        spotToFocus = this.getSpot(options.spot);
+      else if (this.isActive()) {
+        return false;
       }
 
       this.active = true;
 
-      if (spotToFocus) {
-        this.focus(spotToFocus);
+      // Ask the spots to highlight themselves if they should; see Spot#highlight
+      _.invoke(this.spots, 'highlight');
+
+      // Focus a spot if possible.
+      if (options.spot) {
+        this.focus(this.__getSpot(options.spot));
       }
+
+      /**
+       * @event start
+       *
+       * Same as Tour#start_tours but triggered on the tour's event delegator
+       * instead: Tour#$.
+       */
+      this.$.triggerHandler('start', [ this ]);
 
       /**
        * @event start_tours
@@ -89,40 +135,38 @@
        * Fired when the tour has been started, ie: the spots have been highlighted
        * and one has been focused, if viable.
        *
-       * **This event is triggered on `guide.$`, the guide event delegator.**
+       * **This event is triggered on Guide#$, the guide event delegator.**
        *
        * @param {Tour} tour This tour.
        */
       guide.$.triggerHandler('start.tours', [ this ]);
 
-      /**
-       * @event start
-       *
-       * Same as Tour#start_tours but triggered on the tour's event delegator
-       * instead: `tour.$`.
-       */
-      this.$.triggerHandler('start');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, []);
-      }
-
-      return this;
+      return true;
     },
 
     /**
      * Stop the current tour by dehighlighting all its spots, and de-focusing
      * the current spot, if any.
      *
-     * @fires stop_tours
      * @fires stop
+     * @fires stop_tours
      */
     stop: function() {
-      var callback  = this.options.onStop;
+      if (!this.isActive()) {
+        return false;
+      }
 
       _.invoke(this.spots, 'dehighlight', { force: true });
 
       this.active = false;
+
+      /**
+       * @event stop
+       *
+       * Same as Tour#stop_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('stop', [ this ]);
 
       /**
        * @event stop_tours
@@ -136,19 +180,7 @@
        */
       guide.$.triggerHandler('stop.tours', [ this ]);
 
-      /**
-       * @event stop
-       *
-       * Same as Tour#stop_tours but triggered on the tour's event delegator
-       * instead: `tour.$`.
-       */
-      this.$.triggerHandler('stop');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, []);
-      }
-
-      return this;
+      return true;
     },
 
     /**
@@ -159,20 +191,15 @@
     reset: function(full) {
       if (this.current) {
         this.current.defocus();
-        this.current = null;
 
         // should we also de-highlight, as in #stop?
       }
 
-      this.previous = null;
+      this.current = this.previous = null;
       this.cursor = -1;
 
       if (full) {
-        guide.$.triggerHandler('reset.tours', [ this ]);
-
-        _.each(this.spots, function(spot) {
-          spot.remove();
-        });
+        _.invoke(this.spots, 'remove');
 
         this.spots = [];
         this.options = _.clone(this.defaults);
@@ -193,7 +220,8 @@
      */
     refresh: function() {
       if (this.isActive()) {
-        this.stop().start();
+        this.stop();
+        this.start();
       }
 
       return this;
@@ -217,23 +245,25 @@
       }
 
       if (!($el instanceof jQuery)) {
-        throw 'guide.js: bad Spot target, expected a jQuery object ' +
-              'but got ' + typeof($el);
+        throw 'guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
       }
 
-      // has the spot been already defined? we can not handle duplicates
+      // Has the spot been already defined? we can not handle duplicates
       // if ($el.data('gjs-spot')) {
         // throw 'guide.js: duplicate spot, see console for more information';
       // }
 
       spot = new guide.Spot($el, this, this.spots.length, options);
-
       this.spots.push(spot);
+
+      // Stop tracking it if it gets removed
+      spot.$.on('remove', _.bind(this.__removeSpot, this));
 
       if (this.isActive()) {
         spot.highlight();
       }
 
+      this.$.triggerHandler('add', [ spot ]);
       guide.$.triggerHandler('add', [ spot ]);
 
       return spot;
@@ -241,8 +271,7 @@
 
     addSpots: function(spots) {
       if (!_.isArray(spots)) {
-        throw new Error('guide.js: bad spots, expected Array,' + ' got: ' +
-                        typeof(spots));
+        throw 'guide.js: bad spots, expected Array,' + ' got: ' + typeof(spots);
       }
 
       _.each(spots, function(definition) {
@@ -254,8 +283,6 @@
 
     /**
      * Focuses the next spot, if any.
-     *
-     * @see guide#focus
      */
     next: function() {
       if (!this.hasNext()) {
@@ -280,9 +307,7 @@
     },
 
     hasPrev: function() {
-      var ln = this.spots.length;
-
-      return ln !== 1 && this.cursor > 0;
+      return this.spots.length !== 1 && this.cursor > 0;
     },
 
     first: function() {
@@ -304,7 +329,7 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot = this.getSpot(index);
+      var spot = this.__getSpot(index);
 
       if (!this.isActive()) {
         return false;
@@ -335,8 +360,9 @@
         spot.options.preFocus.apply(spot, []);
       }
 
-      guide.$.triggerHandler('pre-focus', [ spot, this ]);
+      spot.$.triggerHandler('pre-focus');
       this.$.triggerHandler('pre-focus', [ spot ]);
+      guide.$.triggerHandler('pre-focus', [ spot, this ]);
 
       // If the spot target isn't currently visible, we'll try to refresh
       // the selector in case the element has just been created, and if it still
@@ -345,7 +371,7 @@
         if (!spot.__refreshTarget() || !spot.isVisible()) {
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
-          spot = this.closest(spot);
+          spot = this.__closest(spot, spot.options.fallback);
 
           if (!spot) {
             return false;
@@ -379,7 +405,26 @@
       return true;
     },
 
-    closest: function(inSpot) {
+    /**
+     * Attempt to find the closest visible spot to the given one.
+     *
+     * @param {Number/String} [direction='forwards']
+     * The first direction to seek a match in:
+     *
+     * - `forwards`: will look for spots that follow the anchor
+     * - `backwards`: will look for spots that precede the anchor
+     * - Number: will use the spot at the given index, see Spot#index
+     *
+     * If the direction yields no visible spot, the opposite direction is then
+     * searched.
+     *
+     * @return {null/Spot}
+     * If a number was passed, and that spot isn't visible, `null` is returned,
+     * same goes for if a direction was given and no visible spot could be found.
+     *
+     * @private
+     */
+    __closest: function(inSpot, direction) {
       var
       anchor = inSpot.index,
       spot,
@@ -412,8 +457,8 @@
         return null;
       }
 
-      if (_.contains([ 'forwards', 'backwards' ], inSpot.options.fallback)) {
-        return seek(inSpot.options.fallback);
+      if (_.contains([ 'forwards', 'backwards' ], direction)) {
+        return seek(direction);
       } else {
         if (this.spots.length > anchor && (spot = seek('forwards'))) {
           return spot;
@@ -427,7 +472,10 @@
       return null;
     },
 
-    getSpot: function(index) {
+    /**
+     * @private
+     */
+    __getSpot: function(index) {
       if (_.isNumber(index)) {
         return this.spots[index];
       }
@@ -440,6 +488,21 @@
       }
 
       return null;
+    },
+
+    /**
+     * @private
+     */
+    __removeSpot: function(e, spot) {
+      this.spots = _.without(this.spots, spot);
+
+      if (spot === this.current) {
+        this.current = null;
+        this.cursor = -1;
+      }
+      else if (spot === this.previous) {
+        this.previous = null;
+      }
     }
   });
 
