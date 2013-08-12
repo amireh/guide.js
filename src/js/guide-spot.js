@@ -160,21 +160,10 @@
     },
 
     /**
-     * Check if the spot target is currently reachable in the DOM.
-     */
-    isAvailable: function() {
-      return !!(this.$el.length);
-    },
-
-    isAttached: function() {
-      return this.isAvailable() && this.$el.parent().length > 0;
-    },
-
-    /**
-     * Check if the spot target is currently available *and* visible in the DOM.
+     * Check if the target is currently existent *and* visible in the DOM.
      */
     isVisible: function() {
-      return this.isAttached() && this.$el.is(':visible');
+      return this.$el.length && this.$el.is(':visible');
     },
 
     /**
@@ -192,18 +181,22 @@
       klasses = [ KLASS_TARGET ],
       positionQuery;
 
+
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
       // the selector to see if it's now available, otherwise we can't highlight.
-      if (!this.isAvailable()) {
+      if (!this.isVisible()) {
         this.__refreshTarget();
+
+        // Still not visible? Abort highlighting
+        if (!this.isVisible()) {
+          return false;
+        }
       }
 
-      // Still not visible? Abort highlighting
-      if (!this.isVisible() || !this.options.highlight) {
+      if (!this.options.highlight) {
         return false;
       }
-
-      if (!this.tour.getOptions().alwaysHighlight && !this.isCurrent()) {
+      else if (!this.tour.options.alwaysHighlight && !this.isCurrent()) {
         return false;
       }
 
@@ -212,8 +205,8 @@
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
       if (!this.options.noPositioningFix &&
-          !this.tour.hasOption('spots.noPositioningFix') &&
-          !guide.hasOption('spots.noPositioningFix')) {
+          !this.tour.isOptionOn('spots.noPositioningFix') &&
+          !guide.isOptionOn('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
@@ -288,10 +281,12 @@
       this.$.triggerHandler('focus');
 
       _.defer(function() {
-        if (that.options.autoScroll && $scroller.length && !$scroller.is(':in_viewport')) {
+        if (that.options.autoScroll &&
+            $scroller.length &&
+            !$scroller.is(':in_viewport')) {
           $('html,body').animate({
             scrollTop: $scroller.offset().top * 0.9
-          }, 250);
+          }, guide.options.withAnimations ? 250 : 0);
         }
       });
 
@@ -338,7 +333,10 @@
       }
 
       if (this.isFocused()) {
-        return this.defocus().focus();
+        this.defocus();
+        this.focus();
+
+        return this;
       }
 
       this.dehighlight();
@@ -360,7 +358,7 @@
         this.$scrollAnchor = this.$el;
       }
 
-      return this.isAvailable();
+      return this.isVisible();
     },
 
     setScrollAnchor: function($el) {
