@@ -1,0 +1,78 @@
+<link href="/disco_droid.css" rel="stylesheet" type="text/css" />
+<section>
+  <h2>Disco Droid</h2>
+  <p>Courtesy of <a href="http://cssdeck.com/labs/full/android-on-crack">CSSDeck</a>,
+    by <a href="https://twitter.com/xl1blue">xl1blue</a> and <a href="http://cssdeck.com/user/rishabhp">Rishabh</a>
+  </p>
+
+  <div class="right light"></div>
+  <div class="left light"></div>
+  <div class="droid">
+    <div class="head">
+      <div class="ears">
+        <div class="right ear"></div>
+        <div class="left ear"></div>
+      </div>
+      <div class="eyes">
+        <div class="right eye"></div>
+        <div class="left eye"></div>
+      </div>
+    </div>
+    <div class="body">
+      <div class="right arm"></div>
+      <div class="left arm"></div>
+      <div class="trunk">
+      </div>
+    </div>
+    <div class="foot">
+      <div class="right leg"></div>
+      <div class="left leg"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  $(function() {
+
+    guide.tour.setOptions({
+      alwaysHighlight: false,
+      spots: {
+        flashy: true
+      },
+      tutor: {
+        enabled: false
+      }
+    });
+
+    guide.addSpot('.droid .head', {
+      text: 'This is what a droid\'s head looks like.',
+      highlight: false,
+      marker: {
+        position: 'top',
+        placement: 'inline'
+      }
+    });
+
+    guide.addSpot('.droid .arm.left', {
+      text: "A droid's arm.",
+      disco: true,
+      marker: {
+        position: 'right',
+        placement: 'inline',
+        width: 80
+      }
+    });
+    guide.addSpot('.droid .right.leg', {
+      text: "And a droid's leg.",
+      flashy: true,
+      disco: true,
+      marker: {
+        position: 'bottom',
+        placement: 'inline',
+        width: 100
+      }
+    });
+
+    guide.show();
+  });
+</script
