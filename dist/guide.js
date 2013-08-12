@@ -793,7 +793,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.3.0';
+  Guide.VERSION = '1.3.1';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -1424,6 +1424,14 @@
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
           setTimeout(_.bind(function() {
+            // This is a necessary evil for specs as in some cases, a spot gets
+            // removed before the timeout has elapsed, in that case we'll abort.
+            //
+            // TODO: remove in production build.
+            if (!spot.$el) {
+              return;
+            }
+
             // Refresh...
             if (spot.__refreshTarget() && spot.isVisible()) {
               this.hasJustRefreshed = true;
@@ -2696,7 +2704,7 @@
       spot      = this.spot;
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
-      if (!spot.isVisible()) {
+      if (!spot || !spot.isVisible()) {
         return false;
       }
       // Already built? no-op at the moment, we don't support re-building
