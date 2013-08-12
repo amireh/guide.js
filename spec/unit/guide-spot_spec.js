@@ -53,10 +53,45 @@ describe("guide", function() {
       expect($el.data()).toEqual({});
     });
 
+    describe('Callbacks', function() {
+      var
+      spot,
+      listener = {
+        handler: function() {}
+      };
+
+      beforeEach(function() {
+        spot = mkSpot();
+
+        spyOn(listener, 'handler');
+      });
+
+      it('#focus', function() {
+        spot.$.on('focus.spec', _.bind(listener.handler, listener));
+        spot.focus();
+        expect(listener.handler).toHaveBeenCalled();
+      });
+
+      it('#defocus', function() {
+        spot.$.on('defocus.spec', _.bind(listener.handler, listener));
+        spot.focus();
+        spot.defocus();
+        expect(listener.handler).toHaveBeenCalled();
+      });
+
+      it('#remove', function() {
+        spot.$.on('remove.spec', _.bind(listener.handler, listener));
+        spot.remove();
+        expect(listener.handler).toHaveBeenCalled();
+      });
+
+    });
+
     describe('Highlighting', function() {
       var spot;
 
       beforeEach(function() {
+        guide.tour.setOptions(guide.tour.defaults);
         spot = mkVisibleSpot();
       });
 
@@ -130,6 +165,20 @@ describe("guide", function() {
         expect(spot.highlight()).toBeTruthy();
         expect(spot.$el[0].className).not.toEqual(klasses);
         expect(spot.dehighlight({ force: true })).toBeTruthy();
+        expect(spot.$el[0].className).toEqual(klasses);
+      });
+
+      it('should restore the target\'s classes on defocus', function() {
+        var klasses = spot.$el[0].className;
+
+        spot.tour.setOptions({
+          alwaysHighlight: false,
+          alwaysMark: false
+        });
+
+        expect(spot.focus()).toBeTruthy();
+        expect(spot.$el[0].className).not.toEqual(klasses);
+        expect(spot.defocus()).toBeTruthy();
         expect(spot.$el[0].className).toEqual(klasses);
       });
 

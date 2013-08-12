@@ -16,6 +16,8 @@ beforeEach(function() {
 });
 
 afterEach(function() {
+  console.log('-- SPEC TEARDOWN --');
+
   _.each(specCallbacks, function(callback) {
     callback();
   });

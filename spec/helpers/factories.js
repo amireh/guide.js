@@ -1,19 +1,24 @@
-var specCallbacks     = this.specCallbacks,
-    spotCleanupQueue  = []
+var specCallbacks = this.specCallbacks,
+    cleanupQueue  = []
 
 if (!specCallbacks) {
   specCallbacks = [];
 }
 
 specCallbacks.push(function() {
-  _.invoke(spotCleanupQueue, 'remove');
+  _.invoke(cleanupQueue, 'remove');
 
-  spotCleanupQueue = [];
+  cleanupQueue = [];
 });
 
 function mkSpot($inEl, inTour, options) {
-  var $el   = $inEl || $('<div [data-spec]>Fixture</div>')
+  var $el   = $inEl,
       tour  = inTour || guide.tour;
+
+  if (!$el) {
+    $el = $('<div [data-spec]>Fixture</div>');
+    cleanupQueue.push($el);
+  }
 
   return tour.addSpot($el, options || {});
 };
@@ -22,8 +27,6 @@ function mkVisibleSpot($el, tour, options) {
   var spot = mkSpot($el, tour, options);
 
   spot.$el.appendTo($('body'));
-
-  spotCleanupQueue.push(spot.$el);
 
   return spot;
 };

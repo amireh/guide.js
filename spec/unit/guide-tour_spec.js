@@ -41,27 +41,27 @@ describe("guide", function() {
         mkVisibleSpot();
 
         anchor = tour.spots[3];
-        alt    = tour.closest(anchor);
+        alt    = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(2);
 
         anchor = tour.spots[2];
         anchor.options.fallback = 'backwards';
-        alt    = tour.closest(anchor);
+        alt    = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
 
         anchor = tour.spots[0];
         anchor.options.fallback = 'backwards';
-        alt = tour.closest(anchor);
+        alt = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeFalsy();
 
         delete anchor.options.fallback;
 
-        alt = tour.closest(anchor);
+        alt = tour.__closest(anchor, anchor.options.fallback);
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
       });
@@ -75,27 +75,27 @@ describe("guide", function() {
         mkVisibleSpot();
 
         anchor = tour.spots[0];
-        alt    = tour.closest(anchor);
+        alt    = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
 
         anchor = tour.spots[2];
         anchor.options.fallback = 'forwards';
-        alt    = tour.closest(anchor);
+        alt    = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(3);
 
         anchor = tour.spots[3];
         anchor.options.fallback = 'forwards';
-        alt = tour.closest(anchor);
+        alt = tour.__closest(anchor, anchor.options.fallback);
 
         expect( alt ).toBeFalsy();
 
         delete anchor.options.fallback;
 
-        alt = tour.closest(anchor);
+        alt = tour.__closest(anchor, anchor.options.fallback);
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(2);
       });
