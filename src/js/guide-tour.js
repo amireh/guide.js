@@ -378,6 +378,14 @@
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
           setTimeout(_.bind(function() {
+            // This is a necessary evil for specs as in some cases, a spot gets
+            // removed before the timeout has elapsed, in that case we'll abort.
+            //
+            // TODO: remove in production build.
+            if (!spot.$el) {
+              return;
+            }
+
             // Refresh...
             if (spot.__refreshTarget() && spot.isVisible()) {
               this.hasJustRefreshed = true;

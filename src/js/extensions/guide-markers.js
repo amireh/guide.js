@@ -303,7 +303,7 @@
       spot      = this.spot;
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
-      if (!spot.isVisible()) {
+      if (!spot || !spot.isVisible()) {
         return false;
       }
       // Already built? no-op at the moment, we don't support re-building
