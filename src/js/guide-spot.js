@@ -50,6 +50,27 @@
        */
       noPositioningFix: false,
 
+      dynamic: true,
+
+      /**
+       * @cfg {Boolean} [disco=false]
+       * A disco-lights highlighting effect on the spot target. Highlighting it
+       * will not only shade it with an overlay, but also throw in a light particle
+       * that dances around its borders.
+       *
+       * Very pretty for small, rectangular elements like buttons and panels.
+       */
+      disco: false,
+
+      /**
+       * @cfg {Boolean/'once'} [flashy=false]
+       * Flash the target when it gets focus. Turn it red, then not, then red,
+       * then not.
+       *
+       * Pair this with Spot#disco for maximum hackery.
+       */
+      flashy: false,
+
       /**
        * @cfg {Function} [preFocus=null]
        * A chance to prepare the Spot's target before being visited by the user.
@@ -98,6 +119,11 @@
        * and will also receive the spot object as its second parameter.
        */
       onDefocus: null
+    },
+
+    templates: {
+      disco: _.template('<div class="gjs-spot-disco"></div>'),
+      flashy: _.template('<div class="gjs-spot-flashy"></div>')
     },
 
     /**
@@ -170,12 +196,26 @@
         options: _.extend({}, this.defaults, tour.options.spots, options)
       });
 
+      if (this.options.disco) {
+        this.$disco = $(this.templates.disco({}));
+      }
+      if (this.options.flashy) {
+        this.$flashy = $(this.templates.flashy({}));
+        if (this.options.flashy === 'once') {
+          this.$flashy.addClass('flash-once');
+        }
+      }
+
       $el
         .addClass(guide.entityKlass())
         .data('gjs-spot', this);
 
-      // Install handlers that were passed manually for convenience
+      // Install handlers that were passed manually for convenience.
       if (_.isFunction(options.preFocus)) {
+        // This is triggered by the tour itself in #focus as the spot has no
+        // control at that stage yet.
+        //
+        // See Tour#focus.
         this.$.on('pre-focus.user', _.bind(options.preFocus, this));
       }
       if (_.isFunction(options.onFocus)) {
@@ -193,6 +233,13 @@
      */
     isFocused: function() {
       return this.$el.hasClass(KLASS_FOCUSED);
+    },
+
+    /**
+     * Whether the spot is currently highlighted in the tour.
+     */
+    isHighlighted: function() {
+      return this.$el.hasClass(KLASS_TARGET);
     },
 
     getText: function() {
@@ -236,7 +283,6 @@
       var
       klasses = [ KLASS_TARGET ],
       positionQuery;
-
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
       // the selector to see if it's now available, otherwise we can't highlight.
@@ -310,6 +356,14 @@
     focus: function(prev_spot) {
       this.highlight();
 
+      if (this.options.disco) {
+        this.$disco.appendTo(this.$el);
+      }
+
+      if (this.options.flashy) {
+        this.$flashy.appendTo(this.$el);
+      }
+
       this.$el
         .addClass(KLASS_FOCUSED)
         /**
@@ -354,10 +408,17 @@
     defocus: function(next_spot) {
       this.dehighlight();
 
+      if (this.$disco) {
+        this.$disco.detach();
+      }
+      if (this.$flashy) {
+        this.$flashy.detach();
+      }
+
+      this.$el.removeClass(KLASS_FOCUSED);
+
       this.$.triggerHandler('defocus', [ this, next_spot ]);
-      this.$el
-        .removeClass(KLASS_FOCUSED)
-        .triggerHandler('defocus.gjs', [ this, next_spot ]);
+      this.$el.triggerHandler('defocus.gjs', [ this, next_spot ]);
 
       return this;
     },
@@ -392,6 +453,8 @@
      * have been modified by the spot.
      */
     remove: function() {
+      guide.log('Spot ' + this + ' is being removed.');
+
       /**
        * @event focus
        * Fired when the spot is being entirely removed from a tour. Once a spot
@@ -436,8 +499,10 @@
         return this;
       }
 
-      this.dehighlight();
-      this.highlight();
+      if (this.isHighlighted()) {
+        this.dehighlight();
+        this.highlight();
+      }
 
       return this;
     },
@@ -450,14 +515,16 @@
      * @private
      */
     __refreshTarget: function() {
-      this.$el = $(this.$el.selector);
+      if (this.$el.selector.length) {
+        this.$el = $(this.$el.selector);
 
-      if (!this.$scrollAnchor ||
-          // Could be set by an extension, like Markers, to something other than
-          // the target $el, don't override it.
-          !this.$scrollAnchor.length ||
-          !this.$scrollAnchor.is(':visible')) {
-        this.setScrollAnchor(this.$el);
+        if (!this.$scrollAnchor ||
+            // Could be set by an extension, like Markers, to something other than
+            // the target $el, don't override it.
+            !this.$scrollAnchor.length ||
+            !this.$scrollAnchor.is(':visible')) {
+          this.setScrollAnchor(this.$el);
+        }
       }
 
       return this.isVisible();
