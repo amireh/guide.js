@@ -10,6 +10,8 @@
     return this.constructor.apply(this, arguments);
   },
 
+  idGenerator = 0,
+
   /**
    * Plain markers that contain only the step index, no text, and no caption.
    */
@@ -75,6 +77,8 @@
           }), 'marker');
       };
 
+      guide.Spot.prototype.addOption('withMarker', true);
+
       // We must manually assign the options to the default tour as it has
       // already been created.
       if (guide.tour) {
@@ -135,7 +139,9 @@
         var marker = $(this).data('gjs-marker');
 
         if (marker) {
-          marker.spot.tour.focus(marker.spot);
+          if (!marker.spot.isFocused()) {
+            marker.spot.tour.focus(marker.spot);
+          }
 
           return $.consume(e);
         }
@@ -160,14 +166,9 @@
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
-
-      // listen to its option changes
-      // tour.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
     },
 
     onTourStop: function(tour) {
-      // tour.$.off(this.nsEvent('refresh'));
-
       _.invoke(tour.getMarkers(), 'hide');
     },
 
@@ -180,9 +181,7 @@
 
       console.log('[markers] repositioning markers for tour ', tour.id);
 
-      _.invoke(_.filter(tour.getMarkers(), function(marker) {
-        return marker.placement === PMT_OVERLAY;
-      }), 'snapToSpot');
+      _.invoke(_.where(tour.getMarkers(), { placement: PMT_OVERLAY }), 'snapToSpot');
 
       return true;
     }
@@ -258,33 +257,38 @@
     },
 
     constructor: function(spot, attributes) {
-      _.extend(this, attributes);
+      _.extend(this, attributes, {
+        id: ++idGenerator,
+        spot: spot,
+        options: _.extend({ },
+          // lowest priority: our defaults
+          this.defaults,
 
-      this.spot   = spot;
+          (attributes || {}).options,
+          // then, guide's global marker options,
+          guide.getOptions().marker,
+          // then, the spot's tour options,
+          spot.tour.getOptions().marker,
+          // and highest priority: the spot's options
+          spot.getOptions().marker)
+      });
+
       spot.marker = this;
 
-      // Parse the marker options
-      this.options = _.extend(
-        {},
-        // lowest priority: our defaults
-        this.defaults,
-
-        (attributes || {}).options,
-        // then, guide's global marker options,
-        guide.getOptions().marker,
-        // then, the spot's tour options,
-        spot.tour.getOptions().marker,
-        // and highest priority: the spot's options
-        spot.getOptions().marker);
-
       this.spot.$
-        .on('focus', _.bind(this.highlight, this))
-        .on('defocus', _.bind(this.dehighlight, this))
-        .on('remove', _.bind(this.remove, this));
+        .on(this.ns('focus'),   _.bind(function() { this.show(); }, this))
+        .on(this.ns('defocus'), _.bind(function() { this.hide(); }, this))
+        .on(this.ns('remove'),  _.bind(function() { this.remove(); }, this));
 
       this.build();
 
+      guide.log('Marker', this.id, 'created for spot', this.spot.toString());
+
       return this;
+    },
+
+    ns: function(event) {
+      return [ event, 'gjs_marker', this.id ].join('.');
     },
 
     /**
@@ -406,9 +410,53 @@
       return true;
     },
 
+    remove: function() {
+      if (!this.spot) {
+        throw 'marker being removed twice?!';
+      }
+
+      guide.log('Marker', this.id, 'removed for spot', this.spot.toString());
+
+      this.hide({
+        completely: true
+      });
+
+      this.spot.$
+        .off(this.ns('remove'))
+        .off(this.ns('defocus'))
+        .off(this.ns('focus'));
+
+      delete this.spot.marker;
+
+      if (this.$el) {
+        this.$el.remove();
+        this.$el = this.spot = null;
+      }
+    },
+
     show: function() {
       if (!this.$el && !this.build()) {
         return false;
+      }
+      else if (!this.canShow()) {
+        this.hide({ completely: true });
+        return false;
+      }
+
+      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
+
+      if (this.spot.isFocused()) {
+        this.$el.addClass('focused');
+
+        if (this.withText) {
+          this.$index.hide();
+
+          this.$text.show();
+          this.$caption.show();
+          this.$el.css({
+            width: this.width
+          });
+        }
       }
 
       // Mark the spot as being highlighted by a marker
@@ -416,78 +464,56 @@
 
       this.attach();
       this.place();
-    },
 
-    hide: function() {
-      var $el = this.$el;
-
-      this.spot.$el.removeClass(this.spot_klasses);
-
-      if ($el) {
-        $el.detach();
-      }
-    },
-
-    remove: function() {
-      this.hide();
-      this.unwrap();
-
-      if (this.$el) {
-        this.$el.remove();
-        this.$el = null;
-      }
-    },
-
-    highlight: function() {
-      if (!this.$el && !this.build()) {
-        return false;
-      }
-
-      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
-
-      this.$el.addClass('focused');
-
-      if (this.withText) {
-        this.$index.hide();
-
-        this.$text.show();
-        this.$caption.show();
-        this.$el.css({
-          width: this.width
-        });
-      }
-
-      this.show();
-
-      guide.log('marker highlighted for spot', this.spot.toString());
+      guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
 
       guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
-    dehighlight: function() {
-      if (!this.$el) {
-        return;
-      }
+    hide: function(options) {
+      options = _.defaults(options || {}, {
+        completely: false
+      });
 
       guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
 
-      this.$el.removeClass('focused');
+      // If the tour doesn't want markers to always be shown, or we're being
+      // removed (options.completely), then we'll roll-back our changes,
+      // detach ourselves, and unwrap if viable.
+      //
+      if (!this.spot.tour.options.alwaysMark || options.completely) {
+        // Restore the spot's target's CSS classes
+        this.spot.$el.removeClass(this.spot_klasses);
 
-      if (this.withText) {
-        this.$index.show();
+        // Hide ourselves.
+        if (this.$el) {
+          this.$el.detach();
+        }
 
-        this.$text.hide();
-        this.$caption.hide();
-        this.$el.css({
-          width: 'auto'
-        });
+        // Un-wrap the spot's target, if we're in sibling placement mode.
+        if (this.isWrapped()) {
+          this.unwrap();
+        }
       }
+      // This check is necessary because #hide might be called while the marker
+      // has not been built, or has failed to build.
+      else if (this.$el) {
+        this.$el.removeClass('focused');
 
-      if (!this.spot.tour.options.alwaysMark) {
-        this.hide();
-      }
-      else {
-        this.show();
+        // Hide the content, show the number marker.
+        if (this.withText) {
+          this.$index.show();
+
+          this.$text.hide();
+          this.$caption.hide();
+          this.$el.css({
+            width: 'auto'
+          });
+        }
+
+        // this.attach();
+        // this.place();
+        _.defer(_.bind(this.show, this));
       }
 
       guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
@@ -510,7 +536,7 @@
         return false;
       }
 
-      if (!spot.tour.isActive()) {
+      if (!spot.tour.isActive() || !spot.options.mark) {
         return false;
       }
 
@@ -593,18 +619,6 @@
       var $spot = this.spot.$el,
           $marker = this.$el;
 
-      this.query = {
-        w: $marker.outerWidth(),
-        h: $marker.outerHeight(),
-
-        o:  $spot.offset(),
-        sw: $spot.outerWidth(),
-        sh: $spot.outerHeight(),
-
-        vw: $(window).width()   - 20,
-        vh: $(window).height()  - 20
-      };
-
       switch(this.placement) {
         case PMT_INLINE:
           this.hvCenter();
@@ -643,10 +657,15 @@
           this.spot.$el.append(this.$el);
         break;
         case PMT_SIBLING:
+          if (!this.isWrapped()) {
+            this.wrap();
+          }
+
           method  = (this.position >= POS_TR && this.position <= POS_BR) ?
             'append' :
             'prepend';
 
+          this.$container.append(this.spot.$el);
           this.$container[method](this.$el);
         break;
         case PMT_OVERLAY:
@@ -672,7 +691,15 @@
       var dir, center,
           $marker = this.$el,
           margin  = 0,
-          query   = this.query;
+          query   = {
+            w: $marker.outerWidth(),
+            h: $marker.outerHeight(),
+
+            o: this.spot.$el.offset(),
+
+            vw: $(window).width()   - 20,
+            vh: $(window).height()  - 20
+          };
 
       switch(this.position) {
         case POS_T:
@@ -765,7 +792,13 @@
      * position of the marker, its dimensions, and the target's dimensions.
      */
     snapToSpot: function() {
-      var markerWidth, markerHeight,
+      if (!this.canShow()) {
+        this.hide({ completely: true });
+        return false;
+      }
+
+      var markerWidth, markerHeight, scrollLock,
+      origin        = this.$el.offset() || { top: 0, left: 0 },
       offset        = this.spot.$el.offset(),
       anchorWidth   = this.spot.$el.outerWidth(),
       anchorHeight  = this.spot.$el.outerHeight(),
@@ -813,7 +846,35 @@
         break;
       }
 
-      this.$el.offset(offset);
+      // Move the marker.
+      if (guide.options.withAnimations) {
+        // Prevent the spot from autoScrolling to the marker since it'll be
+        // moving still while animated.
+        scrollLock = this.spot.options.autoScroll;
+        this.spot.options.autoScroll = false;
+
+        this.$el.offset(origin);
+        this.$el
+          .animate({
+              top: offset.top,
+              left: offset.left
+            },
+            250,
+            // Restore the autoScroll option.
+            _.bind(function() {
+              this.spot.options.autoScroll = scrollLock;
+            }, this));
+
+        // Scroll the marker into view if needed
+        if (this.spot.isFocused() && !this.spot.$el.is(':in_viewport')) {
+          $('html, body').animate({
+            scrollTop: offset.top * 0.9
+          }, guide.options.withAnimations ? 250 : 0);
+        }
+      }
+      else {
+        this.$el.offset(offset);
+      }
     },
 
     /**
@@ -873,7 +934,7 @@
         .insertBefore($spot)
         .append($spot);
 
-      guide.log('wrapped');
+      guide.log('Marker',this.id,'wrapped');
     },
 
     /**
@@ -882,8 +943,11 @@
      */
     unwrap: function() {
       if (this.$container) {
-        guide.log('unwrapping');
-        this.$el.detach();
+        guide.log('Marker',this.id,'unwrapping');
+
+        if (this.$el) {
+          this.$el.detach();
+        }
 
         if (this.spot.$el.parent().is(this.$container)) {
           this.$container.replaceWith(this.spot.$el);
@@ -918,4 +982,24 @@
   });
 
   guide.addExtension(new Extension());
+
+  /**
+   * @class Spot
+   *
+   * @cfg {Boolean} [withMarker=true]
+   * Attach and display a marker to the spot's element when it receives focus.
+   *
+   * **This option is available only if the Markers extension is enabled.**
+   */
+
+  /**
+   * @class Tour
+   *
+   * @cfg {Boolean} [alwaysMark=true]
+   * Display markers for all tour spots, not only the focused one. Non-focused
+   * markers will only display the spot index and not its content.
+   *
+   * **This option is available only if the Markers extension is enabled.**
+   */
+
 })(_, jQuery, window.guide);
