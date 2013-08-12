@@ -46,7 +46,6 @@
 
       this.$el = $(this.templates.controls({}));
       this.$el.addClass(guide.entityKlass());
-      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
 
       _.extend(this, {
         $bwd:   this.$el.find('[data-action*=prev]'),
@@ -57,7 +56,6 @@
         $tour_selector:  this.$el.find('[data-action="switchTour"]')
       });
 
-
       return this;
     },
 
@@ -65,10 +63,15 @@
       this.tour = tour;
       this.tour.$.on(this.nsEvent('focus'), _.bind(this.refreshControls, this));
       this.tour.$.on(this.nsEvent('add'), _.bind(this.refreshControls, this));
+
+      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
+
       this.refresh();
     },
 
     onTourStop: function() {
+      this.$el.off(this.nsEvent('click'));
+
       this.tour.$.off(this.nsEvent('focus'));
       this.tour = null;
       this.hide();

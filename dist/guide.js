@@ -654,16 +654,15 @@
       }
 
       this.$container.addClass(KLASS_HIDING);
-
       that.$.triggerHandler('hiding');
 
       that.$el.animate({ opacity: 'hide' }, animeMs, function() {
         if (that.tour) {
           that.tour.stop();
+          that.tour = null;
         }
 
         that.$.triggerHandler('hide');
-
         that.$el.detach();
 
         that.$container.removeClass([
@@ -691,15 +690,21 @@
     },
 
     reset: function() {
+      if (this.tour) {
+        this.tour.stop();
+        this.tour = null;
+      }
+
       if (this.isShown()) {
         this.hide();
       }
 
-      this.$.triggerHandler('reset.guide');
-      this.options = _.clone(this.defaults);
+      this.$.triggerHandler('reset');
 
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
+
+      this.options = _.clone(this.defaults);
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
@@ -920,10 +925,15 @@
       // Make sure an `enabled` option always exists
       _.defaults(this.defaults, { enabled: true });
 
-      this.options = _.extend({}, this.defaults, this.options);
+      _.extend(this, {
+        $:        $(this),
+        options:  _.extend({}, this.defaults, this.options)
+      });
+
+      guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
       if (this.onGuideShow) {
-        guide.$.on(this.nsEvent('hide'), _.bind(function() {
+        guide.$.on(this.nsEvent('show'), _.bind(function() {
           if (this.isEnabled()) {
             this.onGuideShow();
             this._shouldHide = true;
@@ -1026,7 +1036,9 @@
      */
     reset: function() {
       this.options = _.clone(this.defaults);
-    }
+    },
+
+    remove: function() {}
   });
 
   guide.Extension = Extension;
@@ -1060,7 +1072,45 @@
        * guide.js will run the default tour if no tour is specified, and falls
        * back to a blank 'Default Tour' if no tour has #isDefault specified.
        */
-      isDefault: false
+      isDefault: false,
+
+      /**
+       * @cfg {Number} [refreshInterval=10]
+       *
+       * Milliseconds to wait for a spot's element that's not visible to show up
+       * before looking for an alternative spot to focus.
+       *
+       * See Spot#dynamic and Tour#focus for more details on this behaviour.
+       */
+      refreshInterval: 10,
+
+      /**
+       * @cfg {Function} [onStart=null]
+       * A chance to prepare any elements, install event handlers, or context
+       * needed for this tour.
+       *
+       * A few usage examples for this callback:
+       *
+       * - Backbone apps can ensure that a certain view or route is active
+       *   prior to starting the tour (ie, its elements reside in that view)
+       * - Listen to events that should advance the tour, stop it, restart it, etc.
+       * - Show a greeting modal or a message to the user to tell them what
+       *   the tour is about
+       *
+       * This callback will be invoked with the tour object being `thisArg`,
+       * and will also receive the tour object as its second parameter.
+       */
+      onStart: null,
+
+      /**
+       * @cfg {Function} [onStop=null]
+       * A chance to clean-up any resources allocated during the tour, or specific
+       * to it. This should basically undo what Tour#onStart did.
+       *
+       * This callback will be invoked with the tour object being `thisArg`,
+       * and will also receive the tour object as its second parameter.
+       */
+      onStop: null
     },
 
     constructor: function(label) {
@@ -1069,7 +1119,7 @@
       _.extend(this, {
         id: label, // TODO: unique constraints on tour IDs
 
-        options: _.extend({}, this.defaults),
+        options: _.extend({}, guide.options.tours, this.defaults),
 
         spots: [],
 
@@ -1085,6 +1135,12 @@
 
       // console.log('guide.js: tour defined: ', this.id);
 
+      if (_.isFunction(this.options.onStart)) {
+        this.$.on('start.user', _.bind(this.options.onStart, this));
+      }
+      if (_.isFunction(this.options.onStop)) {
+        this.$.on('stop.user', _.bind(this.options.onStop, this));
+      }
       return this;
     },
 
@@ -1096,26 +1152,38 @@
      * @fires start
      */
     start: function(options) {
-      var callback    = this.options.onStart,
-          spotToFocus = this.current || this.spots[0];
+      options = _.defaults(options || {}, {
+        // Set a default spot to focus if none was specified, we'll default to
+        // the current one (if resuming) or the first.
+        spot: this.current || this.spots[0]
+      });
 
       if (!guide.isShown()) {
         guide.runTour(this, options);
 
-        return this;
+        return false;
       }
-
-      _.invoke(this.spots, 'highlight');
-
-      if ((options||{}.spot) !== undefined) {
-        spotToFocus = this.getSpot(options.spot);
+      else if (this.isActive()) {
+        return false;
       }
 
       this.active = true;
 
-      if (spotToFocus) {
-        this.focus(spotToFocus);
+      // Ask the spots to highlight themselves if they should; see Spot#highlight
+      _.invoke(this.spots, 'highlight');
+
+      // Focus a spot if possible.
+      if (options.spot) {
+        this.focus(this.__getSpot(options.spot));
       }
+
+      /**
+       * @event start
+       *
+       * Same as Tour#start_tours but triggered on the tour's event delegator
+       * instead: Tour#$.
+       */
+      this.$.triggerHandler('start', [ this ]);
 
       /**
        * @event start_tours
@@ -1123,40 +1191,42 @@
        * Fired when the tour has been started, ie: the spots have been highlighted
        * and one has been focused, if viable.
        *
-       * **This event is triggered on `guide.$`, the guide event delegator.**
+       * **This event is triggered on Guide#$, the guide event delegator.**
        *
        * @param {Tour} tour This tour.
        */
       guide.$.triggerHandler('start.tours', [ this ]);
 
-      /**
-       * @event start
-       *
-       * Same as Tour#start_tours but triggered on the tour's event delegator
-       * instead: `tour.$`.
-       */
-      this.$.triggerHandler('start');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, []);
-      }
-
-      return this;
+      return true;
     },
 
     /**
      * Stop the current tour by dehighlighting all its spots, and de-focusing
      * the current spot, if any.
      *
-     * @fires stop_tours
      * @fires stop
+     * @fires stop_tours
      */
     stop: function() {
-      var callback  = this.options.onStop;
+      if (!this.isActive()) {
+        return false;
+      }
+
+      if (this.current) {
+        this.current.defocus();
+      }
 
       _.invoke(this.spots, 'dehighlight', { force: true });
 
       this.active = false;
+
+      /**
+       * @event stop
+       *
+       * Same as Tour#stop_tours but triggered on the tour's event delegator
+       * instead: `tour.$`.
+       */
+      this.$.triggerHandler('stop', [ this ]);
 
       /**
        * @event stop_tours
@@ -1170,19 +1240,7 @@
        */
       guide.$.triggerHandler('stop.tours', [ this ]);
 
-      /**
-       * @event stop
-       *
-       * Same as Tour#stop_tours but triggered on the tour's event delegator
-       * instead: `tour.$`.
-       */
-      this.$.triggerHandler('stop');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, []);
-      }
-
-      return this;
+      return true;
     },
 
     /**
@@ -1193,20 +1251,15 @@
     reset: function(full) {
       if (this.current) {
         this.current.defocus();
-        this.current = null;
 
         // should we also de-highlight, as in #stop?
       }
 
-      this.previous = null;
+      this.current = this.previous = null;
       this.cursor = -1;
 
       if (full) {
-        guide.$.triggerHandler('reset.tours', [ this ]);
-
-        _.each(this.spots, function(spot) {
-          spot.remove();
-        });
+        _.invoke(this.spots, 'remove');
 
         this.spots = [];
         this.options = _.clone(this.defaults);
@@ -1227,7 +1280,8 @@
      */
     refresh: function() {
       if (this.isActive()) {
-        this.stop().start();
+        this.stop();
+        this.start();
       }
 
       return this;
@@ -1251,23 +1305,25 @@
       }
 
       if (!($el instanceof jQuery)) {
-        throw 'guide.js: bad Spot target, expected a jQuery object ' +
-              'but got ' + typeof($el);
+        throw 'guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
       }
 
-      // has the spot been already defined? we can not handle duplicates
-      if ($el.data('gjs-spot')) {
-        throw 'guide.js: duplicate spot, see console for more information';
-      }
+      // Has the spot been already defined? we can not handle duplicates
+      // if ($el.data('gjs-spot')) {
+        // throw 'guide.js: duplicate spot, see console for more information';
+      // }
 
       spot = new guide.Spot($el, this, this.spots.length, options);
-
       this.spots.push(spot);
+
+      // Stop tracking it if it gets removed
+      spot.$.on('remove', _.bind(this.__removeSpot, this));
 
       if (this.isActive()) {
         spot.highlight();
       }
 
+      this.$.triggerHandler('add', [ spot ]);
       guide.$.triggerHandler('add', [ spot ]);
 
       return spot;
@@ -1275,8 +1331,7 @@
 
     addSpots: function(spots) {
       if (!_.isArray(spots)) {
-        throw new Error('guide.js: bad spots, expected Array,' + ' got: ' +
-                        typeof(spots));
+        throw 'guide.js: bad spots, expected Array,' + ' got: ' + typeof(spots);
       }
 
       _.each(spots, function(definition) {
@@ -1288,8 +1343,6 @@
 
     /**
      * Focuses the next spot, if any.
-     *
-     * @see guide#focus
      */
     next: function() {
       if (!this.hasNext()) {
@@ -1314,9 +1367,7 @@
     },
 
     hasPrev: function() {
-      var ln = this.spots.length;
-
-      return ln !== 1 && this.cursor > 0;
+      return this.spots.length !== 1 && this.cursor > 0;
     },
 
     first: function() {
@@ -1338,15 +1389,11 @@
      * @return whether the spot has been focused
      */
     focus: function(index) {
-      var spot  = this.getSpot(index),
-          i; // spot iterator
-
+      var spot = this.__getSpot(index);
 
       if (!this.isActive()) {
         return false;
       }
-
-      guide.log('tour: focusing spot', index);
 
       if (!spot) {
         throw 'guide.js: bad spot @ ' + index + ' to focus';
@@ -1359,45 +1406,48 @@
 
       // de-focus the last spot
       if (this.current) {
-        this.current.defocus(spot);
-        guide.$.triggerHandler('defocus', [ this.current, spot, this ]);
-        this.$.triggerHandler('defocus', [ this.current, spot ]);
+        this.__defocus(spot);
       }
 
-      if (_.isFunction(spot.options.preFocus)) {
-        spot.options.preFocus.apply(spot, []);
-      }
+      if (!this.hasJustRefreshed) {
+        spot.$.triggerHandler('pre-focus', [ spot ]);
+        this.$.triggerHandler('pre-focus', [ spot ]);
+        guide.$.triggerHandler('pre-focus', [ spot, this ]);
 
-      guide.$.triggerHandler('pre-focus', [ spot, this ]);
-      this.$.triggerHandler('pre-focus', [ spot ]);
-
-      // If the spot target isn't currently visible, we'll try to refresh
-      // the selector in case the element has just been created, and if it still
-      // isn't visible, we'll try finding any visible spot to focus instead.
-      if (!spot.isVisible()) {
-        if (!spot.__refreshTarget() || !spot.isVisible()) {
+        // If the spot target isn't currently visible, we'll try to refresh
+        // the selector in case the element has just been created, and if it still
+        // isn't visible, we'll try finding any visible spot to focus instead.
+        //
+        // We'll give the spot a space of 10ms to refresh by default, otherwise
+        // see #refreshInterval.
+        if (spot.options.dynamic && !spot.isVisible()) {
           guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
 
-          for (i = 0; i < this.spots.length; ++i) {
-            spot = this.spots[i];
-
-            if (spot.isVisible()) {
-              guide.log('tour: \tfound one:', spot.index);
-              this.cursor = i;
-              break;
+          setTimeout(_.bind(function() {
+            // Refresh...
+            if (spot.__refreshTarget() && spot.isVisible()) {
+              this.hasJustRefreshed = true;
+              this.focus(spot);
             }
+            // Look for an alternative:
             else {
-              spot = null;
+              spot = this.__closest(spot, spot.options.fallback);
+
+              if (spot) {
+                this.hasJustRefreshed = false;
+                this.focus(spot);
+              }
+
+              // Nothing we can do.
             }
-          }
+          }, this), this.options.refreshInterval);
 
-          if (!spot) {
-            return false;
-          }
-        }
-      }
+          return false;
+        } // visibility test
+      } // refreshing block
 
-      this.previous = this.current;
+      this.hasJustRefreshed = false;
+
       this.current = spot;
       this.cursor  = spot.index;
 
@@ -1422,7 +1472,90 @@
       return true;
     },
 
-    getSpot: function(index) {
+    /**
+     * @private
+     */
+    __defocus: function(nextSpot) {
+      this.current.defocus(nextSpot);
+
+      this.$.triggerHandler('defocus',  [ this.current, nextSpot ]);
+      guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
+
+      this.previous = this.current;
+      this.current = null;
+    },
+
+    /**
+     * Attempt to find the closest visible spot to the given one.
+     *
+     * @param {Number/String} [direction='forwards']
+     * The first direction to seek a match in:
+     *
+     * - `forwards`: will look for spots that follow the anchor
+     * - `backwards`: will look for spots that precede the anchor
+     * - Number: will use the spot at the given index, see Spot#index
+     *
+     * If the direction yields no visible spot, the opposite direction is then
+     * searched.
+     *
+     * @return {null/Spot}
+     * If a number was passed, and that spot isn't visible, `null` is returned,
+     * same goes for if a direction was given and no visible spot could be found.
+     *
+     * @private
+     */
+    __closest: function(inSpot, direction) {
+      var
+      anchor = inSpot.index,
+      spot,
+      seek = _.bind(function(direction) {
+        var i, spot;
+
+        if (direction === 'backwards') {
+          for (i = anchor-1; i >= 0; --i) {
+            spot = this.spots[i];
+
+            if (spot.isVisible()) {
+              return spot;
+            }
+          }
+        }
+        else {
+          for (i = anchor+1; i < this.spots.length; ++i) {
+            spot = this.spots[i];
+
+            if (spot.isVisible()) {
+              return spot;
+            }
+          }
+        }
+
+        return null;
+      }, this);
+
+      if (this.spots.length <= 1) {
+        return null;
+      }
+
+      if (_.contains([ 'forwards', 'backwards' ], direction)) {
+        return seek(direction);
+      } else {
+        if (this.spots.length > anchor && (spot = seek('forwards'))) {
+          return spot;
+        }
+
+        if (anchor > 0 && (spot = seek('backwards'))) {
+          return spot;
+        }
+      }
+
+      return null;
+    },
+
+    /**
+     * @private
+     */
+    __getSpot: function(index) {
       if (_.isNumber(index)) {
         return this.spots[index];
       }
@@ -1435,6 +1568,21 @@
       }
 
       return null;
+    },
+
+    /**
+     * @private
+     */
+    __removeSpot: function(e, spot) {
+      this.spots = _.without(this.spots, spot);
+
+      if (spot === this.current) {
+        this.current = null;
+        this.cursor = -1;
+      }
+      else if (spot === this.previous) {
+        this.previous = null;
+      }
     }
   });
 
@@ -1468,12 +1616,6 @@
     defaults: {
 
       /**
-       * @cfg {Boolean} [withMarker=true]
-       * Attach a Marker to this spot, if the Markers extension is enabled.
-       */
-      withMarker: true,
-
-      /**
        * @cfg {Boolean} [highlight=true]
        * Highlight this spot while the tour is active by attaching an opaque
        * overlay on top of it using CSS.
@@ -1494,7 +1636,82 @@
        * Do not force 'relative' positioning on elements that are statically
        * positioned.
        */
-      noPositioningFix: false
+      noPositioningFix: false,
+
+      dynamic: true,
+
+      /**
+       * @cfg {Boolean} [disco=false]
+       * A disco-lights highlighting effect on the spot target. Highlighting it
+       * will not only shade it with an overlay, but also throw in a light particle
+       * that dances around its borders.
+       *
+       * Very pretty for small, rectangular elements like buttons and panels.
+       */
+      disco: false,
+
+      /**
+       * @cfg {Boolean/'once'} [flashy=false]
+       * Flash the target when it gets focus. Turn it red, then not, then red,
+       * then not.
+       *
+       * Pair this with Spot#disco for maximum hackery.
+       */
+      flashy: false,
+
+      /**
+       * @cfg {Function} [preFocus=null]
+       * A chance to prepare the Spot's target before being visited by the user.
+       *
+       * This callback should be used if the element is dynamically added to
+       * the DOM and might not have been visible at the time the tour started.
+       *
+       * A few usage examples for this callback:
+       *
+       * - Backbone apps that use JavaScript routing, you can jump to a different
+       *   view, or render it, where the target element will become visible.
+       * - Show a dropdown-menu that contains a link or element that the spot
+       *   represents
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      preFocus: null,
+
+      /**
+       * @cfg {Function} [onFocus=null]
+       * Invoked when the Spot has been focused and the user is currently viewing it.
+       *
+       * A few usage example for this callback:
+       *
+       * - Show a dropdown-menu that's *related* to the context of the spot, unless
+       *   the user has manually displayed it.
+       * - Bind to events in your application that should cause the tour to advance
+       *   to the next spot, or retreat to the previous one.
+       *
+       * See #onDefocus for a chance to clean up things you've done in this phase.
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      onFocus: null,
+
+      /**
+       * @cfg {Function} [onDefocus=null]
+       * Invoked when the Spot is no longer focused.
+       *
+       * You can use this callback to do any necessary clean-ups for things you've
+       * done in earlier callbacks.
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      onDefocus: null
+    },
+
+    templates: {
+      disco: _.template('<div class="gjs-spot-disco"></div>'),
+      flashy: _.template('<div class="gjs-spot-flashy"></div>')
     },
 
     /**
@@ -1560,16 +1777,41 @@
          * The element that will be used as an indicator of the spot's position
          * when scrolling the element into view, if #autoScroll is enabled.
          *
-         * This could be modified by extensions.
+         * This could be modified by extensions. Use #setScrollAnchor for overriding.
          */
         $scrollAnchor: $el,
 
-        options: _.extend({}, this.defaults, options)
+        options: _.extend({}, this.defaults, tour.options.spots, options)
       });
+
+      if (this.options.disco) {
+        this.$disco = $(this.templates.disco({}));
+      }
+      if (this.options.flashy) {
+        this.$flashy = $(this.templates.flashy({}));
+        if (this.options.flashy === 'once') {
+          this.$flashy.addClass('flash-once');
+        }
+      }
 
       $el
         .addClass(guide.entityKlass())
         .data('gjs-spot', this);
+
+      // Install handlers that were passed manually for convenience.
+      if (_.isFunction(options.preFocus)) {
+        // This is triggered by the tour itself in #focus as the spot has no
+        // control at that stage yet.
+        //
+        // See Tour#focus.
+        this.$.on('pre-focus.user', _.bind(options.preFocus, this));
+      }
+      if (_.isFunction(options.onFocus)) {
+        this.$.on('focus.user', _.bind(options.onFocus, this));
+      }
+      if (_.isFunction(options.onDefocus)) {
+        this.$.on('defocus.user', _.bind(options.onDefocus, this));
+      }
 
       return this;
     },
@@ -1581,8 +1823,11 @@
       return this.$el.hasClass(KLASS_FOCUSED);
     },
 
-    isCurrent: function() {
-      return this.tour.current === this;
+    /**
+     * Whether the spot is currently highlighted in the tour.
+     */
+    isHighlighted: function() {
+      return this.$el.hasClass(KLASS_TARGET);
     },
 
     getText: function() {
@@ -1606,21 +1851,10 @@
     },
 
     /**
-     * Check if the spot target is currently reachable in the DOM.
-     */
-    isAvailable: function() {
-      return !!(this.$el.length);
-    },
-
-    isAttached: function() {
-      return this.isAvailable() && this.$el.parent().length > 0;
-    },
-
-    /**
-     * Check if the spot target is currently available *and* visible in the DOM.
+     * Check if the target is currently existent *and* visible in the DOM.
      */
     isVisible: function() {
-      return this.isAttached() && this.$el.is(':visible');
+      return this.$el.length && this.$el.is(':visible');
     },
 
     /**
@@ -1640,16 +1874,19 @@
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
       // the selector to see if it's now available, otherwise we can't highlight.
-      if (!this.isAvailable()) {
+      if (!this.isVisible()) {
         this.__refreshTarget();
+
+        // Still not visible? Abort highlighting
+        if (!this.isVisible()) {
+          return false;
+        }
       }
 
-      // Still not visible? Abort highlighting
-      if (!this.isVisible() || !this.options.highlight) {
+      if (!this.options.highlight) {
         return false;
       }
-
-      if (!this.tour.getOptions().alwaysHighlight && !this.isCurrent()) {
+      else if (!this.tour.options.alwaysHighlight && !this.__isCurrent()) {
         return false;
       }
 
@@ -1658,8 +1895,8 @@
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
       if (!this.options.noPositioningFix &&
-          !this.tour.hasOption('spots.noPositioningFix') &&
-          !guide.hasOption('spots.noPositioningFix')) {
+          !this.tour.isOptionOn('spots.noPositioningFix') &&
+          !guide.isOptionOn('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
@@ -1680,16 +1917,15 @@
      *
      * @param {Object} [options={}]
      * @param {Boolean} [options.force=false]
-     *  Dehighlight regardless of any options that might otherwise be respected.
+     * Dehighlight regardless of any options that might otherwise be respected.
      */
     dehighlight: function(options) {
-      if ((options||{}).force ||
-          !this.tour.getOptions().alwaysHighlight) {
+      options = _.defaults(options || {}, {
+        force: false
+      });
 
-        this.$el.removeClass([
-          KLASS_TARGET,
-          'gjs-positioning-fix'
-        ].join(' '));
+      if (options.force || !this.tour.options.alwaysHighlight) {
+        this.$el.removeClass([ KLASS_TARGET, 'gjs-positioning-fix' ].join(' '));
 
         return true;
       }
@@ -1702,44 +1938,54 @@
      * into view if #autoScroll is enabled. The spot will also be implicitly
      * {@link #highlight highlighted}.
      *
+     * @fires focus
      * @fires focus_gjs
      */
     focus: function(prev_spot) {
-      var that      = this,
-          callback  = this.options.onFocus,
-          $scroller = this.$scrollAnchor;
-
       this.highlight();
 
-      this
-        .$el
-          .addClass(KLASS_FOCUSED)
-          /**
-           * @event focus_gjs
-           * Fired when a tour focuses a new spot.
-           *
-           * **This event is triggered on the Spot's #$el.**
-           *
-           * @param {jQuery.Event} event
-           *  A default jQuery event.
-           * @param {Spot} previousSpot
-           *  The spot that was previously focused, if any.
-           */
-          .triggerHandler('focus.gjs', prev_spot);
-
-      this.$.triggerHandler('focus');
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, arguments);
+      if (this.options.disco) {
+        this.$disco.appendTo(this.$el);
       }
 
-      _.defer(function() {
-        if (that.options.autoScroll && $scroller.length && !$scroller.is(':in_viewport')) {
-          $('html,body').animate({
-            scrollTop: $scroller.offset().top * 0.9
-          }, 250);
-        }
-      });
+      if (this.options.flashy) {
+        this.$flashy.appendTo(this.$el);
+      }
+
+      this.$el
+        .addClass(KLASS_FOCUSED)
+        /**
+         * @event focus_gjs
+         * Fired when a tour focuses a new spot.
+         *
+         * **This event is triggered on the Spot#$el.**
+         *
+         * @param {jQuery.Event} event
+         * A default jQuery event.
+         * @param {Spot} elementSpot
+         * The spot this element is represented by.
+         * @param {Spot} previousSpot
+         * The spot that was previously focused, if any.
+         */
+        .triggerHandler('focus.gjs', [ this, prev_spot ]);
+
+      /**
+       * @event focus
+       * Fired when a tour focuses a new spot.
+       *
+       * **This event is triggered on the Spot delegator, Spot#$.**
+       *
+       * @param {jQuery.Event} event
+       * A default jQuery event.
+       * @param {Spot} thisSpot
+       * @param {Spot} previousSpot
+       * The spot that was previously focused, if any.
+       */
+      this.$.triggerHandler('focus', [ this, prev_spot ]);
+
+      if (this.options.autoScroll) {
+        _.defer(_.bind(this.scrollIntoView, this));
+      }
 
       return this;
     },
@@ -1748,71 +1994,140 @@
      *
      */
     defocus: function(next_spot) {
-      var callback = this.options.onDefocus;
-
       this.dehighlight();
 
-      this.$el
-        .removeClass(KLASS_FOCUSED)
-        .triggerHandler('defocus.gjs', next_spot);
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, arguments);
+      if (this.$disco) {
+        this.$disco.detach();
+      }
+      if (this.$flashy) {
+        this.$flashy.detach();
       }
 
-      this.$.triggerHandler('defocus');
+      this.$el.removeClass(KLASS_FOCUSED);
+
+      this.$.triggerHandler('defocus', [ this, next_spot ]);
+      this.$el.triggerHandler('defocus.gjs', [ this, next_spot ]);
 
       return this;
     },
 
-    remove: function() {
-      this.$.triggerHandler('remove');
-      guide.$.triggerHandler('remove.spots', [ this ]);
+    /**
+     * Scrolls the spot into view so that the user sees it.
+     *
+     * The element that is used to tell whether the spot is not currently visible,
+     * and thus should be scrolled to, can be overridden in #setScrollAnchor.
+     *
+     * This method respects Guide#withAnimations in animating the scrolling,
+     * and uses jQuery#in_viewport to test the element's visibility.
+     *
+     * @async
+     */
+    scrollIntoView: function() {
+      if (!this.$scrollAnchor ||
+          !this.$scrollAnchor.length ||
+          this.$scrollAnchor.is(':in_viewport')) {
+        return false;
+      }
 
-      this.$el
-        .removeData('gjs-spot')
-        .removeClass([
-          'no-highlight',
-          KLASS_TARGET,
-          KLASS_FOCUSED
-        ].join(' '));
+      $('html, body').animate({
+        scrollTop: this.$scrollAnchor.offset().top * 0.9
+      }, guide.options.withAnimations ? 250 : 0);
+
+      return true;
     },
 
+    /**
+     * Unlink the Spot from its target, restoring any attributes that might
+     * have been modified by the spot.
+     */
+    remove: function() {
+      guide.log('Spot ' + this + ' is being removed.');
+
+      /**
+       * @event focus
+       * Fired when the spot is being entirely removed from a tour. Once a spot
+       * is removed, its target must be _completely_ restored as if guide.js has
+       * never been shown.
+       *
+       * Use this callback to clean-up any DOM mods.
+       *
+       * **This event is triggered on the Spot delegator, Spot#$.**
+       */
+      this.$.triggerHandler('remove', [ this ]);
+
+      if (this.isFocused()) {
+        this.defocus();
+      }
+
+      this.dehighlight({ force: true });
+
+      this.$el.removeData('gjs-spot');
+
+      // Remove all handlers and invalidate all properties
+      this.$.off();
+      this.$el = this.$scrollAnchor = this.$ = this.tour = null;
+      this.index = -1;
+
+      return this;
+    },
+
+    /**
+     * Refresh the target selector, re-focus if Spot is focused, otherwise
+     * re-highlight if applicable.
+     */
     refresh: function() {
       if (!this.isVisible()) {
         this.__refreshTarget();
       }
 
       if (this.isFocused()) {
-        return this.defocus().focus();
+        this.defocus();
+        this.focus();
+
+        return this;
       }
 
-      this.dehighlight();
-      this.highlight();
+      if (this.isHighlighted()) {
+        this.dehighlight();
+        this.highlight();
+      }
 
       return this;
-    },
-
-    /**
-     * @private
-     */
-    __refreshTarget: function() {
-      this.$el = $(this.$el.selector);
-
-      if (!this.$scrollAnchor ||
-        // Could be set by an extension, like Markers, to something other than
-        // the target $el, don't override it.
-        !this.$scrollAnchor.length) {
-        this.$scrollAnchor = this.$el;
-      }
-
-      return this.isAvailable();
     },
 
     setScrollAnchor: function($el) {
       this.$scrollAnchor = $el;
     },
 
+    /**
+     * @private
+     */
+    __refreshTarget: function() {
+      if (this.$el.selector.length) {
+        this.$el = $(this.$el.selector);
+
+        if (!this.$scrollAnchor ||
+            // Could be set by an extension, like Markers, to something other than
+            // the target $el, don't override it.
+            !this.$scrollAnchor.length ||
+            !this.$scrollAnchor.is(':visible')) {
+          this.setScrollAnchor(this.$el);
+        }
+      }
+
+      return this.isVisible();
+    },
+
+    /**
+     * @private
+     */
+    __isCurrent: function() {
+      return this.tour.current === this;
+    },
+
+    /**
+     * @private
+     */
     toString: function() {
       return this.tour.id + '#' + this.index;
     },
@@ -1828,50 +2143,48 @@
   var
   Extension = function() {
     return this.constructor();
-  },
-
-  JST_CONTROLS = _.template([
-    '<div id="gjs_controls">',
-      '<button data-action="tour.first">First</button>',
-      '<button data-action="tour.prev">&lt;</button>',
-      '<button data-action="tour.next">&gt;</button>',
-      '<button data-action="tour.last">Last</button>',
-      '<button data-action="guide.hide">Close</button>',
-      '<select name="tour" data-action="switchTour"></select>',
-    '</div>'
-  ].join('')),
-
-  JST_TOUR_LIST = _.template([
-    '<% _.forEach(tours, function(tour) { %>',
-      '<option value="<%= tour.id %>"><%= tour.id %></option>',
-    '<% }); %>'
-  ].join(''));
+  };
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
       enabled: true,
       inMarkers:  false,
       inTutor:    false,
-      withTourSelector: true
+      withTourSelector: true,
+      withJumps: true,
+      withClose: true
     },
 
     id: 'controls',
+
+    templates: {
+      controls: _.template([
+        '<div id="gjs_controls">',
+          '<button data-action="tour.first">First</button>',
+          '<button data-action="tour.prev">&lt;</button>',
+          '<button data-action="tour.next">&gt;</button>',
+          '<button data-action="tour.last">Last</button>',
+          '<button data-action="guide.hide">Close</button>',
+          '<select name="tour" data-action="switchTour"></select>',
+        '</div>'
+      ].join('')),
+
+      tourList: _.template([
+        '<% _.forEach(tours, function(tour) { %>',
+          '<% if (tour.spots.length) { %>',
+            '<option value="<%= tour.id %>"><%= tour.id %></option>',
+          '<% } %>',
+        '<% }); %>'
+      ].join(''))
+    },
 
     constructor: function() {
       this.$container = guide.$el;
       this.guide = guide;
       this.tour = null;
 
-      // this.refresh();
-
-      guide.$
-        .on('dismiss',  _.bind(this.remove, this))
-        .on('focus',    _.bind(this.refreshControls, this));
-
-      this.$el = $(JST_CONTROLS({}));
-      this.$el
-        .addClass(guide.entityKlass())
-        .on('click', '[data-action]', _.bind(this.delegate, this));
+      this.$el = $(this.templates.controls({}));
+      this.$el.addClass(guide.entityKlass());
 
       _.extend(this, {
         $bwd:   this.$el.find('[data-action*=prev]'),
@@ -1887,15 +2200,27 @@
 
     onTourStart: function(tour) {
       this.tour = tour;
+      this.tour.$.on(this.nsEvent('focus'), _.bind(this.refreshControls, this));
+      this.tour.$.on(this.nsEvent('add'), _.bind(this.refreshControls, this));
+
+      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
+
       this.refresh();
     },
 
     onTourStop: function() {
+      this.$el.off(this.nsEvent('click'));
+
+      this.tour.$.off(this.nsEvent('focus'));
       this.tour = null;
       this.hide();
     },
 
     show: function() {
+      if (!this.tour) {
+        return false;
+      }
+
       this.$el.appendTo(this.$container);
       this.refreshControls();
     },
@@ -1908,8 +2233,8 @@
       if (this.$el) {
         this.$el.remove();
         guide.$
-        .off('marking.gjs_markers.embedded_controls')
-        .off('unmarking.gjs_markers.embedded_controls');
+          .off(this.nsEvent('marking.gjs_markers'))
+          .off(this.nsEvent('unmarking.gjs_markers'));
       }
     },
 
@@ -2001,14 +2326,14 @@
       ext.$el.addClass('with-controls');
     },
 
-    delegate: function(e) {
+    proxy: function(e) {
       var action = $(e.target).attr('data-action'),
           pair,
           target,
           method;
 
       if (!action) {
-        return;
+        return $.consume(e);
       }
       else if (action.indexOf('.') > -1) {
         pair    = action.split('.');
@@ -2030,18 +2355,18 @@
 
 
     refreshControls: function() {
-      var tour = guide.tour;
+      var tour    = this.tour,
+          options = this.getOptions(tour);
 
       this.$bwd.prop('disabled',    !tour.hasPrev());
       this.$fwd.prop('disabled',    !tour.hasNext());
-      this.$first.prop('disabled',  !tour.hasPrev());
-      this.$last.prop('disabled',   !tour.hasNext());
-      // this.$hide.toggle(            !tour.hasNext());
-      this.$hide.show();
+      this.$first.prop('disabled',  !tour.hasPrev()).toggle(options.withJumps);
+      this.$last.prop('disabled',   !tour.hasNext()).toggle(options.withJumps);
+      this.$hide.toggle(options.withClose);
 
-      if (this.getOptions().withTourSelector) {
+      if (options.withTourSelector) {
         this.$tour_selector
-          .html(JST_TOUR_LIST({ tours: guide.tours }))
+          .html(this.templates.tourList({ tours: guide.tours }))
           .toggle(guide.tours.length > 1)
           .find('[value="' + tour.id + '"]').prop('selected', true);
       }
@@ -2055,10 +2380,10 @@
 
       if (tour && !tour.isActive()) {
         tour.reset();
-        guide.runTour(tour);
+        return guide.runTour(tour);
       }
 
-      return true;
+      return false;
     }
 
   }); // Extension.prototype
@@ -2077,6 +2402,8 @@
   Marker = function() {
     return this.constructor.apply(this, arguments);
   },
+
+  idGenerator = 0,
 
   /**
    * Plain markers that contain only the step index, no text, and no caption.
@@ -2143,6 +2470,8 @@
           }), 'marker');
       };
 
+      guide.Spot.prototype.addOption('withMarker', true);
+
       // We must manually assign the options to the default tour as it has
       // already been created.
       if (guide.tour) {
@@ -2203,7 +2532,9 @@
         var marker = $(this).data('gjs-marker');
 
         if (marker) {
-          marker.spot.tour.focus(marker.spot);
+          if (!marker.spot.isFocused()) {
+            marker.spot.tour.focus(marker.spot);
+          }
 
           return $.consume(e);
         }
@@ -2228,14 +2559,9 @@
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
-
-      // listen to its option changes
-      // tour.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
     },
 
     onTourStop: function(tour) {
-      // tour.$.off(this.nsEvent('refresh'));
-
       _.invoke(tour.getMarkers(), 'hide');
     },
 
@@ -2248,9 +2574,7 @@
 
       console.log('[markers] repositioning markers for tour ', tour.id);
 
-      _.invoke(_.filter(tour.getMarkers(), function(marker) {
-        return marker.placement === PMT_OVERLAY;
-      }), 'snapToSpot');
+      _.invoke(_.where(tour.getMarkers(), { placement: PMT_OVERLAY }), 'snapToSpot');
 
       return true;
     }
@@ -2319,39 +2643,45 @@
 
       smart: true,
 
-      noClone: true,
+      mimic: false,
+      mimicDisplay: true,
 
       margin: 15
     },
 
     constructor: function(spot, attributes) {
-      _.extend(this, attributes);
+      _.extend(this, attributes, {
+        id: ++idGenerator,
+        spot: spot,
+        options: _.extend({ },
+          // lowest priority: our defaults
+          this.defaults,
 
-      this.spot   = spot;
+          (attributes || {}).options,
+          // then, guide's global marker options,
+          guide.getOptions().marker,
+          // then, the spot's tour options,
+          spot.tour.getOptions().marker,
+          // and highest priority: the spot's options
+          spot.getOptions().marker)
+      });
+
       spot.marker = this;
 
-      // Parse the marker options
-      this.options = _.extend(
-        {},
-        // lowest priority: our defaults
-        this.defaults,
-
-        (attributes || {}).options,
-        // then, guide's global marker options,
-        guide.getOptions().marker,
-        // then, the spot's tour options,
-        spot.tour.getOptions().marker,
-        // and highest priority: the spot's options
-        spot.getOptions().marker);
-
       this.spot.$
-        .on('focus', _.bind(this.highlight, this))
-        .on('defocus', _.bind(this.dehighlight, this))
-        .on('remove', _.bind(this.remove, this));
+        .on(this.ns('focus'),   _.bind(function() { this.show(); }, this))
+        .on(this.ns('defocus'), _.bind(function() { this.hide(); }, this))
+        .on(this.ns('remove'),  _.bind(function() { this.remove(); }, this));
 
       this.build();
 
+      guide.log('Marker', this.id, 'created for spot', this.spot.toString());
+
       return this;
+    },
+
+    ns: function(event) {
+      return [ event, 'gjs_marker', this.id ].join('.');
     },
 
     /**
@@ -2473,9 +2803,53 @@
       return true;
     },
 
+    remove: function() {
+      if (!this.spot) {
+        throw 'marker being removed twice?!';
+      }
+
+      guide.log('Marker', this.id, 'removed for spot', this.spot.toString());
+
+      this.hide({
+        completely: true
+      });
+
+      this.spot.$
+        .off(this.ns('remove'))
+        .off(this.ns('defocus'))
+        .off(this.ns('focus'));
+
+      delete this.spot.marker;
+
+      if (this.$el) {
+        this.$el.remove();
+        this.$el = this.spot = null;
+      }
+    },
+
     show: function() {
       if (!this.$el && !this.build()) {
         return false;
+      }
+      else if (!this.canShow()) {
+        this.hide({ completely: true });
+        return false;
+      }
+
+      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
+
+      if (this.spot.isFocused()) {
+        this.$el.addClass('focused');
+
+        if (this.withText) {
+          this.$index.hide();
+
+          this.$text.show();
+          this.$caption.show();
+          this.$el.css({
+            width: this.width
+          });
+        }
       }
 
       // Mark the spot as being highlighted by a marker
@@ -2483,78 +2857,56 @@
 
       this.attach();
       this.place();
-    },
 
-    hide: function() {
-      var $el = this.$el;
-
-      this.spot.$el.removeClass(this.spot_klasses);
-
-      if ($el) {
-        $el.detach();
-      }
-    },
-
-    remove: function() {
-      this.hide();
-      this.unwrap();
-
-      if (this.$el) {
-        this.$el.remove();
-        this.$el = null;
-      }
-    },
-
-    highlight: function() {
-      if (!this.$el && !this.build()) {
-        return false;
-      }
-
-      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
-
-      this.$el.addClass('focused');
-
-      if (this.withText) {
-        this.$index.hide();
-
-        this.$text.show();
-        this.$caption.show();
-        this.$el.css({
-          width: this.width
-        });
-      }
-
-      this.show();
-
-      guide.log('marker highlighted for spot', this.spot.toString());
+      guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
 
       guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
-    dehighlight: function() {
-      if (!this.$el) {
-        return;
-      }
+    hide: function(options) {
+      options = _.defaults(options || {}, {
+        completely: false
+      });
 
       guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
 
-      this.$el.removeClass('focused');
+      // If the tour doesn't want markers to always be shown, or we're being
+      // removed (options.completely), then we'll roll-back our changes,
+      // detach ourselves, and unwrap if viable.
+      //
+      if (!this.spot.tour.options.alwaysMark || options.completely) {
+        // Restore the spot's target's CSS classes
+        this.spot.$el.removeClass(this.spot_klasses);
 
-      if (this.withText) {
-        this.$index.show();
+        // Hide ourselves.
+        if (this.$el) {
+          this.$el.detach();
+        }
 
-        this.$text.hide();
-        this.$caption.hide();
-        this.$el.css({
-          width: 'auto'
-        });
+        // Un-wrap the spot's target, if we're in sibling placement mode.
+        if (this.isWrapped()) {
+          this.unwrap();
+        }
       }
+      // This check is necessary because #hide might be called while the marker
+      // has not been built, or has failed to build.
+      else if (this.$el) {
+        this.$el.removeClass('focused');
 
-      if (!this.spot.tour.options.alwaysMark) {
-        this.hide();
-      }
-      else {
-        this.show();
+        // Hide the content, show the number marker.
+        if (this.withText) {
+          this.$index.show();
+
+          this.$text.hide();
+          this.$caption.hide();
+          this.$el.css({
+            width: 'auto'
+          });
+        }
+
+        // this.attach();
+        // this.place();
+        _.defer(_.bind(this.show, this));
       }
 
       guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
@@ -2577,7 +2929,7 @@
         return false;
       }
 
-      if (!spot.tour.isActive()) {
+      if (!spot.tour.isActive() || !spot.options.withMarker) {
         return false;
       }
 
@@ -2660,18 +3012,6 @@
       var $spot = this.spot.$el,
           $marker = this.$el;
 
-      this.query = {
-        w: $marker.outerWidth(),
-        h: $marker.outerHeight(),
-
-        o:  $spot.offset(),
-        sw: $spot.outerWidth(),
-        sh: $spot.outerHeight(),
-
-        vw: $(window).width()   - 20,
-        vh: $(window).height()  - 20
-      };
-
       switch(this.placement) {
         case PMT_INLINE:
           this.hvCenter();
@@ -2679,6 +3019,7 @@
         case PMT_SIBLING:
           if (!this.$container.is(':visible')) {
             this.wrap();
+            this.attach();
           }
 
           this.negateMargins($marker,
@@ -2709,10 +3050,15 @@
           this.spot.$el.append(this.$el);
         break;
         case PMT_SIBLING:
+          if (!this.isWrapped()) {
+            this.wrap();
+          }
+
           method  = (this.position >= POS_TR && this.position <= POS_BR) ?
             'append' :
             'prepend';
 
+          this.$container.append(this.spot.$el);
           this.$container[method](this.$el);
         break;
         case PMT_OVERLAY:
@@ -2738,7 +3084,15 @@
       var dir, center,
           $marker = this.$el,
           margin  = 0,
-          query   = this.query;
+          query   = {
+            w: $marker.outerWidth(),
+            h: $marker.outerHeight(),
+
+            o: this.spot.$el.offset(),
+
+            vw: $(window).width()   - 20,
+            vh: $(window).height()  - 20
+          };
 
       switch(this.position) {
         case POS_T:
@@ -2831,7 +3185,13 @@
      * position of the marker, its dimensions, and the target's dimensions.
      */
     snapToSpot: function() {
-      var markerWidth, markerHeight,
+      if (!this.canShow()) {
+        this.hide({ completely: true });
+        return false;
+      }
+
+      var markerWidth, markerHeight, scrollLock,
+      origin        = this.$el.offset() || { top: 0, left: 0 },
       offset        = this.spot.$el.offset(),
       anchorWidth   = this.spot.$el.outerWidth(),
       anchorHeight  = this.spot.$el.outerHeight(),
@@ -2879,7 +3239,35 @@
         break;
       }
 
-      this.$el.offset(offset);
+      // Move the marker.
+      if (guide.options.withAnimations) {
+        // Prevent the spot from autoScrolling to the marker since it'll be
+        // moving still while animated.
+        scrollLock = this.spot.options.autoScroll;
+        this.spot.options.autoScroll = false;
+
+        this.$el.offset(origin);
+        this.$el
+          .animate({
+              top: offset.top,
+              left: offset.left
+            },
+            250,
+            // Restore the autoScroll option.
+            _.bind(function() {
+              this.spot.options.autoScroll = scrollLock;
+            }, this));
+
+        // Scroll the marker into view if needed
+        if (this.spot.isFocused() && !this.spot.$el.is(':in_viewport')) {
+          $('html, body').animate({
+            scrollTop: offset.top * 0.9
+          }, guide.options.withAnimations ? 250 : 0);
+        }
+      }
+      else {
+        this.$el.offset(offset);
+      }
     },
 
     /**
@@ -2899,13 +3287,13 @@
 
       // Build the container:
       this.$container =
-        $(this.options.noClone ?
-            '<div />' :
+        $(this.options.mimic ?
             // Instead of building a plain `<div/>`, we'll try to replicate the
             // target element, so we won't break any CSS/JS that uses the tag as
             // an identifier, we'll do that by cloning the tag and stripping
             // some properties from it.
-            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ')
+            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ') :
+            '<div />'
         )
         // Empty it, we only need the tag and its structure
         .html('')
@@ -2913,18 +3301,20 @@
           'id': null,
 
           // Remove any gjs- related classes from the container
-          'class': this.options.noClone ?
-                   '' :
-                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+          'class': this.options.mimic ?
+                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim() :
+                   ''
         })
         .css({
           // Try to mimic the alignment of the target element
-          display: $spot.css('display'),
+          display: this.options.mimicDisplay ? $spot.css('display') : 'inherit',
 
           // The container must be relatively positioned, since
           // we're positioning the marker using margins.
           position: 'relative'
         })
+
+        .addClass('gjs-container-' + (this.spot.index+1))
 
         // Set a flag so we can tell whether the spot target is
         // already wrapped so that we will properly clean up
@@ -2937,7 +3327,7 @@
         .insertBefore($spot)
         .append($spot);
 
-      guide.log('wrapped');
+      guide.log('Marker',this.id,'wrapped');
     },
 
     /**
@@ -2946,8 +3336,11 @@
      */
     unwrap: function() {
       if (this.$container) {
-        guide.log('unwrapping');
-        this.$el.detach();
+        guide.log('Marker',this.id,'unwrapping');
+
+        if (this.$el) {
+          this.$el.detach();
+        }
 
         if (this.spot.$el.parent().is(this.$container)) {
           this.$container.replaceWith(this.spot.$el);
@@ -2982,6 +3375,26 @@
   });
 
   guide.addExtension(new Extension());
+
+  /**
+   * @class Spot
+   *
+   * @cfg {Boolean} [withMarker=true]
+   * Attach and display a marker to the spot's element when it receives focus.
+   *
+   * **This option is available only if the Markers extension is enabled.**
+   */
+
+  /**
+   * @class Tour
+   *
+   * @cfg {Boolean} [alwaysMark=true]
+   * Display markers for all tour spots, not only the focused one. Non-focused
+   * markers will only display the spot index and not its content.
+   *
+   * **This option is available only if the Markers extension is enabled.**
+   */
+
 })(_, jQuery, window.guide);
 
 (function(_, $, guide) {
@@ -3077,7 +3490,9 @@
 
     launchTour: function() {
       if (this.options.resetOnStart) {
-        guide.tour.reset();
+        if (guide.tour) {
+          guide.tour.reset();
+        }
       }
 
       guide.show();
