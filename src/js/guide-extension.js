@@ -10,12 +10,15 @@
       // Make sure an `enabled` option always exists
       _.defaults(this.defaults, { enabled: true });
 
-      this.options = _.extend({}, this.defaults, this.options);
+      _.extend(this, {
+        $:        $(this),
+        options:  _.extend({}, this.defaults, this.options)
+      });
 
       guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
       if (this.onGuideShow) {
-        guide.$.on(this.nsEvent('hide'), _.bind(function() {
+        guide.$.on(this.nsEvent('show'), _.bind(function() {
           if (this.isEnabled()) {
             this.onGuideShow();
             this._shouldHide = true;
