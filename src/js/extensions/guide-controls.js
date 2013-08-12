@@ -4,50 +4,47 @@
   var
   Extension = function() {
     return this.constructor();
-  },
-
-  JST_CONTROLS = _.template([
-    '<div id="gjs_controls">',
-      '<button data-action="tour.first">First</button>',
-      '<button data-action="tour.prev">&lt;</button>',
-      '<button data-action="tour.next">&gt;</button>',
-      '<button data-action="tour.last">Last</button>',
-      '<button data-action="guide.hide">Close</button>',
-      '<select name="tour" data-action="switchTour"></select>',
-    '</div>'
-  ].join('')),
-
-  JST_TOUR_LIST = _.template([
-    '<% _.forEach(tours, function(tour) { %>',
-      '<option value="<%= tour.id %>"><%= tour.id %></option>',
-    '<% }); %>'
-  ].join(''));
+  };
 
   _.extend(Extension.prototype, guide.Extension, {
     defaults: {
       enabled: true,
       inMarkers:  false,
       inTutor:    false,
-      withTourSelector: true
+      withTourSelector: true,
+      withJumps: true,
+      withClose: true
     },
 
     id: 'controls',
+
+    templates: {
+      controls: _.template([
+        '<div id="gjs_controls">',
+          '<button data-action="tour.first">First</button>',
+          '<button data-action="tour.prev">&lt;</button>',
+          '<button data-action="tour.next">&gt;</button>',
+          '<button data-action="tour.last">Last</button>',
+          '<button data-action="guide.hide">Close</button>',
+          '<select name="tour" data-action="switchTour"></select>',
+        '</div>'
+      ].join('')),
+
+      tourList: _.template([
+        '<% _.forEach(tours, function(tour) { %>',
+          '<option value="<%= tour.id %>"><%= tour.id %></option>',
+        '<% }); %>'
+      ].join(''))
+    },
 
     constructor: function() {
       this.$container = guide.$el;
       this.guide = guide;
       this.tour = null;
 
-      // this.refresh();
-
-      guide.$
-        .on('dismiss',  _.bind(this.remove, this))
-        .on('focus',    _.bind(this.refreshControls, this));
-
-      this.$el = $(JST_CONTROLS({}));
-      this.$el
-        .addClass(guide.entityKlass())
-        .on('click', '[data-action]', _.bind(this.delegate, this));
+      this.$el = $(this.templates.controls({}));
+      this.$el.addClass(guide.entityKlass());
+      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
 
       _.extend(this, {
         $bwd:   this.$el.find('[data-action*=prev]'),
@@ -58,20 +55,28 @@
         $tour_selector:  this.$el.find('[data-action="switchTour"]')
       });
 
+
       return this;
     },
 
     onTourStart: function(tour) {
       this.tour = tour;
+      this.tour.$.on(this.nsEvent('focus'), _.bind(this.refreshControls, this));
+      this.tour.$.on(this.nsEvent('add'), _.bind(this.refreshControls, this));
       this.refresh();
     },
 
     onTourStop: function() {
+      this.tour.$.off(this.nsEvent('focus'));
       this.tour = null;
       this.hide();
     },
 
     show: function() {
+      if (!this.tour) {
+        return false;
+      }
+
       this.$el.appendTo(this.$container);
       this.refreshControls();
     },
@@ -84,8 +89,8 @@
       if (this.$el) {
         this.$el.remove();
         guide.$
-        .off('marking.gjs_markers.embedded_controls')
-        .off('unmarking.gjs_markers.embedded_controls');
+          .off(this.nsEvent('marking.gjs_markers'))
+          .off(this.nsEvent('unmarking.gjs_markers'));
       }
     },
 
@@ -177,14 +182,14 @@
       ext.$el.addClass('with-controls');
     },
 
-    delegate: function(e) {
+    proxy: function(e) {
       var action = $(e.target).attr('data-action'),
           pair,
           target,
           method;
 
       if (!action) {
-        return;
+        return $.consume(e);
       }
       else if (action.indexOf('.') > -1) {
         pair    = action.split('.');
@@ -206,18 +211,18 @@
 
 
     refreshControls: function() {
-      var tour = guide.tour;
+      var tour    = this.tour,
+          options = this.getOptions(tour);
 
       this.$bwd.prop('disabled',    !tour.hasPrev());
       this.$fwd.prop('disabled',    !tour.hasNext());
-      this.$first.prop('disabled',  !tour.hasPrev());
-      this.$last.prop('disabled',   !tour.hasNext());
-      // this.$hide.toggle(            !tour.hasNext());
-      this.$hide.show();
+      this.$first.prop('disabled',  !tour.hasPrev()).toggle(options.withJumps);
+      this.$last.prop('disabled',   !tour.hasNext()).toggle(options.withJumps);
+      this.$hide.toggle(options.withClose);
 
-      if (this.getOptions().withTourSelector) {
+      if (options.withTourSelector) {
         this.$tour_selector
-          .html(JST_TOUR_LIST({ tours: guide.tours }))
+          .html(this.templates.tourList({ tours: guide.tours }))
           .toggle(guide.tours.length > 1)
           .find('[value="' + tour.id + '"]').prop('selected', true);
       }
@@ -231,10 +236,10 @@
 
       if (tour && !tour.isActive()) {
         tour.reset();
-        guide.runTour(tour);
+        return guide.runTour(tour);
       }
 
-      return true;
+      return false;
     }
 
   }); // Extension.prototype
