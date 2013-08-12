@@ -22,12 +22,6 @@
     defaults: {
 
       /**
-       * @cfg {Boolean} [withMarker=true]
-       * Attach a Marker to this spot, if the Markers extension is enabled.
-       */
-      withMarker: true,
-
-      /**
        * @cfg {Boolean} [highlight=true]
        * Highlight this spot while the tour is active by attaching an opaque
        * overlay on top of it using CSS.
