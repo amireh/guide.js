@@ -6,10 +6,7 @@ if (!specCallbacks) {
 }
 
 specCallbacks.push(function() {
-  _.each(spotCleanupQueue, function(spot) {
-    spot.$el.remove();
-    spot.remove();
-  });
+  _.invoke(spotCleanupQueue, 'remove');
 
   spotCleanupQueue = [];
 });
@@ -26,7 +23,7 @@ function mkVisibleSpot($el, tour, options) {
 
   spot.$el.appendTo($('body'));
 
-  spotCleanupQueue.push(spot);
+  spotCleanupQueue.push(spot.$el);
 
   return spot;
 };

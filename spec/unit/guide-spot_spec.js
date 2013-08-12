@@ -34,7 +34,7 @@ describe("guide", function() {
       expect(spot.isVisible()).toBeTruthy();
     });
 
-    it('should created with a detached element', function() {
+    it('should be created with a detached element', function() {
       var spot = new guide.Spot($target, tour);
 
       expect(spot).toBeTruthy();
@@ -42,26 +42,22 @@ describe("guide", function() {
     });
 
     it('should cleanly remove itself', function() {
-      var spot = mkSpot();
+      var spot = mkSpot(), $el = spot.$el;
 
-      expect(spot.$el.data()).toEqual({
+      expect($el.data()).toEqual({
         gjsSpot: spot
       });
 
       spot.remove();
 
-      expect(spot.$el.data()).toEqual({});
+      expect($el.data()).toEqual({});
     });
 
     describe('Highlighting', function() {
       var spot;
 
       beforeEach(function() {
-        spot = mkSpot($target.appendTo($('body')));
-      });
-
-      afterEach(function() {
-        spot.remove();
+        spot = mkVisibleSpot();
       });
 
       it('should be highlighted', function() {
@@ -74,7 +70,7 @@ describe("guide", function() {
         expect(spot.highlight()).toBeFalsy();
       });
 
-      it('should respect the tour\'s @alwaysHighlight option', function() {
+      it('should respect the tour @alwaysHighlight option', function() {
         spot.tour.setOptions({ alwaysHighlight: false });
         spot.setOptions({
           highlight: true
@@ -91,7 +87,7 @@ describe("guide", function() {
         expect(spot.highlight()).toBeTruthy();
       });
 
-      it('should be highlight when focused', function() {
+      it('should be highlighted when focused', function() {
         spot.tour.setOptions({
           alwaysHighlight: false
         });
@@ -136,42 +132,49 @@ describe("guide", function() {
         expect(spot.dehighlight({ force: true })).toBeTruthy();
         expect(spot.$el[0].className).toEqual(klasses);
       });
-    });
 
-    it('should refresh its target on #highlight', function() {
-      var spot = mkSpot($('#__temp__'));
+      it('should refresh its target on #highlight', function() {
+        var spot = mkSpot($('#__temp__'));
 
-      expect(spot.$el.length).toEqual(0);
-      expect(spot.isVisible()).toBeFalsy();
-      expect(spot.highlight()).toBeFalsy();
+        expect(spot.$el.length).toEqual(0);
+        expect(spot.isVisible()).toBeFalsy();
+        expect(spot.highlight()).toBeFalsy();
 
-      $target = $('body').affix('div#__temp__');
+        $target = $('body').affix('div#__temp__');
 
-      expect(spot.highlight()).toBeTruthy();
-      expect(spot.$el.length).toEqual(1);
-      expect(spot.isVisible()).toBeTruthy();
+        expect(spot.highlight()).toBeTruthy();
+        expect(spot.$el.length).toEqual(1);
+        expect(spot.isVisible()).toBeTruthy();
+      });
+
+      it('should handle its target being re-made', function() {
+        var spot;
+
+        $target = $('body').affix('div#__temp__');
+        spot = mkSpot($('#__temp__'));
+        expect(spot.highlight()).toBeTruthy();
+
+        $target.remove();
+        expect(spot.highlight()).toBeFalsy();
+
+        $target = $('body').affix('div#__temp__');
+        expect(spot.highlight()).toBeTruthy();
+      });
     });
 
     it('#isVisible', function() {
       var spot = mkSpot($target);
 
+      $target.detach();
       expect(spot.isVisible()).toBeFalsy();
 
       $target.appendTo($('body'));
-
       expect(spot.isVisible()).toBeTruthy();
-    });
 
-    it('#isAvailable', function() {
-      var spot = mkSpot($('#__temp__'));
-
-      expect(spot.isAvailable()).toBeFalsy();
-
-      $target = $('body').affix('div#__temp__');
-
-      spot.__refreshTarget();
-
-      expect(spot.isAvailable()).toBeTruthy();
+      $target.hide();
+      expect(spot.isVisible()).toBeFalsy();
+      $target.show();
+      expect(spot.isVisible()).toBeTruthy();
     });
 
   });

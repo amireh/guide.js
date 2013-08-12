@@ -116,6 +116,8 @@ describe("guide", function() {
         expect(tour.next()).toBeTruthy();
         expect(tour.cursor).toEqual(1);
         expect(tour.current.index).toEqual(1);
+
+        // guide.hide();
       });
 
       it('should go backwards', function() {

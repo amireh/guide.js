@@ -6,6 +6,7 @@ var
 beforeEach(function() {
   guide.options.withAnimations = false;
   guide.options.animeDuration = 0;
+  guide.options.debug = true;
 
   if (!guide.$container.length) {
     guide.$container = $(guide.$container.selector);

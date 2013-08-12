@@ -5,9 +5,9 @@ describe("Extensions", function() {
     describe("Marker", function() {
       var spot, tour, marker;
 
-      afterEach(function() {
-        if (spot) { spot.remove(); spot.$el.remove(); }
-      });
+      // afterEach(function() {
+      //   if (spot) { spot.$el.remove(); spot.remove(); }
+      // });
 
       it('should be created', function() {
         spot = mkSpot();
