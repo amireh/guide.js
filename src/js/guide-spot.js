@@ -48,7 +48,56 @@
        * Do not force 'relative' positioning on elements that are statically
        * positioned.
        */
-      noPositioningFix: false
+      noPositioningFix: false,
+
+      /**
+       * @cfg {Function} [preFocus=null]
+       * A chance to prepare the Spot's target before being visited by the user.
+       *
+       * This callback should be used if the element is dynamically added to
+       * the DOM and might not have been visible at the time the tour started.
+       *
+       * A few usage examples for this callback:
+       *
+       * - Backbone apps that use JavaScript routing, you can jump to a different
+       *   view, or render it, where the target element will become visible.
+       * - Show a dropdown-menu that contains a link or element that the spot
+       *   represents
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      preFocus: null,
+
+      /**
+       * @cfg {Function} [onFocus=null]
+       * Invoked when the Spot has been focused and the user is currently viewing it.
+       *
+       * A few usage example for this callback:
+       *
+       * - Show a dropdown-menu that's *related* to the context of the spot, unless
+       *   the user has manually displayed it.
+       * - Bind to events in your application that should cause the tour to advance
+       *   to the next spot, or retreat to the previous one.
+       *
+       * See #onDefocus for a chance to clean up things you've done in this phase.
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      onFocus: null,
+
+      /**
+       * @cfg {Function} [onDefocus=null]
+       * Invoked when the Spot is no longer focused.
+       *
+       * You can use this callback to do any necessary clean-ups for things you've
+       * done in earlier callbacks.
+       *
+       * This callback will be invoked with the spot object being `thisArg`,
+       * and will also receive the spot object as its second parameter.
+       */
+      onDefocus: null
     },
 
     /**
@@ -114,7 +163,7 @@
          * The element that will be used as an indicator of the spot's position
          * when scrolling the element into view, if #autoScroll is enabled.
          *
-         * This could be modified by extensions.
+         * This could be modified by extensions. Use #setScrollAnchor for overriding.
          */
         $scrollAnchor: $el,
 
@@ -125,6 +174,17 @@
         .addClass(guide.entityKlass())
         .data('gjs-spot', this);
 
+      // Install handlers that were passed manually for convenience
+      if (_.isFunction(options.preFocus)) {
+        this.$.on('pre-focus.user', _.bind(options.preFocus, this));
+      }
+      if (_.isFunction(options.onFocus)) {
+        this.$.on('focus.user', _.bind(options.onFocus, this));
+      }
+      if (_.isFunction(options.onDefocus)) {
+        this.$.on('defocus.user', _.bind(options.onDefocus, this));
+      }
+
       return this;
     },
 
@@ -133,10 +193,6 @@
      */
     isFocused: function() {
       return this.$el.hasClass(KLASS_FOCUSED);
-    },
-
-    isCurrent: function() {
-      return this.tour.current === this;
     },
 
     getText: function() {
@@ -196,7 +252,7 @@
       if (!this.options.highlight) {
         return false;
       }
-      else if (!this.tour.options.alwaysHighlight && !this.isCurrent()) {
+      else if (!this.tour.options.alwaysHighlight && !this.__isCurrent()) {
         return false;
       }
 
@@ -227,16 +283,15 @@
      *
      * @param {Object} [options={}]
      * @param {Boolean} [options.force=false]
-     *  Dehighlight regardless of any options that might otherwise be respected.
+     * Dehighlight regardless of any options that might otherwise be respected.
      */
     dehighlight: function(options) {
-      if ((options||{}).force ||
-          !this.tour.getOptions().alwaysHighlight) {
+      options = _.defaults(options || {}, {
+        force: false
+      });
 
-        this.$el.removeClass([
-          KLASS_TARGET,
-          'gjs-positioning-fix'
-        ].join(' '));
+      if (options.force || !this.tour.options.alwaysHighlight) {
+        this.$el.removeClass([ KLASS_TARGET, 'gjs-positioning-fix' ].join(' '));
 
         return true;
       }
@@ -249,46 +304,46 @@
      * into view if #autoScroll is enabled. The spot will also be implicitly
      * {@link #highlight highlighted}.
      *
+     * @fires focus
      * @fires focus_gjs
      */
     focus: function(prev_spot) {
-      var that      = this,
-          callback  = this.options.onFocus,
-          $scroller = this.$scrollAnchor;
-
       this.highlight();
 
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, arguments);
+      this.$el
+        .addClass(KLASS_FOCUSED)
+        /**
+         * @event focus_gjs
+         * Fired when a tour focuses a new spot.
+         *
+         * **This event is triggered on the Spot#$el.**
+         *
+         * @param {jQuery.Event} event
+         * A default jQuery event.
+         * @param {Spot} elementSpot
+         * The spot this element is represented by.
+         * @param {Spot} previousSpot
+         * The spot that was previously focused, if any.
+         */
+        .triggerHandler('focus.gjs', [ this, prev_spot ]);
+
+      /**
+       * @event focus
+       * Fired when a tour focuses a new spot.
+       *
+       * **This event is triggered on the Spot delegator, Spot#$.**
+       *
+       * @param {jQuery.Event} event
+       * A default jQuery event.
+       * @param {Spot} thisSpot
+       * @param {Spot} previousSpot
+       * The spot that was previously focused, if any.
+       */
+      this.$.triggerHandler('focus', [ this, prev_spot ]);
+
+      if (this.options.autoScroll) {
+        _.defer(_.bind(this.scrollIntoView, this));
       }
-
-      this
-        .$el
-          .addClass(KLASS_FOCUSED)
-          /**
-           * @event focus_gjs
-           * Fired when a tour focuses a new spot.
-           *
-           * **This event is triggered on the Spot's #$el.**
-           *
-           * @param {jQuery.Event} event
-           *  A default jQuery event.
-           * @param {Spot} previousSpot
-           *  The spot that was previously focused, if any.
-           */
-          .triggerHandler('focus.gjs', prev_spot);
-
-      this.$.triggerHandler('focus');
-
-      _.defer(function() {
-        if (that.options.autoScroll &&
-            $scroller.length &&
-            !$scroller.is(':in_viewport')) {
-          $('html,body').animate({
-            scrollTop: $scroller.offset().top * 0.9
-          }, guide.options.withAnimations ? 250 : 0);
-        }
-      });
 
       return this;
     },
@@ -297,36 +352,78 @@
      *
      */
     defocus: function(next_spot) {
-      var callback = this.options.onDefocus;
-
       this.dehighlight();
 
+      this.$.triggerHandler('defocus', [ this, next_spot ]);
       this.$el
         .removeClass(KLASS_FOCUSED)
-        .triggerHandler('defocus.gjs', next_spot);
-
-      if (callback && _.isFunction(callback)) {
-        callback.apply(this, arguments);
-      }
-
-      this.$.triggerHandler('defocus');
+        .triggerHandler('defocus.gjs', [ this, next_spot ]);
 
       return this;
     },
 
-    remove: function() {
-      this.$.triggerHandler('remove');
-      guide.$.triggerHandler('remove.spots', [ this ]);
+    /**
+     * Scrolls the spot into view so that the user sees it.
+     *
+     * The element that is used to tell whether the spot is not currently visible,
+     * and thus should be scrolled to, can be overridden in #setScrollAnchor.
+     *
+     * This method respects Guide#withAnimations in animating the scrolling,
+     * and uses jQuery#in_viewport to test the element's visibility.
+     *
+     * @async
+     */
+    scrollIntoView: function() {
+      if (!this.$scrollAnchor ||
+          !this.$scrollAnchor.length ||
+          this.$scrollAnchor.is(':in_viewport')) {
+        return false;
+      }
 
-      this.$el
-        .removeData('gjs-spot')
-        .removeClass([
-          'no-highlight',
-          KLASS_TARGET,
-          KLASS_FOCUSED
-        ].join(' '));
+      $('html, body').animate({
+        scrollTop: this.$scrollAnchor.offset().top * 0.9
+      }, guide.options.withAnimations ? 250 : 0);
+
+      return true;
     },
 
+    /**
+     * Unlink the Spot from its target, restoring any attributes that might
+     * have been modified by the spot.
+     */
+    remove: function() {
+      /**
+       * @event focus
+       * Fired when the spot is being entirely removed from a tour. Once a spot
+       * is removed, its target must be _completely_ restored as if guide.js has
+       * never been shown.
+       *
+       * Use this callback to clean-up any DOM mods.
+       *
+       * **This event is triggered on the Spot delegator, Spot#$.**
+       */
+      this.$.triggerHandler('remove', [ this ]);
+
+      if (this.isFocused()) {
+        this.defocus();
+      }
+
+      this.dehighlight({ force: true });
+
+      this.$el.removeData('gjs-spot');
+
+      // Remove all handlers and invalidate all properties
+      this.$.off();
+      this.$el = this.$scrollAnchor = this.$ = this.tour = null;
+      this.index = -1;
+
+      return this;
+    },
+
+    /**
+     * Refresh the target selector, re-focus if Spot is focused, otherwise
+     * re-highlight if applicable.
+     */
     refresh: function() {
       if (!this.isVisible()) {
         this.__refreshTarget();
@@ -345,6 +442,10 @@
       return this;
     },
 
+    setScrollAnchor: function($el) {
+      this.$scrollAnchor = $el;
+    },
+
     /**
      * @private
      */
@@ -352,19 +453,26 @@
       this.$el = $(this.$el.selector);
 
       if (!this.$scrollAnchor ||
-        // Could be set by an extension, like Markers, to something other than
-        // the target $el, don't override it.
-        !this.$scrollAnchor.length) {
-        this.$scrollAnchor = this.$el;
+          // Could be set by an extension, like Markers, to something other than
+          // the target $el, don't override it.
+          !this.$scrollAnchor.length ||
+          !this.$scrollAnchor.is(':visible')) {
+        this.setScrollAnchor(this.$el);
       }
 
       return this.isVisible();
     },
 
-    setScrollAnchor: function($el) {
-      this.$scrollAnchor = $el;
+    /**
+     * @private
+     */
+    __isCurrent: function() {
+      return this.tour.current === this;
     },
 
+    /**
+     * @private
+     */
     toString: function() {
       return this.tour.id + '#' + this.index;
     },
