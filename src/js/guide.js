@@ -375,16 +375,15 @@
       }
 
       this.$container.addClass(KLASS_HIDING);
-
       that.$.triggerHandler('hiding');
 
       that.$el.animate({ opacity: 'hide' }, animeMs, function() {
         if (that.tour) {
           that.tour.stop();
+          that.tour = null;
         }
 
         that.$.triggerHandler('hide');
-
         that.$el.detach();
 
         that.$container.removeClass([
@@ -412,15 +411,21 @@
     },
 
     reset: function() {
+      if (this.tour) {
+        this.tour.stop();
+        this.tour = null;
+      }
+
       if (this.isShown()) {
         this.hide();
       }
 
-      this.$.triggerHandler('reset.guide');
-      this.options = _.clone(this.defaults);
+      this.$.triggerHandler('reset');
 
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
+
+      this.options = _.clone(this.defaults);
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
