@@ -1,4 +1,4 @@
-<section class="single">
+<section class="single content-sources">
   <div>
     <h3>Via JavaScript</h3>
 
@@ -6,7 +6,7 @@
 
     <div class="freespace"></div>
     <p><strong>Code</strong></p>
-    <pre>
+    <pre data-language="javascript">
 guide.addSpots([{
   $el: $('#via_js'),
   text: "I'm a Tour Step built from JavaScript!",
@@ -16,7 +16,7 @@ guide.addSpots([{
 }]);
     </pre>
   </div>
-
+  <hr />
   <div>
     <h3>Via Markup</h3>
 
@@ -28,7 +28,7 @@ guide.addSpots([{
 
     <div class="freespace"></div>
     <p><strong>Code</strong></p>
-<pre>
+<pre data-language="html">
 &lt;button
   data-guide="I was made into a Tour Step using data- attributes"
   data-guide-options="marker.width: 120"&gt;
@@ -36,15 +36,35 @@ guide.addSpots([{
 &lt;/button&gt;
 </pre>
   </div>
+
+  <hr />
   <div>
     <h3>Via another HTML element</h3>
     <button id="via_node"
       data-guide-caption="Referenced Content"
       data-guide-options="marker.width: 240">Via another HTML element</button>
+<pre data-language="html">
+&lt;div data-guide-spot=&quot;#via_node&quot; data-guide-caption=&quot;Referenced Content&quot;
+    data-guide-options=&quot;marker.position:top, marker.width:240&quot; class=&quot;text-left&quot;&gt;
+  This is content taken from a separate HTML &lt;code&gt;div&lt;/code&gt; element.
+
+  &lt;p&gt;As you can see, you can use any kind of markup to embed inside
+    a guide.js marker.
+  &lt;/p&gt;
+
+  &lt;p&gt;Here's a list for illustration:&lt;/p&gt;
+  &lt;ul&gt;
+    &lt;li&gt;Flexible&lt;/li&gt;
+    &lt;li&gt;Responsive&lt;/li&gt;
+    &lt;li&gt;Pink&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/div&gt;
+</pre>
   </div>
 </section>
 
-<div data-guide-spot="#via_node" class="text-left">
+<div data-guide-spot="#via_node" data-guide-caption="Referenced Content"
+    data-guide-options="marker.position:top, marker.width:240" class="text-left">
   This is content taken from a separate HTML <code>div</code> element.
 
   <p>As you can see, you can use any kind of markup to embed inside
@@ -62,16 +82,19 @@ guide.addSpots([{
 
 <script>
   $(function() {
-    guide.setOptions({
-      tutor: {
-        enabled: false
-      }
-    })
-    // assign some tour options which will apply to all the tour's spots
     guide.getTour('Default Tour').setOptions({
+      alwaysMark: false,
       marker: {
         placement: 'sibling',
         position:  'right'
+      },
+      tutor: {
+        enabled: false
+      },
+      controls: {
+        inMarkers: true,
+        withJumps: false,
+        withClose: false
       }
     });
 

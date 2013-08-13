@@ -51,6 +51,8 @@
        */
       animeDuration: 500,
 
+      RTL: false,
+
       debug: true
     },
 
@@ -514,7 +516,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.3.1';
+  Guide.VERSION = '1.3.2';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {

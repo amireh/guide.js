@@ -297,10 +297,9 @@
      * @return {Guide.Marker} this
      */
     build: function() {
-      var
-      $el,
-      template,
-      spot      = this.spot;
+      var $el, template, rtl_pos,
+      rtl   = guide.options.RTL,
+      spot  = this.spot;
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
       if (!spot || !spot.isVisible()) {
@@ -334,15 +333,30 @@
           throw 'guide-marker.js: bad placement "'+this.options.placement+'"';
       }
 
+      if (rtl) {
+        switch(this.options.position) {
+          case 'topleft':     rtl_pos = 'topright'; break;
+          case 'topright':    rtl_pos = 'topleft'; break;
+          case 'right':       rtl_pos = 'left'; break;
+          case 'bottomright': rtl_pos = 'bottomleft'; break;
+          case 'bottomleft':  rtl_pos = 'bottomright'; break;
+          case 'left':        rtl_pos = 'right'; break;
+          default:
+            rtl_pos = this.options.position;
+        }
+
+        this.options.position = rtl_pos;
+      }
+
       switch(this.options.position) {
-        case 'topleft':     this.position = POS_TL; break;
+        case 'topleft':     this.position = rtl ? POS_TR  : POS_TL; break;
         case 'top':         this.position = POS_T; break;
-        case 'topright':    this.position = POS_TR; break;
-        case 'right':       this.position = POS_R; break;
-        case 'bottomright': this.position = POS_BR; break;
+        case 'topright':    this.position = rtl ? POS_TL  : POS_TR; break;
+        case 'right':       this.position = rtl ? POS_L   : POS_R; break;
+        case 'bottomright': this.position = rtl ? POS_BL  : POS_BR; break;
         case 'bottom':      this.position = POS_B; break;
-        case 'bottomleft':  this.position = POS_BL; break;
-        case 'left':        this.position = POS_L; break;
+        case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
+        case 'left':        this.position = rtl ? POS_R   : POS_L; break;
         default:
           throw 'guide-marker.js: bad position "' + this.options.position + '"';
       }
@@ -443,9 +457,10 @@
         return false;
       }
 
-      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
 
       if (this.spot.isFocused()) {
+        guide.$.triggerHandler('marking.gjs_markers', [ this ]);
+
         this.$el.addClass('focused');
 
         if (this.withText) {
@@ -457,6 +472,8 @@
             width: this.width
           });
         }
+
+        guide.$.triggerHandler('marked.gjs_markers', [ this ]);
       }
 
       // Mark the spot as being highlighted by a marker
@@ -467,7 +484,6 @@
 
       guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
 
-      guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
     hide: function(options) {

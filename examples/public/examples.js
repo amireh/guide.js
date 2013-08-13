@@ -97,6 +97,6 @@ $(document.body).collapsible({
 
 $(function() {
   $('[data-collapser]').on('collapsed expanded', function() {
-    guide.tour.refresh();
+    // guide.tour.refresh();
   });
 })

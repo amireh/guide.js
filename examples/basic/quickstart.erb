@@ -26,22 +26,27 @@
   </div>
 </section>
 
-<script>
+<script id="quickstart">
   $(function() {
     guide.tour.setOptions({
-      // markers: { enabled: false },
-      alwaysMark: false,
+      alwaysMark: true,
+
       spots: {
         disco: true,
         flashy: true
       },
 
-      marker: {
-        withText: false
-        // template: function(data) { return '<div>' + data.text + '</div>' }
+      controls: {
+        inMarkers: true
+      },
+
+      tutor: {
+        enabled: false
       }
     });
 
     guide.fromDOM($('.example')).show();
   });
 </script>
+
+<%= erb :"source", locals: { selector: '#quickstart' } %>

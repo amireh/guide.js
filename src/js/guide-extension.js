@@ -1,6 +1,10 @@
 (function(_, $, guide) {
   'use strict';
 
+  /**
+   * @class Extension
+   *
+   */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
       if (!this.id) {
@@ -37,8 +41,6 @@
 
       if (this.onTourStart) {
         guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
-          // this.refresh();
-
           if (this.isEnabled(tour)) {
             this.onTourStart(tour);
             tour.$.one('stop', _.bind(this.onTourStop, this, tour));

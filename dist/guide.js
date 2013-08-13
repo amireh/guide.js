@@ -330,6 +330,8 @@
        */
       animeDuration: 500,
 
+      RTL: false,
+
       debug: true
     },
 
@@ -793,7 +795,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.3.1';
+  Guide.VERSION = '1.3.2';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -916,6 +918,10 @@
 (function(_, $, guide) {
   'use strict';
 
+  /**
+   * @class Extension
+   *
+   */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
       if (!this.id) {
@@ -952,8 +958,6 @@
 
       if (this.onTourStart) {
         guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
-          // this.refresh();
-
           if (this.isEnabled(tour)) {
             this.onTourStart(tour);
             tour.$.one('stop', _.bind(this.onTourStop, this, tour));
@@ -2203,6 +2207,14 @@
         $tour_selector:  this.$el.find('[data-action="switchTour"]')
       });
 
+      guide.$
+        .on(this.nsEvent('focus'), _.bind(function() {
+          this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
+        }, this))
+        .on(this.nsEvent('defocus'), _.bind(function() {
+          this.$el.off(this.nsEvent('click'), '[data-action]');
+        }, this));
+
       return this;
     },
 
@@ -2211,13 +2223,10 @@
       this.tour.$.on(this.nsEvent('focus'), _.bind(this.refreshControls, this));
       this.tour.$.on(this.nsEvent('add'), _.bind(this.refreshControls, this));
 
-      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
-
       this.refresh();
     },
 
     onTourStop: function() {
-      this.$el.off(this.nsEvent('click'));
 
       this.tour.$.off(this.nsEvent('focus'));
       this.tour = null;
@@ -2272,8 +2281,6 @@
       extMarkers  = guide.getExtension('markers'),
       options     = this.getOptions();
 
-      // this.remove();
-
       if (extMarkers && extMarkers.isEnabled(tour) && options.inMarkers) {
         this.markerMode(extMarkers);
       }
@@ -2320,12 +2327,15 @@
           that.detachFromMarker(marker);
         });
 
-      // if we're embedding into markers and a spot is currently marked,
-      // attach ourselves to the marker
+      // If we're embedding into markers and a spot is currently marked,
+      // attach ourselves to the marker.
       if (guide.tour && guide.tour.current && guide.tour.current.marker) {
         marker = guide.tour.current.marker;
 
-        _.defer(_.bind(this.attachToMarker, this, marker));
+        this.attachToMarker(marker);
+
+        // We've to refresh its position as its width might have changed.
+        marker.place();
       }
     },
 
@@ -2698,10 +2708,9 @@
      * @return {Guide.Marker} this
      */
     build: function() {
-      var
-      $el,
-      template,
-      spot      = this.spot;
+      var $el, template, rtl_pos,
+      rtl   = guide.options.RTL,
+      spot  = this.spot;
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
       if (!spot || !spot.isVisible()) {
@@ -2735,15 +2744,30 @@
           throw 'guide-marker.js: bad placement "'+this.options.placement+'"';
       }
 
+      if (rtl) {
+        switch(this.options.position) {
+          case 'topleft':     rtl_pos = 'topright'; break;
+          case 'topright':    rtl_pos = 'topleft'; break;
+          case 'right':       rtl_pos = 'left'; break;
+          case 'bottomright': rtl_pos = 'bottomleft'; break;
+          case 'bottomleft':  rtl_pos = 'bottomright'; break;
+          case 'left':        rtl_pos = 'right'; break;
+          default:
+            rtl_pos = this.options.position;
+        }
+
+        this.options.position = rtl_pos;
+      }
+
       switch(this.options.position) {
-        case 'topleft':     this.position = POS_TL; break;
+        case 'topleft':     this.position = rtl ? POS_TR  : POS_TL; break;
         case 'top':         this.position = POS_T; break;
-        case 'topright':    this.position = POS_TR; break;
-        case 'right':       this.position = POS_R; break;
-        case 'bottomright': this.position = POS_BR; break;
+        case 'topright':    this.position = rtl ? POS_TL  : POS_TR; break;
+        case 'right':       this.position = rtl ? POS_L   : POS_R; break;
+        case 'bottomright': this.position = rtl ? POS_BL  : POS_BR; break;
         case 'bottom':      this.position = POS_B; break;
-        case 'bottomleft':  this.position = POS_BL; break;
-        case 'left':        this.position = POS_L; break;
+        case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
+        case 'left':        this.position = rtl ? POS_R   : POS_L; break;
         default:
           throw 'guide-marker.js: bad position "' + this.options.position + '"';
       }
@@ -2844,9 +2868,10 @@
         return false;
       }
 
-      guide.$.triggerHandler('marking.gjs_markers', [ this ]);
 
       if (this.spot.isFocused()) {
+        guide.$.triggerHandler('marking.gjs_markers', [ this ]);
+
         this.$el.addClass('focused');
 
         if (this.withText) {
@@ -2858,6 +2883,8 @@
             width: this.width
           });
         }
+
+        guide.$.triggerHandler('marked.gjs_markers', [ this ]);
       }
 
       // Mark the spot as being highlighted by a marker
@@ -2868,7 +2895,6 @@
 
       guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
 
-      guide.$.triggerHandler('marked.gjs_markers', [ this ]);
     },
 
     hide: function(options) {
