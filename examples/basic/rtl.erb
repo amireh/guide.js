@@ -1,0 +1,25 @@
+<section>
+  <h3>Right-to-Left adjustment</h3>
+  <p>Marker positions are properly flipped when running in RTL mode.</p>
+  <%= erb :"advanced/samples/grid", locals: { placement: 'inline' } %>
+</section>
+
+<script>
+  $(function() {
+    guide.setOptions({
+      RTL: true,
+      tutor: {
+        enabled: false
+      },
+      controls: {
+        inMarkers: false
+      },
+
+      marker: {
+        placement: 'inline'
+      }
+    })
+    .fromDOM($('body'))
+    .show();
+  });
+</script>

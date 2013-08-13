@@ -1,0 +1,21 @@
+<% selector ||= '' %>
+<% node ||= 0 %>
+<script>
+  $(function() {
+    var $source = $('section.source');
+    if (!$source.length) {
+      $source = $([
+        '<section class="source">',
+          '<h2 data-collapser>Source</h2>',
+          '<div data-collapsible></div>',
+        '</section>'
+      ].join(''));
+
+      $source.appendTo($('body'));
+    }
+
+    $('<pre data-language="javascript"></pre>')
+      .text($('script<%= selector || "" %>')[<%= node %>].innerHTML)
+      .appendTo($source.find('> div'));
+  });
+</script>
