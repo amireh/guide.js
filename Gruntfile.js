@@ -147,7 +147,9 @@ module.exports = function(grunt) {
           'color': true,
           'tags': [ 'docs/jsduck_tags/async_tag' ],
           'warnings': [],
-          'external': ['XMLHttpRequest', 'jQuery', '$']
+          'external': [ 'XMLHttpRequest', 'jQuery', '$', '_' ],
+          'images': 'docs/images',
+          'eg-iframe': 'docs/gjs-iframe.html'
         }
       }
     },
@@ -181,12 +183,19 @@ module.exports = function(grunt) {
 
   grunt.registerTask('test', [ 'jsvalidate', 'jshint', 'jasmine' ]);
   grunt.registerTask('build', [ 'concat', 'uglify', 'test', 'less' ]);
-  grunt.registerTask('docs', [ 'jsduck' ]);
+  grunt.registerTask('docs', [ 'jsduck', 'docs_assets' ]);
 
   grunt.registerTask('default', ['test']);
 
   grunt.registerTask('updatePkg', function () {
     grunt.config.set('pkg', readPkg());
+  });
+
+  grunt.registerTask('docs_assets', function () {
+    grunt.file.copy('dist/guide.min.js', 'docs/js/guide.min.js');
+    grunt.file.copy('src/vendor/jquery-1.10.2.js', 'docs/js/jquery-1.10.2.js');
+    grunt.file.copy('src/vendor/lodash.js', 'docs/js/lodash.js');
+    grunt.file.copy('dist/guide.min.css', 'docs/css/guide.min.css');
   });
 
   // Release alias task

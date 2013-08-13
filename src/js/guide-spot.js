@@ -3,13 +3,15 @@
   var
 
   /**
-   * @class Spot
+   * @class Guide.Spot
    *
    * A tour spot represents an element in the DOM that will be visited in a
    * {@link Tour tour}.
    *
    * Spots contain text to be shown to the user to tell them about the element
    * they represent, and have a static position in the tour (their *index*.)
+   *
+   * @alternateClassName Spot
    */
   Spot = function() {
     return this.constructor.apply(this, arguments);
@@ -155,6 +157,13 @@
       }
 
       _.extend(this, {
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * See Guide#$ for details.
+         */
         $: $(this),
 
         /**
@@ -342,7 +351,7 @@
     /**
      * Apply a CSS class to indicate that the spot is focused, and scroll it
      * into view if #autoScroll is enabled. The spot will also be implicitly
-     * {@link #highlight highlighted}.
+     * {@link #cfg-highlight highlighted}.
      *
      * @fires focus
      * @fires focus_gjs
@@ -375,18 +384,7 @@
          */
         .triggerHandler('focus.gjs', [ this, prev_spot ]);
 
-      /**
-       * @event focus
-       * Fired when a tour focuses a new spot.
-       *
-       * **This event is triggered on the Spot delegator, Spot#$.**
-       *
-       * @param {jQuery.Event} event
-       * A default jQuery event.
-       * @param {Spot} thisSpot
-       * @param {Spot} previousSpot
-       * The spot that was previously focused, if any.
-       */
+
       this.$.triggerHandler('focus', [ this, prev_spot ]);
 
       if (this.options.autoScroll) {
@@ -397,9 +395,12 @@
     },
 
     /**
+     * Restore the target as if it was not focused by this spot.
      *
+     * @param  {Spot} nextSpot
+     * The spot that will be focused once this loses focus.
      */
-    defocus: function(next_spot) {
+    defocus: function(nextSpot) {
       this.dehighlight();
 
       if (this.$disco) {
@@ -411,8 +412,8 @@
 
       this.$el.removeClass(KLASS_FOCUSED);
 
-      this.$.triggerHandler('defocus', [ this, next_spot ]);
-      this.$el.triggerHandler('defocus.gjs', [ this, next_spot ]);
+      this.$.triggerHandler('defocus', [ this, nextSpot ]);
+      this.$el.triggerHandler('defocus.gjs', [ this, nextSpot ]);
 
       return this;
     },
@@ -450,7 +451,8 @@
       guide.log('Spot ' + this + ' is being removed.');
 
       /**
-       * @event focus
+       * @event remove
+       *
        * Fired when the spot is being entirely removed from a tour. Once a spot
        * is removed, its target must be _completely_ restored as if guide.js has
        * never been shown.
@@ -537,8 +539,22 @@
     toString: function() {
       return this.tour.id + '#' + this.index;
     },
-
   });
 
   guide.Spot = Spot;
+
+  /**
+   * @event focus
+   * @inheritdoc Tour#focus
+   */
+
+  /**
+   * @event defocus
+   * @inheritdoc Tour#defocus
+   */
+
+  /**
+   * @event pre-focus
+   * @inheritdoc Tour#pre-focus
+   */
 })(_, jQuery, window.guide);

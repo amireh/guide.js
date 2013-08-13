@@ -35,7 +35,7 @@
 
       /**
        * @cfg {Boolean} [withOverlay=false]
-       * Attach a CSS 'shade' overlay to the document.
+       * Attach a darkening CSS overlay to the document while touring.
        */
       withOverlay: false,
 
@@ -436,16 +436,18 @@
     /**
      * Attaches a darkening overlay to the window as per the withOverlay option.
      *
-     * @param <Boolean> doToggle if true, the withOverlay option will be toggled
+     * @param {Boolean} [doToggle=false]
+     * Toggle the value of Guide#withOverlay.
      *
-     * @note
+     * **Note**:
+     *
      * We need to track two states: 'with-overlay' and 'without-overlay'
      * because in overlayed mode, the foreground of highlighted elements needs
      * a higher level of contrast than in non-overlayed mode (they're lighter),
      * thus the CSS is able to do the following:
      *
-     *   .gjs-with-overlay #my_element { color: white }
-     *   .gjs-without-overlay #my_element { color: black }
+     *     .gjs-with-overlay #my_element { color: white }
+     *     .gjs-without-overlay #my_element { color: black }
      *
      */
     toggleOverlayMode: function(doToggle) {

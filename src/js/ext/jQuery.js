@@ -56,7 +56,7 @@
    *     });
    *
    * @param {Event} e The event to consume.
-   * @return {false}
+   * @return {Boolean} false
    */
   $.consume = function(e) {
     if (!e) { return false; }
@@ -102,4 +102,11 @@
     return $(this);
   };
 
+  /**
+   * @class jQuery.Event
+   *
+   * See [the official jQuery Event documentation][1] for more info.
+   *
+   * [1]: http://api.jquery.com/category/events/event-object/
+   */
 })($);

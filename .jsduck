@@ -6,21 +6,21 @@
         "name": "Core",
         "classes": [
           "Guide",
-          "Optionable",
-          "Extension",
-          "Tour",
-          "Spot"
+          "Guide.Optionable",
+          "Guide.Extension",
+          "Guide.Tour",
+          "Guide.Spot"
         ]
       },
 
       {
         "name": "Extensions",
         "classes": [
-          "Markers",
-          "Marker",
-          "Toggler",
-          "Tutor",
-          "Controls"
+          "Guide.Markers",
+          "Guide.Marker",
+          "Guide.Toggler",
+          "Guide.Tutor",
+          "Guide.Controls"
         ]
       },
 

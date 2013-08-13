@@ -3,10 +3,12 @@
 
   var
   /**
-   * @class Tour
+   * @class Guide.Tour
    *
    * A guide.js tour is a collection of {@link Spot tour spots} which provides
    * an interface for navigating between the spots and focusing them.
+   *
+   * @alternateClassName Tour
    */
   Tour = function() {
     return this.constructor.apply(this, arguments);
@@ -68,9 +70,16 @@
     },
 
     constructor: function(label) {
-      this.$ = $(this);
-
       _.extend(this, {
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * See Guide#$ for details.
+         */
+        $: $(this),
+
         id: label, // TODO: unique constraints on tour IDs
 
         options: _.extend({}, guide.options.tours, this.defaults),
@@ -333,14 +342,21 @@
     },
 
     /**
+     * Guide the user to a given spot in this tour.
      *
-     * @emit defocus.gjs on the current (now previous) spot, guide.previous.$el
-     * @emit defocus [ prevSpot, currSpot, guide ] on guide.$
+     * Current spot will be defocused, and in case the given spot is not currently
+     * visible, an attempt to 'refresh' it will be made, and if that fails,
+     * an alternative spot will be searched for and used if found.
      *
-     * @emit focus.gjs on the next (now current) spot, guide.current.$el
-     * @emit focus [ currSpot, guide ] on guide.$
+     * @param {Number/Spot} index
+     * The spot, or an index of a spot, that should be focused.
      *
-     * @return whether the spot has been focused
+     * @fires defocus
+     * @fires prefocus
+     * @fires focus
+     *
+     * @return {Boolean} Whether the spot has been successfully focused.
+     * @async
      */
     focus: function(index) {
       var spot = this.__getSpot(index);
@@ -364,6 +380,22 @@
       }
 
       if (!this.hasJustRefreshed) {
+        /**
+         * @event pre-focus
+         * Fired when a spot is about to be focused. See Spot#preFocus for
+         * more details.
+         *
+         * **This event is triggered on multiple targets:**
+         *
+         *  - Spot#$
+         *  - Tour#$
+         *  - Guide#$
+         *
+         * @param {jQuery.Event} event
+         * A default jQuery event.
+         * @param {Spot} spot
+         * The spot.
+         */
         spot.$.triggerHandler('pre-focus', [ spot ]);
         this.$.triggerHandler('pre-focus', [ spot ]);
         guide.$.triggerHandler('pre-focus', [ spot, this ]);
@@ -417,17 +449,24 @@
 
       /**
        * @event focus
-       * Fired when a tour focuses a new spot.
+       * Fired when a tour focuses a new spot. See Spot#onFocus for
+       * more details.
        *
-       * **This event is triggered on the guide event delegator, Guide#$.**
+       * **This event is triggered on multiple targets:**
+       *
+       *  - Spot#$
+       *  - Tour#$
+       *  - Guide#$
        *
        * @param {jQuery.Event} event
-       *  A default jQuery event.
+       * A default jQuery event.
+       * @param {Spot} currentSpot
+       * The spot that's currently focused.
        * @param {Spot} previousSpot
-       *  The spot that was previously focused, if any.
+       * The spot that was previously focused, if any.
        */
-      guide.$.triggerHandler('focus', [ spot, this ]);
-      this.$.triggerHandler('focus', [ spot ]);
+      this.$.triggerHandler('focus', [ spot, this.previous ]);
+      guide.$.triggerHandler('focus', [ spot, this.previous ]);
 
       console.log('guide.js: visiting tour spot #', spot.index);
 
@@ -440,6 +479,24 @@
     __defocus: function(nextSpot) {
       this.current.defocus(nextSpot);
 
+      /**
+       * @event defocus
+       *
+       * Fired when a spot has lost focus. See Spot#onDefocus for more details.
+       *
+       * **This event is triggered on multiple targets:**
+       *
+       *  - Spot#$
+       *  - Tour#$
+       *  - Guide#$
+       *
+       * @param {jQuery.Event} event
+       * A default jQuery event.
+       * @param {Spot} lastSpot
+       * The spot that's no longer focused.
+       * @param {Spot} nextSpot
+       * The spot that will soon be focused, if any.
+       */
       this.$.triggerHandler('defocus',  [ this.current, nextSpot ]);
       guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
 

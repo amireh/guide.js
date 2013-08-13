@@ -2,6 +2,12 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Toggler
+   * @extends Guide.Extension
+   *
+   * A guide.js extension that installs a toggle button that plays and stops tours.
+   */
   Extension = function() {
     return this.constructor();
   },

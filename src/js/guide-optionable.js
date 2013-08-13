@@ -2,10 +2,13 @@
   'use strict';
 
   /**
-   * @class Optionable
+   * @class Guide.Optionable
    * An interface for defining and updating options an object accepts.
+   *
+   * @alternateClassName Optionable
    */
   var Optionable = {
+
     /**
      * The options the object accepts along with their default values.
      */
@@ -19,8 +22,8 @@
      *
      * @fires refresh
      * @param {Object/String} options
-     *  The set of options to override. If the parameter is a String, it will
-     *  be parsed into an object using _#parseOptions if it's valid.
+     * The set of options to override. If the parameter is a String, it will
+     * be parsed into an object using _#parseOptions if it's valid.
      */
     setOptions: function(options) {
       if (_.isString(options)) {
@@ -45,11 +48,11 @@
          * **This event is triggered on the Optionable's #$ if set.**
          *
          * @param {jQuery.Event} event
-         *  A default jQuery event.
+         * A default jQuery event.
          * @param {Object} options
-         *  The the new set of options.
+         * The the new set of options.
          * @param {Optionable} object
-         *  The Optionable object that has been modified.
+         * The Optionable object that has been modified.
          */
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }

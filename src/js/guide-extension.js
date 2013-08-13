@@ -2,8 +2,11 @@
   'use strict';
 
   /**
-   * @class Extension
+   * @class Guide.Extension
+   * @mixins Guide.Optionable
+   * @inheritable
    *
+   * An interface, and some helpers, for extensions to mount inside guide.js.
    */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {

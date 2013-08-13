@@ -2,6 +2,15 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Controls
+   * @extends Guide.Extension
+   *
+   * A widget that provides tour navigation controls, like going forward and
+   * backward, jumping to first or last spot, or closing the tour.
+   *
+   * **This extension can integrate with Guide.Tutor and Guide.Markers.**
+   */
   Extension = function() {
     return this.constructor();
   };

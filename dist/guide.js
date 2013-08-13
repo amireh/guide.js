@@ -56,7 +56,7 @@
    *     });
    *
    * @param {Event} e The event to consume.
-   * @return {false}
+   * @return {Boolean} false
    */
   $.consume = function(e) {
     if (!e) { return false; }
@@ -102,6 +102,13 @@
     return $(this);
   };
 
+  /**
+   * @class jQuery.Event
+   *
+   * See [the official jQuery Event documentation][1] for more info.
+   *
+   * [1]: http://api.jquery.com/category/events/event-object/
+   */
 })($);
 
 /**
@@ -314,7 +321,7 @@
 
       /**
        * @cfg {Boolean} [withOverlay=false]
-       * Attach a CSS 'shade' overlay to the document.
+       * Attach a darkening CSS overlay to the document while touring.
        */
       withOverlay: false,
 
@@ -715,16 +722,18 @@
     /**
      * Attaches a darkening overlay to the window as per the withOverlay option.
      *
-     * @param <Boolean> doToggle if true, the withOverlay option will be toggled
+     * @param {Boolean} [doToggle=false]
+     * Toggle the value of Guide#withOverlay.
      *
-     * @note
+     * **Note**:
+     *
      * We need to track two states: 'with-overlay' and 'without-overlay'
      * because in overlayed mode, the foreground of highlighted elements needs
      * a higher level of contrast than in non-overlayed mode (they're lighter),
      * thus the CSS is able to do the following:
      *
-     *   .gjs-with-overlay #my_element { color: white }
-     *   .gjs-without-overlay #my_element { color: black }
+     *     .gjs-with-overlay #my_element { color: white }
+     *     .gjs-without-overlay #my_element { color: black }
      *
      */
     toggleOverlayMode: function(doToggle) {
@@ -812,10 +821,13 @@
   'use strict';
 
   /**
-   * @class Optionable
+   * @class Guide.Optionable
    * An interface for defining and updating options an object accepts.
+   *
+   * @alternateClassName Optionable
    */
   var Optionable = {
+
     /**
      * The options the object accepts along with their default values.
      */
@@ -829,8 +841,8 @@
      *
      * @fires refresh
      * @param {Object/String} options
-     *  The set of options to override. If the parameter is a String, it will
-     *  be parsed into an object using _#parseOptions if it's valid.
+     * The set of options to override. If the parameter is a String, it will
+     * be parsed into an object using _#parseOptions if it's valid.
      */
     setOptions: function(options) {
       if (_.isString(options)) {
@@ -855,11 +867,11 @@
          * **This event is triggered on the Optionable's #$ if set.**
          *
          * @param {jQuery.Event} event
-         *  A default jQuery event.
+         * A default jQuery event.
          * @param {Object} options
-         *  The the new set of options.
+         * The the new set of options.
          * @param {Optionable} object
-         *  The Optionable object that has been modified.
+         * The Optionable object that has been modified.
          */
         this.$.triggerHandler('refresh', [ this.options, this ]);
       }
@@ -919,8 +931,11 @@
   'use strict';
 
   /**
-   * @class Extension
+   * @class Guide.Extension
+   * @mixins Guide.Optionable
+   * @inheritable
    *
+   * An interface, and some helpers, for extensions to mount inside guide.js.
    */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
@@ -1053,10 +1068,12 @@
 
   var
   /**
-   * @class Tour
+   * @class Guide.Tour
    *
    * A guide.js tour is a collection of {@link Spot tour spots} which provides
    * an interface for navigating between the spots and focusing them.
+   *
+   * @alternateClassName Tour
    */
   Tour = function() {
     return this.constructor.apply(this, arguments);
@@ -1118,9 +1135,16 @@
     },
 
     constructor: function(label) {
-      this.$ = $(this);
-
       _.extend(this, {
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * See Guide#$ for details.
+         */
+        $: $(this),
+
         id: label, // TODO: unique constraints on tour IDs
 
         options: _.extend({}, guide.options.tours, this.defaults),
@@ -1383,14 +1407,21 @@
     },
 
     /**
+     * Guide the user to a given spot in this tour.
      *
-     * @emit defocus.gjs on the current (now previous) spot, guide.previous.$el
-     * @emit defocus [ prevSpot, currSpot, guide ] on guide.$
+     * Current spot will be defocused, and in case the given spot is not currently
+     * visible, an attempt to 'refresh' it will be made, and if that fails,
+     * an alternative spot will be searched for and used if found.
      *
-     * @emit focus.gjs on the next (now current) spot, guide.current.$el
-     * @emit focus [ currSpot, guide ] on guide.$
+     * @param {Number/Spot} index
+     * The spot, or an index of a spot, that should be focused.
      *
-     * @return whether the spot has been focused
+     * @fires defocus
+     * @fires prefocus
+     * @fires focus
+     *
+     * @return {Boolean} Whether the spot has been successfully focused.
+     * @async
      */
     focus: function(index) {
       var spot = this.__getSpot(index);
@@ -1414,6 +1445,22 @@
       }
 
       if (!this.hasJustRefreshed) {
+        /**
+         * @event pre-focus
+         * Fired when a spot is about to be focused. See Spot#preFocus for
+         * more details.
+         *
+         * **This event is triggered on multiple targets:**
+         *
+         *  - Spot#$
+         *  - Tour#$
+         *  - Guide#$
+         *
+         * @param {jQuery.Event} event
+         * A default jQuery event.
+         * @param {Spot} spot
+         * The spot.
+         */
         spot.$.triggerHandler('pre-focus', [ spot ]);
         this.$.triggerHandler('pre-focus', [ spot ]);
         guide.$.triggerHandler('pre-focus', [ spot, this ]);
@@ -1467,17 +1514,24 @@
 
       /**
        * @event focus
-       * Fired when a tour focuses a new spot.
+       * Fired when a tour focuses a new spot. See Spot#onFocus for
+       * more details.
        *
-       * **This event is triggered on the guide event delegator, Guide#$.**
+       * **This event is triggered on multiple targets:**
+       *
+       *  - Spot#$
+       *  - Tour#$
+       *  - Guide#$
        *
        * @param {jQuery.Event} event
-       *  A default jQuery event.
+       * A default jQuery event.
+       * @param {Spot} currentSpot
+       * The spot that's currently focused.
        * @param {Spot} previousSpot
-       *  The spot that was previously focused, if any.
+       * The spot that was previously focused, if any.
        */
-      guide.$.triggerHandler('focus', [ spot, this ]);
-      this.$.triggerHandler('focus', [ spot ]);
+      this.$.triggerHandler('focus', [ spot, this.previous ]);
+      guide.$.triggerHandler('focus', [ spot, this.previous ]);
 
       console.log('guide.js: visiting tour spot #', spot.index);
 
@@ -1490,6 +1544,24 @@
     __defocus: function(nextSpot) {
       this.current.defocus(nextSpot);
 
+      /**
+       * @event defocus
+       *
+       * Fired when a spot has lost focus. See Spot#onDefocus for more details.
+       *
+       * **This event is triggered on multiple targets:**
+       *
+       *  - Spot#$
+       *  - Tour#$
+       *  - Guide#$
+       *
+       * @param {jQuery.Event} event
+       * A default jQuery event.
+       * @param {Spot} lastSpot
+       * The spot that's no longer focused.
+       * @param {Spot} nextSpot
+       * The spot that will soon be focused, if any.
+       */
       this.$.triggerHandler('defocus',  [ this.current, nextSpot ]);
       guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
 
@@ -1609,13 +1681,15 @@
   var
 
   /**
-   * @class Spot
+   * @class Guide.Spot
    *
    * A tour spot represents an element in the DOM that will be visited in a
    * {@link Tour tour}.
    *
    * Spots contain text to be shown to the user to tell them about the element
    * they represent, and have a static position in the tour (their *index*.)
+   *
+   * @alternateClassName Spot
    */
   Spot = function() {
     return this.constructor.apply(this, arguments);
@@ -1761,6 +1835,13 @@
       }
 
       _.extend(this, {
+
+        /**
+         * @property {jQuery} $
+         * An event delegator, used for emitting custom events and intercepting them.
+         *
+         * See Guide#$ for details.
+         */
         $: $(this),
 
         /**
@@ -1948,7 +2029,7 @@
     /**
      * Apply a CSS class to indicate that the spot is focused, and scroll it
      * into view if #autoScroll is enabled. The spot will also be implicitly
-     * {@link #highlight highlighted}.
+     * {@link #cfg-highlight highlighted}.
      *
      * @fires focus
      * @fires focus_gjs
@@ -1981,18 +2062,7 @@
          */
         .triggerHandler('focus.gjs', [ this, prev_spot ]);
 
-      /**
-       * @event focus
-       * Fired when a tour focuses a new spot.
-       *
-       * **This event is triggered on the Spot delegator, Spot#$.**
-       *
-       * @param {jQuery.Event} event
-       * A default jQuery event.
-       * @param {Spot} thisSpot
-       * @param {Spot} previousSpot
-       * The spot that was previously focused, if any.
-       */
+
       this.$.triggerHandler('focus', [ this, prev_spot ]);
 
       if (this.options.autoScroll) {
@@ -2003,9 +2073,12 @@
     },
 
     /**
+     * Restore the target as if it was not focused by this spot.
      *
+     * @param  {Spot} nextSpot
+     * The spot that will be focused once this loses focus.
      */
-    defocus: function(next_spot) {
+    defocus: function(nextSpot) {
       this.dehighlight();
 
       if (this.$disco) {
@@ -2017,8 +2090,8 @@
 
       this.$el.removeClass(KLASS_FOCUSED);
 
-      this.$.triggerHandler('defocus', [ this, next_spot ]);
-      this.$el.triggerHandler('defocus.gjs', [ this, next_spot ]);
+      this.$.triggerHandler('defocus', [ this, nextSpot ]);
+      this.$el.triggerHandler('defocus.gjs', [ this, nextSpot ]);
 
       return this;
     },
@@ -2056,7 +2129,8 @@
       guide.log('Spot ' + this + ' is being removed.');
 
       /**
-       * @event focus
+       * @event remove
+       *
        * Fired when the spot is being entirely removed from a tour. Once a spot
        * is removed, its target must be _completely_ restored as if guide.js has
        * never been shown.
@@ -2143,16 +2217,39 @@
     toString: function() {
       return this.tour.id + '#' + this.index;
     },
-
   });
 
   guide.Spot = Spot;
+
+  /**
+   * @event focus
+   * @inheritdoc Tour#focus
+   */
+
+  /**
+   * @event defocus
+   * @inheritdoc Tour#defocus
+   */
+
+  /**
+   * @event pre-focus
+   * @inheritdoc Tour#pre-focus
+   */
 })(_, jQuery, window.guide);
 
 (function(_, $, guide) {
   'use strict';
 
   var
+  /**
+   * @class Guide.Controls
+   * @extends Guide.Extension
+   *
+   * A widget that provides tour navigation controls, like going forward and
+   * backward, jumping to first or last spot, or closing the tour.
+   *
+   * **This extension can integrate with Guide.Tutor and Guide.Markers.**
+   */
   Extension = function() {
     return this.constructor();
   };
@@ -2413,6 +2510,15 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Markers
+   * @extends Guide.Extension
+   *
+   * A guide.js extension that provides interactive {@link Marker markers} that
+   * can be attached to {@link Spot tour spots}.
+   *
+   * @alternateClassName Markers
+   */
   Extension = function() {
     return this.constructor();
   },
@@ -2423,18 +2529,14 @@
 
   idGenerator = 0,
 
-  /**
-   * Plain markers that contain only the step index, no text, and no caption.
-   */
+  // Plain markers that contain only the step index, no text, and no caption.
   JST_PLAIN = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
     '</div>'
   ].join('')),
 
-  /**
-   * Markers that contain the step index when not focused, and text otherwise.
-   */
+  // Markers that contain the step index when not focused, and text otherwise.
   JST_WITH_CONTENT = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
@@ -2442,10 +2544,8 @@
     '</div>'
   ].join('')),
 
-  /**
-   * Markers that contain the step index when not focused, and both caption
-   * and text otherwise.
-   */
+  // Markers that contain the step index when not focused, and both caption
+  // and text otherwise.
   JST_WITH_CAPTION = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
@@ -2454,12 +2554,12 @@
     '</div>'
   ].join('')),
 
-  /* placement modes */
+  // Placement modes
   PMT_INLINE = 1,
   PMT_SIBLING = 2,
   PMT_OVERLAY = 3,
 
-  /* positioning grid */
+  // The positioning grid
   POS_TL  = 1,
   POS_T   = 2,
   POS_TR  = 3,
@@ -2469,14 +2569,22 @@
   POS_BL  = 7,
   POS_L   = 8;
 
-  /**
-   * Marker implementation.
-   */
   _.extend(Extension.prototype, guide.Extension, {
     id: 'markers',
 
     defaults: {
+      /**
+       * @cfg {Boolean} [enabled=true]
+       * Enable {@link Marker markers} functionality and build them for each
+       * tour spot automatically.
+       */
       enabled: true,
+
+      /**
+       * @cfg {Number} [refreshFrequency=500]
+       * Milliseconds to wait before re-positioning markers after the window
+       * has been resized.
+       */
       refreshFrequency: 500
     },
 
@@ -2540,10 +2648,10 @@
     },
 
     /**
-     * Install the window resize handler and launch markers for the current tour.
+     * Install the window resize handler and proxy clicks on markers to focus
+     * their spots.
      *
-     * @see #onTourStart
-     * @see #repositionMarkers
+     * See #repositionMarkers for the repositioning logic.
      */
     onGuideShow: function() {
       $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
@@ -2572,8 +2680,10 @@
       $(document.body).off(this.nsEvent('click'));
     },
 
+    /**
+     * Launch markers for the tour if the option, Tour#alwaysMark, is enabled.
+     */
     onTourStart: function(tour) {
-      // Show all markers for this tour if the option is enabled
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
@@ -2600,7 +2710,7 @@
 
 
   /**
-   * @class Marker
+   * @class Guide.Marker
    *
    * A single marker object attached to a Tour Spot. Markers show up around
    * a tour spot, and can show the index of the spot, its content when highlighted,
@@ -2608,6 +2718,33 @@
    *
    * Marker instances allow you to configure where and how they should be placed.
    *
+   * Example of creating a basic marker:
+   *
+   *     @example
+   *     $(function() {
+   *       $('<button>Hi</button>').appendTo($('body'));
+   *
+   *       // Enable the Markers extension:
+   *       guide.setOptions({
+   *         markers: {
+   *           enabled: true
+   *         }
+   *       });
+   *
+   *       // Create a spot with a marker:
+   *       guide.tour.addSpot($('button'), {
+   *         text: "I'm a button full of awesome.",
+   *         withMarker: true,
+   *         marker: {
+   *           position: 'right',
+   *           width: 140
+   *         }
+   *       });
+   *
+   *       guide.show();
+   *     });
+   *
+   * @alternateClassName Marker
    */
   _.extend(Marker.prototype, {
     defaults: {
@@ -2897,6 +3034,16 @@
 
     },
 
+    /**
+     * Collapse the marker if Tour#alwaysMark is on, otherwise detach it.
+     *
+     * @param  {Object} options
+     * Some overrides.
+     *
+     * @param {Boolean} [options.completely=false]
+     * Don't respect any options that might otherwise prevent the marker from
+     * being detached.
+     */
     hide: function(options) {
       options = _.defaults(options || {}, {
         completely: false
@@ -3106,13 +3253,8 @@
     /**
      * Center node horizontally or vertically by applying negative margins.
      *
-     * @param <jQuery object> $node the element to modify
-     * @param <int> pos the position key
-     *
-     * Positions POS_T and POS_B will cause horizontal centering, while
-     * positions POS_L and POS_R will cause vertical centering.
-     *
-     * @return null
+     * Positions `POS_T` and `POS_B` will cause horizontal centering, while
+     * positions `POS_L` and `POS_R` will cause vertical centering.
      */
     hvCenter: function() {
       var dir, center,
@@ -3411,7 +3553,7 @@
   guide.addExtension(new Extension());
 
   /**
-   * @class Spot
+   * @class Guide.Spot
    *
    * @cfg {Boolean} [withMarker=true]
    * Attach and display a marker to the spot's element when it receives focus.
@@ -3420,7 +3562,7 @@
    */
 
   /**
-   * @class Tour
+   * @class Guide.Tour
    *
    * @cfg {Boolean} [alwaysMark=true]
    * Display markers for all tour spots, not only the focused one. Non-focused
@@ -3435,6 +3577,12 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Toggler
+   * @extends Guide.Extension
+   *
+   * A guide.js extension that installs a toggle button that plays and stops tours.
+   */
   Extension = function() {
     return this.constructor();
   },
@@ -3541,6 +3689,13 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Tutor
+   * @extends Guide.Extension
+   *
+   * A widget that displays the focused spot's content in a static
+   * place on the bottom of the page.
+   */
   Extension = function() {
     return this.constructor();
   },

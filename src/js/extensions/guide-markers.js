@@ -2,6 +2,15 @@
   'use strict';
 
   var
+  /**
+   * @class Guide.Markers
+   * @extends Guide.Extension
+   *
+   * A guide.js extension that provides interactive {@link Marker markers} that
+   * can be attached to {@link Spot tour spots}.
+   *
+   * @alternateClassName Markers
+   */
   Extension = function() {
     return this.constructor();
   },
@@ -12,18 +21,14 @@
 
   idGenerator = 0,
 
-  /**
-   * Plain markers that contain only the step index, no text, and no caption.
-   */
+  // Plain markers that contain only the step index, no text, and no caption.
   JST_PLAIN = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
     '</div>'
   ].join('')),
 
-  /**
-   * Markers that contain the step index when not focused, and text otherwise.
-   */
+  // Markers that contain the step index when not focused, and text otherwise.
   JST_WITH_CONTENT = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
@@ -31,10 +36,8 @@
     '</div>'
   ].join('')),
 
-  /**
-   * Markers that contain the step index when not focused, and both caption
-   * and text otherwise.
-   */
+  // Markers that contain the step index when not focused, and both caption
+  // and text otherwise.
   JST_WITH_CAPTION = _.template([
     '<div>',
       '<span class="index"><%= index +1 %></span>',
@@ -43,12 +46,12 @@
     '</div>'
   ].join('')),
 
-  /* placement modes */
+  // Placement modes
   PMT_INLINE = 1,
   PMT_SIBLING = 2,
   PMT_OVERLAY = 3,
 
-  /* positioning grid */
+  // The positioning grid
   POS_TL  = 1,
   POS_T   = 2,
   POS_TR  = 3,
@@ -58,14 +61,22 @@
   POS_BL  = 7,
   POS_L   = 8;
 
-  /**
-   * Marker implementation.
-   */
   _.extend(Extension.prototype, guide.Extension, {
     id: 'markers',
 
     defaults: {
+      /**
+       * @cfg {Boolean} [enabled=true]
+       * Enable {@link Marker markers} functionality and build them for each
+       * tour spot automatically.
+       */
       enabled: true,
+
+      /**
+       * @cfg {Number} [refreshFrequency=500]
+       * Milliseconds to wait before re-positioning markers after the window
+       * has been resized.
+       */
       refreshFrequency: 500
     },
 
@@ -129,10 +140,10 @@
     },
 
     /**
-     * Install the window resize handler and launch markers for the current tour.
+     * Install the window resize handler and proxy clicks on markers to focus
+     * their spots.
      *
-     * @see #onTourStart
-     * @see #repositionMarkers
+     * See #repositionMarkers for the repositioning logic.
      */
     onGuideShow: function() {
       $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
@@ -161,8 +172,10 @@
       $(document.body).off(this.nsEvent('click'));
     },
 
+    /**
+     * Launch markers for the tour if the option, Tour#alwaysMark, is enabled.
+     */
     onTourStart: function(tour) {
-      // Show all markers for this tour if the option is enabled
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
@@ -189,7 +202,7 @@
 
 
   /**
-   * @class Marker
+   * @class Guide.Marker
    *
    * A single marker object attached to a Tour Spot. Markers show up around
    * a tour spot, and can show the index of the spot, its content when highlighted,
@@ -197,6 +210,33 @@
    *
    * Marker instances allow you to configure where and how they should be placed.
    *
+   * Example of creating a basic marker:
+   *
+   *     @example
+   *     $(function() {
+   *       $('<button>Hi</button>').appendTo($('body'));
+   *
+   *       // Enable the Markers extension:
+   *       guide.setOptions({
+   *         markers: {
+   *           enabled: true
+   *         }
+   *       });
+   *
+   *       // Create a spot with a marker:
+   *       guide.tour.addSpot($('button'), {
+   *         text: "I'm a button full of awesome.",
+   *         withMarker: true,
+   *         marker: {
+   *           position: 'right',
+   *           width: 140
+   *         }
+   *       });
+   *
+   *       guide.show();
+   *     });
+   *
+   * @alternateClassName Marker
    */
   _.extend(Marker.prototype, {
     defaults: {
@@ -486,6 +526,16 @@
 
     },
 
+    /**
+     * Collapse the marker if Tour#alwaysMark is on, otherwise detach it.
+     *
+     * @param  {Object} options
+     * Some overrides.
+     *
+     * @param {Boolean} [options.completely=false]
+     * Don't respect any options that might otherwise prevent the marker from
+     * being detached.
+     */
     hide: function(options) {
       options = _.defaults(options || {}, {
         completely: false
@@ -695,13 +745,8 @@
     /**
      * Center node horizontally or vertically by applying negative margins.
      *
-     * @param <jQuery object> $node the element to modify
-     * @param <int> pos the position key
-     *
-     * Positions POS_T and POS_B will cause horizontal centering, while
-     * positions POS_L and POS_R will cause vertical centering.
-     *
-     * @return null
+     * Positions `POS_T` and `POS_B` will cause horizontal centering, while
+     * positions `POS_L` and `POS_R` will cause vertical centering.
      */
     hvCenter: function() {
       var dir, center,
@@ -1000,7 +1045,7 @@
   guide.addExtension(new Extension());
 
   /**
-   * @class Spot
+   * @class Guide.Spot
    *
    * @cfg {Boolean} [withMarker=true]
    * Attach and display a marker to the spot's element when it receives focus.
@@ -1009,7 +1054,7 @@
    */
 
   /**
-   * @class Tour
+   * @class Guide.Tour
    *
    * @cfg {Boolean} [alwaysMark=true]
    * Display markers for all tour spots, not only the focused one. Non-focused
