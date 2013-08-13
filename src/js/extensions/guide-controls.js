@@ -56,6 +56,14 @@
         $tour_selector:  this.$el.find('[data-action="switchTour"]')
       });
 
+      guide.$
+        .on(this.nsEvent('focus'), _.bind(function() {
+          this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
+        }, this))
+        .on(this.nsEvent('defocus'), _.bind(function() {
+          this.$el.off(this.nsEvent('click'), '[data-action]');
+        }, this));
+
       return this;
     },
 
@@ -64,13 +72,10 @@
       this.tour.$.on(this.nsEvent('focus'), _.bind(this.refreshControls, this));
       this.tour.$.on(this.nsEvent('add'), _.bind(this.refreshControls, this));
 
-      this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
-
       this.refresh();
     },
 
     onTourStop: function() {
-      this.$el.off(this.nsEvent('click'));
 
       this.tour.$.off(this.nsEvent('focus'));
       this.tour = null;
@@ -125,8 +130,6 @@
       extMarkers  = guide.getExtension('markers'),
       options     = this.getOptions();
 
-      // this.remove();
-
       if (extMarkers && extMarkers.isEnabled(tour) && options.inMarkers) {
         this.markerMode(extMarkers);
       }
@@ -173,12 +176,15 @@
           that.detachFromMarker(marker);
         });
 
-      // if we're embedding into markers and a spot is currently marked,
-      // attach ourselves to the marker
+      // If we're embedding into markers and a spot is currently marked,
+      // attach ourselves to the marker.
       if (guide.tour && guide.tour.current && guide.tour.current.marker) {
         marker = guide.tour.current.marker;
 
-        _.defer(_.bind(this.attachToMarker, this, marker));
+        this.attachToMarker(marker);
+
+        // We've to refresh its position as its width might have changed.
+        marker.place();
       }
     },
 
