@@ -18,6 +18,7 @@
   },
 
   KLASS_TARGET  = 'gjs-spot',
+  KLASS_ENTITY  = guide.entityKlass(),
   KLASS_FOCUSED = 'gjs-spot-focused';
 
   _.extend(Spot.prototype, guide.Optionable, {
@@ -209,10 +210,6 @@
         }
       }
 
-      $el
-        .addClass(guide.entityKlass())
-        .data('gjs-spot', this);
-
       // Install handlers that were passed manually for convenience.
       if (_.isFunction(options.preFocus)) {
         // This is triggered by the tour itself in #focus as the spot has no
@@ -284,7 +281,7 @@
      */
     highlight: function() {
       var
-      klasses = [ KLASS_TARGET ],
+      klasses = [ KLASS_TARGET, KLASS_ENTITY ],
       positionQuery;
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
@@ -340,7 +337,11 @@
       });
 
       if (options.force || !this.tour.options.alwaysHighlight) {
-        this.$el.removeClass([ KLASS_TARGET, 'gjs-positioning-fix' ].join(' '));
+        this.$el.removeClass([
+          KLASS_TARGET,
+          KLASS_ENTITY,
+          'gjs-positioning-fix'
+        ].join(' '));
 
         return true;
       }
@@ -468,8 +469,6 @@
       }
 
       this.dehighlight({ force: true });
-
-      this.$el.removeData('gjs-spot');
 
       // Remove all handlers and invalidate all properties
       this.$.off();

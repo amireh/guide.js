@@ -271,11 +271,6 @@
         throw 'guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
       }
 
-      // Has the spot been already defined? we can not handle duplicates
-      // if ($el.data('gjs-spot')) {
-        // throw 'guide.js: duplicate spot, see console for more information';
-      // }
-
       spot = new guide.Spot($el, this, this.spots.length, options);
       this.spots.push(spot);
 
