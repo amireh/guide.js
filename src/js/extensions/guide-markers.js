@@ -140,12 +140,13 @@
     },
 
     /**
-     * Install the window resize handler and proxy clicks on markers to focus
-     * their spots.
+     * Launch markers for the tour if the {@link Tour#cfg-alwaysMark option} is
+     * enabled, and install the window resize handler and proxy clicks on markers
+     * to focus their spots.
      *
      * See #repositionMarkers for the repositioning logic.
      */
-    onGuideShow: function() {
+    onTourStart: function(tour) {
       $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
         var marker = $(this).data('gjs-marker');
 
@@ -160,28 +161,20 @@
         return true;
       });
 
-      // Install a resize handler to reposition overlay placed markers
       $(window).on(this.nsEvent('resize'),
         _.throttle(
           _.bind(this.repositionMarkers, this),
           this.options.refreshFrequency));
-    },
 
-    onGuideHide: function() {
-      $(window).off(this.nsEvent('resize'));
-      $(document.body).off(this.nsEvent('click'));
-    },
-
-    /**
-     * Launch markers for the tour if the option, Tour#alwaysMark, is enabled.
-     */
-    onTourStart: function(tour) {
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
     },
 
     onTourStop: function(tour) {
+      $(window).off(this.nsEvent('resize'));
+      $(document.body).off(this.nsEvent('click'));
+
       _.invoke(tour.getMarkers(), 'hide');
     },
 
@@ -752,11 +745,10 @@
       var dir, center,
           $marker = this.$el,
           margin  = 0,
+          origin  = this.spot.$el.offset(),
           query   = {
             w: $marker.outerWidth(),
             h: $marker.outerHeight(),
-
-            o: this.spot.$el.offset(),
 
             vw: $(window).width()   - 20,
             vh: $(window).height()  - 20
@@ -769,11 +761,11 @@
           center = ($marker.outerWidth() / 2);
           margin = -1 * center;
 
-          if (query.o.left < center) {
+          if (origin.left < center) {
             margin = -1 * (center - query.o.left) / 2;
           }
-          else if (query.o.left + query.w > query.vw) {
-            margin = -1 * (query.o.left + query.w - query.vw);
+          else if (origin.left + query.w > query.vw) {
+            margin = -1 * (origin.left + query.w - query.vw);
           }
 
         break;
