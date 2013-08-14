@@ -420,20 +420,28 @@
     },
 
     /**
-     * Find the default tour which might be explicitly set by the user, or
-     * the first one otherwise.
+     * Find the default tour which might be explicitly set by the user, otherwise
+     * the first one that contains any spots.
      *
      * See Tour#isDefault for more information.
      */
     defaultTour: function() {
-      var i, tour;
+      var tour;
 
-      for (i = 0; i !== this.tours.length; ++i) {
-        tour = this.tours[i];
+      tour =_.find(this.tours, function(tour) {
+        return tour.options.isDefault;
+      });
 
-        if (tour.options.isDefault) {
-          return tour;
-        }
+      if (tour) {
+        return tour;
+      }
+
+      tour =_.find(this.tours, function(tour) {
+        return tour.spots.length > 0;
+      });
+
+      if (tour) {
+        return tour;
       }
 
       return this.tour || this.tours[0];
@@ -804,7 +812,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.4.1';
+  Guide.VERSION = '1.4.2';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -936,6 +944,8 @@
    * @inheritable
    *
    * An interface, and some helpers, for extensions to mount inside guide.js.
+   *
+   * @alternateClassName Extension
    */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
@@ -1336,11 +1346,6 @@
         throw 'guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
       }
 
-      // Has the spot been already defined? we can not handle duplicates
-      // if ($el.data('gjs-spot')) {
-        // throw 'guide.js: duplicate spot, see console for more information';
-      // }
-
       spot = new guide.Spot($el, this, this.spots.length, options);
       this.spots.push(spot);
 
@@ -1696,6 +1701,7 @@
   },
 
   KLASS_TARGET  = 'gjs-spot',
+  KLASS_ENTITY  = guide.entityKlass(),
   KLASS_FOCUSED = 'gjs-spot-focused';
 
   _.extend(Spot.prototype, guide.Optionable, {
@@ -1887,10 +1893,6 @@
         }
       }
 
-      $el
-        .addClass(guide.entityKlass())
-        .data('gjs-spot', this);
-
       // Install handlers that were passed manually for convenience.
       if (_.isFunction(options.preFocus)) {
         // This is triggered by the tour itself in #focus as the spot has no
@@ -1962,7 +1964,7 @@
      */
     highlight: function() {
       var
-      klasses = [ KLASS_TARGET ],
+      klasses = [ KLASS_TARGET, KLASS_ENTITY ],
       positionQuery;
 
       // If the target isn't valid (ie, hasnt been in the DOM), try refreshing
@@ -2018,7 +2020,11 @@
       });
 
       if (options.force || !this.tour.options.alwaysHighlight) {
-        this.$el.removeClass([ KLASS_TARGET, 'gjs-positioning-fix' ].join(' '));
+        this.$el.removeClass([
+          KLASS_TARGET,
+          KLASS_ENTITY,
+          'gjs-positioning-fix'
+        ].join(' '));
 
         return true;
       }
@@ -2146,8 +2152,6 @@
       }
 
       this.dehighlight({ force: true });
-
-      this.$el.removeData('gjs-spot');
 
       // Remove all handlers and invalidate all properties
       this.$.off();
@@ -2484,6 +2488,10 @@
           .html(this.templates.tourList({ tours: guide.tours }))
           .toggle(guide.tours.length > 1)
           .find('[value="' + tour.id + '"]').prop('selected', true);
+
+        if (this.$tour_selector.children().length === 1) {
+          this.$tour_selector.hide();
+        }
       }
       else {
         this.$tour_selector.hide();
@@ -2648,12 +2656,13 @@
     },
 
     /**
-     * Install the window resize handler and proxy clicks on markers to focus
-     * their spots.
+     * Launch markers for the tour if the {@link Tour#cfg-alwaysMark option} is
+     * enabled, and install the window resize handler and proxy clicks on markers
+     * to focus their spots.
      *
      * See #repositionMarkers for the repositioning logic.
      */
-    onGuideShow: function() {
+    onTourStart: function(tour) {
       $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
         var marker = $(this).data('gjs-marker');
 
@@ -2668,28 +2677,20 @@
         return true;
       });
 
-      // Install a resize handler to reposition overlay placed markers
       $(window).on(this.nsEvent('resize'),
         _.throttle(
           _.bind(this.repositionMarkers, this),
           this.options.refreshFrequency));
-    },
 
-    onGuideHide: function() {
-      $(window).off(this.nsEvent('resize'));
-      $(document.body).off(this.nsEvent('click'));
-    },
-
-    /**
-     * Launch markers for the tour if the option, Tour#alwaysMark, is enabled.
-     */
-    onTourStart: function(tour) {
       if (tour.options.alwaysMark) {
         _.invoke(tour.getMarkers(), 'show');
       }
     },
 
     onTourStop: function(tour) {
+      $(window).off(this.nsEvent('resize'));
+      $(document.body).off(this.nsEvent('click'));
+
       _.invoke(tour.getMarkers(), 'hide');
     },
 
@@ -3260,11 +3261,10 @@
       var dir, center,
           $marker = this.$el,
           margin  = 0,
+          origin  = this.spot.$el.offset(),
           query   = {
             w: $marker.outerWidth(),
             h: $marker.outerHeight(),
-
-            o: this.spot.$el.offset(),
 
             vw: $(window).width()   - 20,
             vh: $(window).height()  - 20
@@ -3277,11 +3277,11 @@
           center = ($marker.outerWidth() / 2);
           margin = -1 * center;
 
-          if (query.o.left < center) {
+          if (origin.left < center) {
             margin = -1 * (center - query.o.left) / 2;
           }
-          else if (query.o.left + query.w > query.vw) {
-            margin = -1 * (query.o.left + query.w - query.vw);
+          else if (origin.left + query.w > query.vw) {
+            margin = -1 * (origin.left + query.w - query.vw);
           }
 
         break;

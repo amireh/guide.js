@@ -198,6 +198,7 @@
 }
 .gjs-marker.focused {
   cursor: auto;
+  min-width: 120px;
 }
 .gjs-marker.inline-marker {
   position: absolute;
@@ -558,6 +559,10 @@
   /*right: -20px;*/
 
   width: 36px;
+}
+.gjs-entity .caption,
+.gjs-entity .text {
+  font: 14px Arial, Helvetica, sans-serif;
 }
 /**
  * gjs.js Skin
