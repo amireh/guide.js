@@ -134,20 +134,28 @@
     },
 
     /**
-     * Find the default tour which might be explicitly set by the user, or
-     * the first one otherwise.
+     * Find the default tour which might be explicitly set by the user, otherwise
+     * the first one that contains any spots.
      *
      * See Tour#isDefault for more information.
      */
     defaultTour: function() {
-      var i, tour;
+      var tour;
 
-      for (i = 0; i !== this.tours.length; ++i) {
-        tour = this.tours[i];
+      tour =_.find(this.tours, function(tour) {
+        return tour.options.isDefault;
+      });
 
-        if (tour.options.isDefault) {
-          return tour;
-        }
+      if (tour) {
+        return tour;
+      }
+
+      tour =_.find(this.tours, function(tour) {
+        return tour.spots.length > 0;
+      });
+
+      if (tour) {
+        return tour;
       }
 
       return this.tour || this.tours[0];
