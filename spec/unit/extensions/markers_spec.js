@@ -121,6 +121,25 @@ describe("Extensions", function() {
       expect(spot.marker.hide).toHaveBeenCalled();
     });
 
+    it('should focus spot when clicked', function() {
+      // We need two spots for this:
+      var someSpot = mkVisibleSpot();
+      var spot = mkVisibleSpot(null, null, {
+        withMarker: true
+      });
+
+      spot.tour.setOptions({
+        alwaysHighlight: true,
+        alwaysMark: true
+      });
+
+      spot.tour.start();
+
+      expect(spot.isFocused()).toBeFalsy();
+      spot.marker.$el.click();
+      expect(spot.isFocused()).toBeTruthy();
+    });
+
     describe('Placement modes', function() {
       it('should respect the @placement option', function() {
         spot = mkSpot();
