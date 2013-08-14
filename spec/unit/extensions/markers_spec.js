@@ -5,6 +5,7 @@ describe("Extensions", function() {
 
     it('should be created', function() {
       spot = mkSpot();
+
       marker = ext.addMarker(null, spot);
 
       expect(marker).toBeTruthy();
@@ -22,7 +23,8 @@ describe("Extensions", function() {
 
         expect(spot.marker).toBeFalsy();
 
-        spot.options.withMarker = true;
+        spot.setOption('withMarker', true);
+
         spot.$el.append('<div />');
         spot.$el.append('<ul><li></li></ul>');
 
@@ -38,8 +40,10 @@ describe("Extensions", function() {
           }
         });
 
+        expect(spot.isOn('withMarker')).toBeTruthy();
         marker = ext.addMarker(null, spot);
 
+        expect(marker).toBeTruthy();
         expect(spot.marker).toBeTruthy();
         expect(spot.$el[0].className).toEqual(klasses);
 
@@ -77,14 +81,14 @@ describe("Extensions", function() {
       it('should restore the target\'s classes', function() {
         marker = ext.addMarker(null, spot);
 
-        spot.tour.options.alwaysMark = false;
-        spot.options.withMarker = false;
+        spot.tour.setOption('alwaysMark', false);
+        spot.setOption('withMarker', false);
 
         spot.tour.start({ spot: spot });
 
         klasses = spot.$el[0].className;
 
-        spot.options.withMarker = true;
+        spot.setOption('withMarker', true);
         marker.show();
         expect(spot.$el[0].className).not.toEqual(klasses);
 
@@ -134,7 +138,7 @@ describe("Extensions", function() {
       });
 
       spot.tour.start();
-
+      expect(spot.marker.$el).toBeTruthy();
       expect(spot.isFocused()).toBeFalsy();
       spot.marker.$el.click();
       expect(spot.isFocused()).toBeTruthy();
@@ -149,7 +153,7 @@ describe("Extensions", function() {
           }
         });
 
-        expect(marker.options.placement).toEqual('inline');
+        expect(marker.getOption('placement')).toEqual('inline');
 
         marker.remove();
 
@@ -159,7 +163,7 @@ describe("Extensions", function() {
           }
         });
 
-        expect(marker.options.placement).toEqual('sibling');
+        expect(marker.getOption('placement')).toEqual('sibling');
       });
 
       it('should respect the @placement option from the spot', function() {
@@ -167,13 +171,13 @@ describe("Extensions", function() {
 
         spot.setOptions('marker.placement: inline');
         marker = ext.addMarker(null, spot);
-        expect(marker.options.placement).toEqual('inline');
+        expect(marker.getOption('placement')).toEqual('inline');
 
         marker.remove();
 
         spot.setOptions('marker.placement: sibling');
         marker = ext.addMarker(null, spot);
-        expect(marker.options.placement).toEqual('sibling');
+        expect(marker.getOption('placement')).toEqual('sibling');
       });
 
       it('should respect the @placement option from the tour', function() {
@@ -182,13 +186,13 @@ describe("Extensions", function() {
 
         tour.setOptions('marker.placement: inline');
         marker = ext.addMarker(null, spot);
-        expect(marker.options.placement).toEqual('inline');
+        expect(marker.getOption('placement')).toEqual('inline');
 
         marker.remove();
 
         tour.setOptions('marker.placement: sibling');
         marker = ext.addMarker(null, spot);
-        expect(marker.options.placement).toEqual('sibling');
+        expect(marker.getOption('placement')).toEqual('sibling');
       });
 
       it(':inline', function() {
@@ -202,7 +206,7 @@ describe("Extensions", function() {
 
         marker.spot.tour.start();
 
-        expect(marker.options.placement).toEqual('inline');
+        expect(marker.getOption('placement')).toEqual('inline');
         expect(marker.isWrapped()).toBeFalsy();
         expect(marker.canShow()).toBeTruthy();
 

@@ -7,7 +7,9 @@
    *
    * @alternateClassName Optionable
    */
-  var Optionable = {
+  var
+  Guide = guide,
+  Optionable = {
 
     /**
      * The options the object accepts along with their default values.
@@ -25,7 +27,9 @@
      * The set of options to override. If the parameter is a String, it will
      * be parsed into an object using _#parseOptions if it's valid.
      */
-    setOptions: function(options) {
+    setOptions: function(options, platform, silent) {
+      platform = platform || 'default';
+
       if (_.isString(options)) {
         options = _.parseOptions(options);
       }
@@ -34,13 +38,17 @@
               ' or a String, but got: ' + typeof(options);
       }
 
-      this.options = _.extend(this.options || {}, options);
+      if (!this.options) {
+        this.options = {};
+      }
 
-      if (this.refresh) {
+      this.options[platform] = _.extend(this.options[platform] || {}, options);
+
+      if (!silent && this.refresh) {
         this.refresh();
       }
 
-      if (this.$) {
+      if (!silent && this.$) {
         /**
          * @event refresh
          * Fired when an object's options are updated.
@@ -54,31 +62,53 @@
          * @param {Optionable} object
          * The Optionable object that has been modified.
          */
-        this.$.triggerHandler('refresh', [ this.options, this ]);
+        this.$.triggerHandler('refresh', [ this ]);
       }
 
       return this;
     },
 
+    setOption: function(key, value, platform, silent) {
+      var option = {};
+      option[key] = value;
+
+      return this.setOptions(option, platform, silent);
+    },
+
     /**
      * Retrieve a mutable set of the current options of the object.
      */
-    getOptions: function() {
-      return _.extend({}, this.options);
+    getOptions: function(scope) {
+      var set = _.extend({}, this.options['default'], this.options[Guide.platform]);
+
+      if (scope) {
+        return this.getOption(scope, set);
+      }
+
+      return set;
+    },
+
+    getOption: function(key, set) {
+      return _.dotGet(key, set || this.getOptions());
     },
 
     /**
      * Check if an option is set, regardless of its value.
      */
-    hasOption: function(key) {
-      return _.dotGet(key, this.getOptions()) !== void 0;
+    hasOption: function(key, set) {
+      return this.getOption(key, set) !== void 0;
     },
 
     /**
      * Check if an option is set and evaluates to true.
      */
-    isOptionOn: function(key) {
-      return !!_.dotGet(key, this.getOptions());
+    isOptionOn: function(key, set) {
+      var option = this.getOption(key, set);
+      return _.isBoolean(option) && option;
+    },
+
+    isOn: function() {
+      return this.isOptionOn.apply(this, arguments);
     },
 
     /**
@@ -94,9 +124,7 @@
       this.defaults[key] = default_value;
 
       if (this.options) {
-        if (void 0 === this.options[key]) {
-          this.options[key] = default_value;
-        }
+        this.setOption(key, default_value);
       }
     }
   };
@@ -105,5 +133,6 @@
   guide.Optionable = Optionable;
 
   // guide itself requires this functionality so we add it manually
-  _.extend(guide, Optionable);
+  _.extend(guide, _.omit(Optionable, 'defaults'));
+  guide.setOptions(guide.defaults);
 })(_, jQuery, window.guide);

@@ -346,7 +346,6 @@
       _.extend(this, {
         $container: $('body'),
         $el:        $('<div id="gjs" />'),
-        options: _.clone(this.defaults),
         extensions: [],
 
         /**
@@ -370,7 +369,10 @@
         tours: [],
 
         /** @property {Tour} tour The active tour */
-        tour: null
+        tour: null,
+
+        platforms: [],
+        platform: null
       });
 
       console.log('guide.js: running');
@@ -429,7 +431,7 @@
       var tour;
 
       tour =_.find(this.tours, function(tour) {
-        return tour.options.isDefault;
+        return tour.isOn('isDefault');
       });
 
       if (tour) {
@@ -621,7 +623,7 @@
     show: function(inOptions, inCallback) {
       var options     = inOptions || {},
           that        = this,
-          animeMs     = this.options.withAnimations ? this.options.animeDuration:0;
+          animeMs     = this.isOn('withAnimations') ? this.getOption('animeDuration') : 0;
 
       if (this.isShown()) {
         return this;
@@ -664,7 +666,9 @@
      */
     hide: function() {
       var that     = this,
-          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
+          animeMs  = this.isOn('withAnimations') ?
+            this.getOption('animeDuration') :
+            0;
 
       if (!this.isShown()) {
         return this;
@@ -693,7 +697,7 @@
     },
 
     refresh: function() {
-      _.invoke(this.extensions, 'refresh');
+      // _.invoke(this.extensions, 'refresh');
 
       if (this.tour) {
         this.tour.refresh();
@@ -721,7 +725,8 @@
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
 
-      this.options = _.clone(this.defaults);
+      this.options = {};
+      this.setOptions(this.defaults);
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
@@ -745,14 +750,14 @@
      *
      */
     toggleOverlayMode: function(doToggle) {
-      var option = this.options.withOverlay;
+      var option = this.isOn('withOverlay');
 
       if (doToggle) {
-        this.options.withOverlay = !this.options.withOverlay;
+        this.setOption('withOverlay', !this.isOn('withOverlay'));
       }
 
       if (this.tour && this.tour.hasOption('withOverlay')) {
-        option = this.tour.getOptions().withOverlay;
+        option = this.tour.getOption('withOverlay');
       }
 
       if (option) {
@@ -804,7 +809,7 @@
     },
 
     log: function() {
-      if (this.options.debug) {
+      if (this.isOn('debug')) {
         console.log.apply(console, arguments);
       }
     }
@@ -834,7 +839,9 @@
    *
    * @alternateClassName Optionable
    */
-  var Optionable = {
+  var
+  Guide = guide,
+  Optionable = {
 
     /**
      * The options the object accepts along with their default values.
@@ -852,7 +859,9 @@
      * The set of options to override. If the parameter is a String, it will
      * be parsed into an object using _#parseOptions if it's valid.
      */
-    setOptions: function(options) {
+    setOptions: function(options, platform, silent) {
+      platform = platform || 'default';
+
       if (_.isString(options)) {
         options = _.parseOptions(options);
       }
@@ -861,13 +870,17 @@
               ' or a String, but got: ' + typeof(options);
       }
 
-      this.options = _.extend(this.options || {}, options);
+      if (!this.options) {
+        this.options = {};
+      }
 
-      if (this.refresh) {
+      this.options[platform] = _.extend(this.options[platform] || {}, options);
+
+      if (!silent && this.refresh) {
         this.refresh();
       }
 
-      if (this.$) {
+      if (!silent && this.$) {
         /**
          * @event refresh
          * Fired when an object's options are updated.
@@ -881,31 +894,53 @@
          * @param {Optionable} object
          * The Optionable object that has been modified.
          */
-        this.$.triggerHandler('refresh', [ this.options, this ]);
+        this.$.triggerHandler('refresh', [ this ]);
       }
 
       return this;
     },
 
+    setOption: function(key, value, platform, silent) {
+      var option = {};
+      option[key] = value;
+
+      return this.setOptions(option, platform, silent);
+    },
+
     /**
      * Retrieve a mutable set of the current options of the object.
      */
-    getOptions: function() {
-      return _.extend({}, this.options);
+    getOptions: function(scope) {
+      var set = _.extend({}, this.options['default'], this.options[Guide.platform]);
+
+      if (scope) {
+        return this.getOption(scope, set);
+      }
+
+      return set;
+    },
+
+    getOption: function(key, set) {
+      return _.dotGet(key, set || this.getOptions());
     },
 
     /**
      * Check if an option is set, regardless of its value.
      */
-    hasOption: function(key) {
-      return _.dotGet(key, this.getOptions()) !== void 0;
+    hasOption: function(key, set) {
+      return this.getOption(key, set) !== void 0;
     },
 
     /**
      * Check if an option is set and evaluates to true.
      */
-    isOptionOn: function(key) {
-      return !!_.dotGet(key, this.getOptions());
+    isOptionOn: function(key, set) {
+      var option = this.getOption(key, set);
+      return _.isBoolean(option) && option;
+    },
+
+    isOn: function() {
+      return this.isOptionOn.apply(this, arguments);
     },
 
     /**
@@ -921,9 +956,7 @@
       this.defaults[key] = default_value;
 
       if (this.options) {
-        if (void 0 === this.options[key]) {
-          this.options[key] = default_value;
-        }
+        this.setOption(key, default_value);
       }
     }
   };
@@ -932,7 +965,8 @@
   guide.Optionable = Optionable;
 
   // guide itself requires this functionality so we add it manually
-  _.extend(guide, Optionable);
+  _.extend(guide, _.omit(Optionable, 'defaults'));
+  guide.setOptions(guide.defaults);
 })(_, jQuery, window.guide);
 
 (function(_, $, guide) {
@@ -947,52 +981,64 @@
    *
    * @alternateClassName Extension
    */
-  var Extension = _.extend({}, guide.Optionable, {
+  var
+  Guide = guide,
+  Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
       if (!this.id) {
         throw 'guide.js: bad extension, missing #id';
       }
 
       // Make sure an `enabled` option always exists
-      _.defaults(this.defaults, { enabled: true });
+      this.defaults = _.defaults(this.defaults || {}, { enabled: true });
 
       _.extend(this, {
         $:        $(this),
-        options:  _.extend({}, this.defaults, this.options)
+        // options:  _.extend({}, this.defaults, this.options)
       });
 
+      this.setOptions(_.extend({}, this.defaults));
+
+      // Uninstall extension on Guide.js dismissal
       guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
+      // If implemented, hook into Guide#show and Guide#hide:
+      //
+      // The handlers will be invoked only if the extension is enabled.
       if (this.onGuideShow) {
         guide.$.on(this.nsEvent('show'), _.bind(function() {
           if (this.isEnabled()) {
             this.onGuideShow();
-            this._shouldHide = true;
+
+            // Bind the clean-up handler to the guide hide event, if implemented:
+            if (this.onGuideHide) {
+              guide.$.one(this.nsEvent('hide'), _.bind(this.onGuideHide, this));
+            }
           }
         }, this));
       }
 
-      if (this.onGuideHide) {
-        guide.$.on(this.nsEvent('hide'), _.bind(function() {
-          if (this._shouldHide) {
-            this.onGuideHide();
-            this._shouldHide = false;
-          }
-        }, this));
-      }
-
+      // If implemented, hook into Tour#start and Tour#stop:
+      //
+      // The handlers will be invoked only if the extension has not been explicitly
+      // disabled for the active tour. This saves the extension from doing the
+      // needed tests in the handlers.
       if (this.onTourStart) {
         guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
           if (this.isEnabled(tour)) {
             this.onTourStart(tour);
-            tour.$.one('stop', _.bind(this.onTourStop, this, tour));
+
+            // Bind the clean-up handler to the tour stop event, if implemented:
+            if (this.onTourStop) {
+              tour.$.one(this.nsEvent('stop'), _.bind(this.onTourStop, this, tour));
+            }
           }
         }, this));
       }
     },
 
     /**
-     * An event namespaced to this specific extension.
+     * Namespace an event to this extension.
      */
     nsEvent: function(event) {
       return [ event, 'gjs_extension', this.id ].join('.');
@@ -1019,9 +1065,10 @@
       tour = tour || guide.tour;
 
       return _.extend({},
-        this.options,
-        guide.options[key],
-        tour ? (tour.options || {})[key] : null);
+        this.options['default'],
+        this.options[Guide.platform],
+        Guide.getOptions()[key],
+        tour ? tour.getOptions()[key] : null);
     },
 
     /**
@@ -1032,17 +1079,15 @@
      * the default value is used (which is `true`).
      */
     isEnabled: function(tour) {
-      var tourExtOptions;
+      var scopedOption = [ this.id, 'enabled' ].join('.');
 
       if (tour) {
-        tourExtOptions = tour.options[this.id] || {};
-
-        if (_.isBoolean(tourExtOptions.enabled)) {
-          return tourExtOptions.enabled;
+        if (tour.hasOption(scopedOption)) {
+          return tour.isOptionOn(scopedOption);
         }
       }
 
-      return !!this.getOptions().enabled;
+      return this.isOptionOn('enabled');
     },
 
     /**
@@ -1064,7 +1109,8 @@
      * their defaults.
      */
     reset: function() {
-      this.options = _.clone(this.defaults);
+      this.options = {};
+      this.setOptions(this.defaults);
     },
 
     remove: function() {}
@@ -1109,7 +1155,7 @@
        * @cfg {Number} [refreshInterval=10]
        *
        * Milliseconds to wait for a spot's element that's not visible to show up
-       * before looking for an alternative spot to focus.
+       * before looking for an alternative spot to focus, or "bouncing".
        *
        * See Spot#dynamic and Tour#focus for more details on this behaviour.
        */
@@ -1157,7 +1203,9 @@
 
         id: label, // TODO: unique constraints on tour IDs
 
-        options: _.extend({}, guide.options.tours, this.defaults),
+        options: {
+          'default': _.extend({}, this.defaults, guide.getOptions('tours'))
+        },
 
         spots: [],
 
@@ -1173,11 +1221,11 @@
 
       // console.log('guide.js: tour defined: ', this.id);
 
-      if (_.isFunction(this.options.onStart)) {
-        this.$.on('start.user', _.bind(this.options.onStart, this));
+      if (_.isFunction(this.getOption('onStart'))) {
+        this.$.on('start.user', _.bind(this.getOption('onStart'), this));
       }
-      if (_.isFunction(this.options.onStop)) {
-        this.$.on('stop.user', _.bind(this.options.onStop, this));
+      if (_.isFunction(this.getOption('onStop'))) {
+        this.$.on('stop.user', _.bind(this.getOption('onStop'), this));
       }
       return this;
     },
@@ -1190,11 +1238,15 @@
      * @fires start
      */
     start: function(options) {
-      options = _.defaults(options || {}, {
-        // Set a default spot to focus if none was specified, we'll default to
-        // the current one (if resuming) or the first.
-        spot: this.current || this.spots[0]
-      });
+      // Set a default spot to focus if none was specified, we'll default to
+      // the current one (if resuming) or the first.
+      var spot = this.current || this.spots[0];
+
+      options = options || {};
+
+      if (undefined !== options.spot) {
+        spot = options.spot;
+      }
 
       if (!guide.isShown()) {
         guide.runTour(this, options);
@@ -1211,8 +1263,8 @@
       _.invoke(this.spots, 'highlight');
 
       // Focus a spot if possible.
-      if (options.spot) {
-        this.focus(this.__getSpot(options.spot));
+      if (spot) {
+        this.focus(this.__getSpot(spot));
       }
 
       /**
@@ -1300,7 +1352,7 @@
         _.invoke(this.spots, 'remove');
 
         this.spots = [];
-        this.options = _.clone(this.defaults);
+        this.setOptions( _.clone(this.defaults) );
       }
 
       return this;
@@ -1416,7 +1468,8 @@
      *
      * Current spot will be defocused, and in case the given spot is not currently
      * visible, an attempt to 'refresh' it will be made, and if that fails,
-     * an alternative spot will be searched for and used if found.
+     * an alternative spot will be searched for and used if found, unless
+     * the spot isn't {@link Spot#bouncable bouncable}.
      *
      * @param {Number/Spot} index
      * The spot, or an index of a spot, that should be focused.
@@ -1445,11 +1498,14 @@
       }
 
       // de-focus the last spot
-      if (this.current) {
+      if (this.current && this.current.isFocused()) {
         this.__defocus(spot);
       }
 
-      if (!this.hasJustRefreshed) {
+      if (!this._prepared) {
+        guide.log('tour: preparing spot ' + spot + ' for focusing.');
+        this._prepared = true;
+
         /**
          * @event pre-focus
          * Fired when a spot is about to be focused. See Spot#preFocus for
@@ -1476,8 +1532,8 @@
         //
         // We'll give the spot a space of 10ms to refresh by default, otherwise
         // see #refreshInterval.
-        if (spot.options.dynamic && !spot.isVisible()) {
-          guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
+        if (spot.isOn('dynamic') && !spot.isVisible()) {
+          guide.log('tour: spot#' + (spot.index+1), 'isnt visible, attempting to refresh...');
 
           setTimeout(_.bind(function() {
             // This is a necessary evil for specs as in some cases, a spot gets
@@ -1488,29 +1544,33 @@
               return;
             }
 
-            // Refresh...
+            // Refresh
             if (spot.__refreshTarget() && spot.isVisible()) {
-              this.hasJustRefreshed = true;
-              this.focus(spot);
+              guide.log('tour: \tspot is now visible, focusing.');
+              return this.focus(spot);
             }
-            // Look for an alternative:
-            else {
-              spot = this.__closest(spot, spot.options.fallback);
+            // Or, look for an alternative:
+            else if (spot.isOn('bouncable')) {
+              guide.log('tour: \tspot still isnt visible, looking for an alternative...');
+              spot = this.__closest(spot, spot.getOption('bounce'));
 
               if (spot) {
-                this.hasJustRefreshed = false;
-                this.focus(spot);
-              }
+                guide.log('tour: \t\talternative found: ' + spot + ', focusing.');
 
-              // Nothing we can do.
+                this._prepared = false;
+                this.focus(spot);
+              } else {
+                guide.log('tour: \t\tno alternative found, focusing aborted.');
+              }
             }
-          }, this), this.options.refreshInterval);
+            // Nothing we can do.
+          }, this), this.getOption('refreshInterval'));
 
           return false;
         } // visibility test
       } // refreshing block
 
-      this.hasJustRefreshed = false;
+      this._prepared = false;
 
       this.current = spot;
       this.cursor  = spot.index;
@@ -1538,7 +1598,7 @@
       this.$.triggerHandler('focus', [ spot, this.previous ]);
       guide.$.triggerHandler('focus', [ spot, this.previous ]);
 
-      console.log('guide.js: visiting tour spot #', spot.index);
+      console.log('guide.js: visiting tour spot #', spot.index+1);
 
       return true;
     },
@@ -1577,11 +1637,11 @@
     /**
      * Attempt to find the closest visible spot to the given one.
      *
-     * @param {Number/String} [direction='forwards']
+     * @param {Number/String} [direction='forward']
      * The first direction to seek a match in:
      *
-     * - `forwards`: will look for spots that follow the anchor
-     * - `backwards`: will look for spots that precede the anchor
+     * - `forward`: will look for spots that follow the anchor
+     * - `backward`: will look for spots that precede the anchor
      * - Number: will use the spot at the given index, see Spot#index
      *
      * If the direction yields no visible spot, the opposite direction is then
@@ -1600,7 +1660,7 @@
       seek = _.bind(function(direction) {
         var i, spot;
 
-        if (direction === 'backwards') {
+        if (direction === 'backward') {
           for (i = anchor-1; i >= 0; --i) {
             spot = this.spots[i];
 
@@ -1626,14 +1686,17 @@
         return null;
       }
 
-      if (_.contains([ 'forwards', 'backwards' ], direction)) {
+      if (_.isNumber(direction)) {
+        return this.__getSpot(direction);
+      }
+      else if (_.contains([ 'forward', 'backward' ], direction)) {
         return seek(direction);
       } else {
-        if (this.spots.length > anchor && (spot = seek('forwards'))) {
+        if (this.spots.length > anchor && (spot = seek('forward'))) {
           return spot;
         }
 
-        if (anchor > 0 && (spot = seek('backwards'))) {
+        if (anchor > 0 && (spot = seek('backward'))) {
           return spot;
         }
       }
@@ -1730,7 +1793,47 @@
        */
       noPositioningFix: false,
 
+      /**
+       * @cfg {Boolean} [dynamic=true]
+       * Indicates that the spot's target is (re)created dynamically and might not
+       * be visible all the time. If that's the case, and this option is enabled,
+       * Guide.js will attempt to dynamically locate the target everytime the spot
+       * is visited.
+       *
+       * See Tour#focus for more details on this behaviour.
+       *
+       * You can further control this by tuning the
+       * {@link Tour#refreshInterval refreshInterval} tour option and the #bouncable
+       * option.
+       */
       dynamic: true,
+
+      /**
+       * @cfg {Boolean} [bouncable=true]
+       * Turning this on will allow the tour to look for an alternative spot to
+       * focus if this spot isn't visible and couldn't be located.
+       *
+       * See the #dynamic option.
+       *
+       * *This option has no effect if either #dynamic is turned off.*
+       */
+      bouncable: true,
+
+      /**
+       * @cfg {String/Number} [bounce="forward"]
+       * In case we're bouncing off to a new spot, this option controls which
+       * spot to focus exactly if you specify a number, or gives a hint by specifying
+       * 'forwards' or 'backwards'.
+       *
+       * **Accepted values:**
+       *
+       * - a number: the spot index to bounce to
+       * - a string: 'forward' or 'backward', the preferred direction in which
+       *   to look for a match (a visible spot)
+       *
+       * *This option has no effect if #bouncable is turned off.*
+       */
+      bounce: 'both',
 
       /**
        * @cfg {Boolean} [disco=false]
@@ -1878,20 +1981,13 @@
          *
          * This could be modified by extensions. Use #setScrollAnchor for overriding.
          */
-        $scrollAnchor: $el,
-
-        options: _.extend({}, this.defaults, tour.options.spots, options)
+        $scrollAnchor: $el
       });
 
-      if (this.options.disco) {
-        this.$disco = $(this.templates.disco({}));
-      }
-      if (this.options.flashy) {
-        this.$flashy = $(this.templates.flashy({}));
-        if (this.options.flashy === 'once') {
-          this.$flashy.addClass('flash-once');
-        }
-      }
+      this.setOptions(_.extend({},
+        this.defaults,
+        tour.getOptions('spots'),
+        options));
 
       // Install handlers that were passed manually for convenience.
       if (_.isFunction(options.preFocus)) {
@@ -1978,10 +2074,10 @@
         }
       }
 
-      if (!this.options.highlight) {
+      if (!this.isOn('highlight')) {
         return false;
       }
-      else if (!this.tour.options.alwaysHighlight && !this.__isCurrent()) {
+      else if (!this.tour.isOn('alwaysHighlight') && !this.__isCurrent()) {
         return false;
       }
 
@@ -1989,9 +2085,9 @@
       // to be able to properly highlight the target, it must be positioned
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
-      if (!this.options.noPositioningFix &&
-          !this.tour.isOptionOn('spots.noPositioningFix') &&
-          !guide.isOptionOn('spots.noPositioningFix')) {
+      if (!this.isOn('noPositioningFix') &&
+          !this.tour.isOn('spots.noPositioningFix') &&
+          !guide.isOn('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
@@ -2019,7 +2115,9 @@
         force: false
       });
 
-      if (options.force || !this.tour.options.alwaysHighlight) {
+      if (options.force ||
+        !this.tour.isOn('alwaysHighlight') ||
+        !this.tour.isOn('alwaysMark')) {
         this.$el.removeClass([
           KLASS_TARGET,
           KLASS_ENTITY,
@@ -2043,12 +2141,20 @@
     focus: function(prev_spot) {
       this.highlight();
 
-      if (this.options.disco) {
+      if (this.isOn('disco')) {
+        if (!this.$disco) {
+          this.$disco = $(this.templates.disco({}));
+        }
         this.$disco.appendTo(this.$el);
       }
 
-      if (this.options.flashy) {
+      if (this.isOn('flashy')) {
+        if (!this.$flashy) {
+          this.$flashy = $(this.templates.flashy({}));
+        }
+
         this.$flashy.appendTo(this.$el);
+        this.$flashy.toggleClass('flash-once', this.getOption('flashy') === 'once');
       }
 
       this.$el
@@ -2071,7 +2177,7 @@
 
       this.$.triggerHandler('focus', [ this, prev_spot ]);
 
-      if (this.options.autoScroll) {
+      if (this.isOn('autoScroll')) {
         _.defer(_.bind(this.scrollIntoView, this));
       }
 
@@ -2122,7 +2228,7 @@
 
       $('html, body').animate({
         scrollTop: this.$scrollAnchor.offset().top * 0.9
-      }, guide.options.withAnimations ? 250 : 0);
+      }, guide.isOn('withAnimations') ? 250 : 0);
 
       return true;
     },
@@ -2219,7 +2325,7 @@
      * @private
      */
     toString: function() {
-      return this.tour.id + '#' + this.index;
+      return this.tour.id + '#' + (this.index+1);
     },
   });
 
@@ -2518,6 +2624,7 @@
   'use strict';
 
   var
+  Guide = guide,
   /**
    * @class Guide.Markers
    * @extends Guide.Extension
@@ -2562,6 +2669,8 @@
     '</div>'
   ].join('')),
 
+  JST_CONTAINER = _.template('<div style="position: relative;"></div>'),
+
   // Placement modes
   PMT_INLINE = 1,
   PMT_SIBLING = 2,
@@ -2604,13 +2713,13 @@
           }), 'marker');
       };
 
-      guide.Spot.prototype.addOption('withMarker', true);
-
       // We must manually assign the options to the default tour as it has
       // already been created.
       if (guide.tour) {
-        guide.tour.addOption('alwaysMark', true);
+        guide.tour.setOption('alwaysMark', true);
       }
+
+      guide.Spot.prototype.addOption('withMarker', true);
 
       guide.$.on('add', _.bind(this.addMarker, this));
 
@@ -2620,7 +2729,7 @@
     addMarker: function(e, spot, attributes) {
       var marker;
 
-      if (!spot.options.withMarker) {
+      if (!spot.isOn('withMarker')) {
         return null;
       }
       else if (!this.isEnabled(spot.tour)) {
@@ -2641,15 +2750,11 @@
         return;
       }
 
-      this.onGuideHide();
-
       if (!this.isEnabled()) {
         return;
       }
 
-      this.onGuideShow();
-
-      if (guide.tour) {
+      if (guide.tour && this.isEnabled(guide.tour)) {
         this.onTourStop(guide.tour);
         this.onTourStart(guide.tour);
       }
@@ -2663,7 +2768,7 @@
      * See #repositionMarkers for the repositioning logic.
      */
     onTourStart: function(tour) {
-      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
+      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function() {
         var marker = $(this).data('gjs-marker');
 
         if (marker) {
@@ -2671,7 +2776,7 @@
             marker.spot.tour.focus(marker.spot);
           }
 
-          return $.consume(e);
+          // return $.consume(e);
         }
 
         return true;
@@ -2680,9 +2785,9 @@
       $(window).on(this.nsEvent('resize'),
         _.throttle(
           _.bind(this.repositionMarkers, this),
-          this.options.refreshFrequency));
+          this.getOption('refreshFrequency')));
 
-      if (tour.options.alwaysMark) {
+      if (tour.isOn('alwaysMark')) {
         _.invoke(tour.getMarkers(), 'show');
       }
     },
@@ -2747,7 +2852,7 @@
    *
    * @alternateClassName Marker
    */
-  _.extend(Marker.prototype, {
+  _.extend(Marker.prototype, Guide.Optionable, {
     defaults: {
 
       /**
@@ -2808,19 +2913,20 @@
     constructor: function(spot, attributes) {
       _.extend(this, attributes, {
         id: ++idGenerator,
-        spot: spot,
-        options: _.extend({ },
-          // lowest priority: our defaults
-          this.defaults,
-
-          (attributes || {}).options,
-          // then, guide's global marker options,
-          guide.getOptions().marker,
-          // then, the spot's tour options,
-          spot.tour.getOptions().marker,
-          // and highest priority: the spot's options
-          spot.getOptions().marker)
+        spot: spot
       });
+
+      this.setOptions(_.extend({},
+        // lowest priority: our defaults
+        this.defaults,
+
+        (attributes || {}).options,
+        // then, guide's global marker options,
+        guide.getOptions('marker'),
+        // then, the spot's tour options,
+        spot.tour.getOptions('marker'),
+        // and highest priority: the spot's options
+        spot.getOptions('marker')));
 
       spot.marker = this;
 
@@ -2847,8 +2953,9 @@
      */
     build: function() {
       var $el, template, rtl_pos,
-      rtl   = guide.options.RTL,
-      spot  = this.spot;
+      rtl   = guide.isOn('RTL'),
+      spot  = this.spot,
+      options = this.getOptions();
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
       if (!spot || !spot.isVisible()) {
@@ -2859,31 +2966,17 @@
         return false;
       }
 
-      // If spot has explicitly asked for no text, or doesn't have
-      // any textual content, then we should respect the setting when
-      // highlighted.
-      //
-      // See #highlight.
-      this.withText = this.options.withText && spot.hasContent();
-
-      this.width = this.options.width || this.defaults.width;
-
-      this.spot_klasses = [
-        'gjs-spot-' + this.options.placement,
-        'gjs-spot-' + this.options.position
-      ].join(' ');
-
       // Parse placement and position modes.
-      switch(this.options.placement) {
+      switch(options.placement) {
         case 'inline':  this.placement = PMT_INLINE; break;
         case 'sibling': this.placement = PMT_SIBLING; break;
         case 'overlay': this.placement = PMT_OVERLAY; break;
         default:
-          throw 'guide-marker.js: bad placement "'+this.options.placement+'"';
+          throw 'guide-marker.js: bad placement "' + this.getOption('placement') + '"';
       }
 
       if (rtl) {
-        switch(this.options.position) {
+        switch(this.getOption('position')) {
           case 'topleft':     rtl_pos = 'topright'; break;
           case 'topright':    rtl_pos = 'topleft'; break;
           case 'right':       rtl_pos = 'left'; break;
@@ -2891,13 +2984,17 @@
           case 'bottomleft':  rtl_pos = 'bottomright'; break;
           case 'left':        rtl_pos = 'right'; break;
           default:
-            rtl_pos = this.options.position;
+            rtl_pos = this.getOption('position');
         }
 
-        this.options.position = rtl_pos;
+        this.setOptions({
+          position: rtl_pos
+        });
+
+        options.position = rtl_pos;
       }
 
-      switch(this.options.position) {
+      switch(options.position) {
         case 'topleft':     this.position = rtl ? POS_TR  : POS_TL; break;
         case 'top':         this.position = POS_T; break;
         case 'topright':    this.position = rtl ? POS_TL  : POS_TR; break;
@@ -2907,12 +3004,23 @@
         case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
         case 'left':        this.position = rtl ? POS_R   : POS_L; break;
         default:
-          throw 'guide-marker.js: bad position "' + this.options.position + '"';
+          throw 'guide-marker.js: bad position "' + options.position + '"';
       }
 
+      // If spot has explicitly asked for no text, or doesn't have
+      // any textual content, then we should respect the setting when
+      // highlighted.
+      //
+      // See #highlight.
+      this.withText     = !!options.withText && spot.hasContent();
+      this.spot_klasses = [
+        'gjs-spot-' + options.placement,
+        'gjs-spot-' + options.position
+      ].join(' ');
+
       // Determine which template we should use.
-      if (_.isFunction(this.options.template)) {
-        template = this.options.template;
+      if (_.isFunction(options.template)) {
+        template = options.template;
       }
       else if (spot.hasCaption()) {
         template = JST_WITH_CAPTION;
@@ -2949,8 +3057,8 @@
         .addClass([
           'gjs-marker',
           guide.entityKlass(),
-          this.options.placement + '-marker',
-          this.options.position
+          options.placement + '-marker',
+          options.position
         ].join(' '))
 
         // Attach the marker to the jQuery object, necessary for handling events
@@ -3018,7 +3126,7 @@
           this.$text.show();
           this.$caption.show();
           this.$el.css({
-            width: this.width
+            width: this.getOption('width') || this.defaults.width
           });
         }
 
@@ -3056,7 +3164,7 @@
       // removed (options.completely), then we'll roll-back our changes,
       // detach ourselves, and unwrap if viable.
       //
-      if (!this.spot.tour.options.alwaysMark || options.completely) {
+      if (!this.spot.tour.isOn('alwaysMark') || options.completely) {
         // Restore the spot's target's CSS classes
         this.spot.$el.removeClass(this.spot_klasses);
 
@@ -3111,11 +3219,11 @@
         return false;
       }
 
-      if (!spot.tour.isActive() || !spot.options.withMarker) {
+      if (!spot.tour.isActive() || !spot.isOn('withMarker')) {
         return false;
       }
 
-      if (!spot.tour.options.alwaysMark && !spot.isFocused()) {
+      if (!spot.tour.isOn('alwaysMark') && !spot.isFocused()) {
         return false;
       }
 
@@ -3218,7 +3326,7 @@
         break;
       }
 
-      // if (this.options.smart && !dontBeSmart) {
+      // if (this.isOn('smart') && !dontBeSmart) {
         // this.beSmart();
       // }
     },
@@ -3277,10 +3385,11 @@
           center = ($marker.outerWidth() / 2);
           margin = -1 * center;
 
-          if (origin.left < center) {
-            margin = -1 * (center - query.o.left) / 2;
-          }
-          else if (origin.left + query.w > query.vw) {
+          // if (origin.left < center) {
+            // margin = -1 * (center - origin.left) / 2;
+          // }
+          // else if (origin.left + query.w > query.vw) {
+          if (origin.left + query.w > query.vw) {
             margin = -1 * (origin.left + query.w - query.vw);
           }
 
@@ -3371,7 +3480,7 @@
       offset        = this.spot.$el.offset(),
       anchorWidth   = this.spot.$el.outerWidth(),
       anchorHeight  = this.spot.$el.outerHeight(),
-      margin        = this.options.margin;
+      margin        = this.getOption('margin');
 
       // We must explicitly reset the marker element's offset before querying
       // its dimensions.
@@ -3416,11 +3525,11 @@
       }
 
       // Move the marker.
-      if (guide.options.withAnimations) {
+      if (guide.isOn('withAnimations')) {
         // Prevent the spot from autoScrolling to the marker since it'll be
         // moving still while animated.
-        scrollLock = this.spot.options.autoScroll;
-        this.spot.options.autoScroll = false;
+        scrollLock = this.spot.isOn('autoScroll');
+        this.spot.setOptions({ autoScroll: false }, null, true);
 
         this.$el.offset(origin);
         this.$el
@@ -3431,19 +3540,21 @@
             250,
             // Restore the autoScroll option.
             _.bind(function() {
-              this.spot.options.autoScroll = scrollLock;
+              this.spot.setOptions({ autoScroll: scrollLock }, null, true);
             }, this));
 
         // Scroll the marker into view if needed
         if (this.spot.isFocused() && !this.spot.$el.is(':in_viewport')) {
           $('html, body').animate({
             scrollTop: offset.top * 0.9
-          }, guide.options.withAnimations ? 250 : 0);
+          }, guide.isOn('withAnimations') ? 250 : 0);
         }
       }
       else {
         this.$el.offset(offset);
       }
+
+      return offset;
     },
 
     /**
@@ -3457,49 +3568,43 @@
     wrap: function() {
       var $spot = this.spot.$el;
 
-      if (this.$container) {
+      if (this.isWrapped()) {
         this.unwrap();
       }
 
-      // Build the container:
-      this.$container =
-        $(this.options.mimic ?
-            // Instead of building a plain `<div/>`, we'll try to replicate the
-            // target element, so we won't break any CSS/JS that uses the tag as
-            // an identifier, we'll do that by cloning the tag and stripping
-            // some properties from it.
-            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ') :
-            '<div />'
-        )
-        // Empty it, we only need the tag and its structure
-        .html('')
-        .attr({
-          'id': null,
+      // Build the container by either 'mimicking' the target, or by building
+      // a plain <div>:
+      if (this.isOn('mimic')) {
+        // We'll try to replicate the target element, so we won't break any CSS/JS
+        // that uses the tag as an identifier, we'll do that by cloning the tag
+        // and stripping some of its properties.
+        this.$container =
+          $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
+          // Empty it, we only need the tag and its structure
+          .html('')
+          .attr({
+            'id': null,
+            // Remove any gjs- related classes from the container
+            'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+          })
+          // The container must be relatively positioned
+          .css({
+            position: 'relative'
+          });
+      }
+      else {
+        this.$container = $(JST_CONTAINER({}));
+      }
 
-          // Remove any gjs- related classes from the container
-          'class': this.options.mimic ?
-                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim() :
-                   ''
-        })
+      this.$container
+        // Classify it so the user can override its css if needed
+        .addClass('gjs-container gjs-container-' + (this.spot.index+1))
+        // Try to mimic the display type of the target element
         .css({
-          // Try to mimic the alignment of the target element
-          display: this.options.mimicDisplay ? $spot.css('display') : 'inherit',
-
-          // The container must be relatively positioned, since
-          // we're positioning the marker using margins.
-          position: 'relative'
+          display: this.isOn('mimicDisplay') ? $spot.css('display') : 'inherit',
         })
-
-        .addClass('gjs-container-' + (this.spot.index+1))
-
-        // Set a flag so we can tell whether the spot target is
-        // already wrapped so that we will properly clean up
-        //
-        // See #isWrapped and #remove.
-        .data('gjs-container', true)
-
-        // Position the container right where the target is, and
-        // move the target and the marker inside of it.
+        // Place the container right where the target is, and
+        // move the target and (later) the marker inside of it.
         .insertBefore($spot)
         .append($spot);
 
@@ -3607,8 +3712,6 @@
     id: 'toggler',
 
     constructor: function() {
-      this.options = _.defaults({}, this.defaults);
-
       this.$container = guide.$container;
 
       this.$el = $(JST({}));
@@ -3671,7 +3774,7 @@
     },
 
     launchTour: function() {
-      if (this.options.resetOnStart) {
+      if (this.isOn('resetOnStart')) {
         if (guide.tour) {
           guide.tour.reset();
         }

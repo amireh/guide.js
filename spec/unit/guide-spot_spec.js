@@ -90,7 +90,7 @@ describe("guide", function() {
       var spot;
 
       beforeEach(function() {
-        guide.tour.setOptions(guide.tour.defaults);
+        // guide.tour.setOptions(guide.tour.defaults);
         spot = mkVisibleSpot();
       });
 

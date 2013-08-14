@@ -41,7 +41,7 @@ describe("guide", function() {
 
       expect(spot.text).toEqual('Some text');
       expect(spot.caption).toEqual('Some caption');
-      expect(spot.options.marker).toEqual({ position: 'right' });
+      expect(spot.getOption('marker')).toEqual({ position: 'right' });
 
       $container.remove();
     });
@@ -178,7 +178,7 @@ describe("guide", function() {
 
       expect(spot.text).toEqual('Some text');
       expect(spot.caption).toEqual('Some caption');
-      expect(spot.options.marker).toEqual({
+      expect(spot.getOption('marker')).toEqual({
         position: 'right'
       });
     });

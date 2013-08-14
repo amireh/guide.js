@@ -5,7 +5,8 @@ describe("guide", function() {
     beforeEach(function() {
       o = new Object();
       _.extend(o, guide.Optionable, {
-        $: $(o)
+        $: $(o),
+        options: {}
       });
     });
 
@@ -36,7 +37,7 @@ describe("guide", function() {
       it('should accept a string of options', function() {
         o.setOptions('a:1, foo.bar:true');
 
-        expect(o.options).toEqual({
+        expect(o.getOptions()).toEqual({
           a: 1,
           foo: {
             bar: true
@@ -62,24 +63,19 @@ describe("guide", function() {
 
     describe('#getOptions', function() {
       it('should not mutate the original options', function() {
-        o.options = { foo: true };
-        var options = o.getOptions();
+        o.options.default = { foo: true };
 
-        expect(options).toEqual(o.options);
-
-        options.foo = false;
-        expect(o.options).toEqual({ foo: true });
         expect(o.getOptions()).toEqual({ foo: true });
       });
     });
 
     it('#hasOption', function() {
-      o.options = {
+      o.setOptions({
         foo: true,
         a: {
           b: 'xyz'
         }
-      }
+      });
 
       expect(o.hasOption('foo')).toBeTruthy();
       expect(o.hasOption('a.b')).toBeTruthy();
@@ -87,10 +83,10 @@ describe("guide", function() {
     });
 
     it('#isOptionOn', function() {
-      o.options = {
+      o.setOptions({
         foo: true,
         bar: false
-      }
+      });
 
       expect(o.isOptionOn('foo')).toBeTruthy();
       expect(o.isOptionOn('bar')).toBeFalsy();

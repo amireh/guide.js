@@ -10,52 +10,64 @@
    *
    * @alternateClassName Extension
    */
-  var Extension = _.extend({}, guide.Optionable, {
+  var
+  Guide = guide,
+  Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
       if (!this.id) {
         throw 'guide.js: bad extension, missing #id';
       }
 
       // Make sure an `enabled` option always exists
-      _.defaults(this.defaults, { enabled: true });
+      this.defaults = _.defaults(this.defaults || {}, { enabled: true });
 
       _.extend(this, {
         $:        $(this),
-        options:  _.extend({}, this.defaults, this.options)
+        // options:  _.extend({}, this.defaults, this.options)
       });
 
+      this.setOptions(_.extend({}, this.defaults));
+
+      // Uninstall extension on Guide.js dismissal
       guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
+      // If implemented, hook into Guide#show and Guide#hide:
+      //
+      // The handlers will be invoked only if the extension is enabled.
       if (this.onGuideShow) {
         guide.$.on(this.nsEvent('show'), _.bind(function() {
           if (this.isEnabled()) {
             this.onGuideShow();
-            this._shouldHide = true;
+
+            // Bind the clean-up handler to the guide hide event, if implemented:
+            if (this.onGuideHide) {
+              guide.$.one(this.nsEvent('hide'), _.bind(this.onGuideHide, this));
+            }
           }
         }, this));
       }
 
-      if (this.onGuideHide) {
-        guide.$.on(this.nsEvent('hide'), _.bind(function() {
-          if (this._shouldHide) {
-            this.onGuideHide();
-            this._shouldHide = false;
-          }
-        }, this));
-      }
-
+      // If implemented, hook into Tour#start and Tour#stop:
+      //
+      // The handlers will be invoked only if the extension has not been explicitly
+      // disabled for the active tour. This saves the extension from doing the
+      // needed tests in the handlers.
       if (this.onTourStart) {
         guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
           if (this.isEnabled(tour)) {
             this.onTourStart(tour);
-            tour.$.one('stop', _.bind(this.onTourStop, this, tour));
+
+            // Bind the clean-up handler to the tour stop event, if implemented:
+            if (this.onTourStop) {
+              tour.$.one(this.nsEvent('stop'), _.bind(this.onTourStop, this, tour));
+            }
           }
         }, this));
       }
     },
 
     /**
-     * An event namespaced to this specific extension.
+     * Namespace an event to this extension.
      */
     nsEvent: function(event) {
       return [ event, 'gjs_extension', this.id ].join('.');
@@ -82,9 +94,10 @@
       tour = tour || guide.tour;
 
       return _.extend({},
-        this.options,
-        guide.options[key],
-        tour ? (tour.options || {})[key] : null);
+        this.options['default'],
+        this.options[Guide.platform],
+        Guide.getOptions()[key],
+        tour ? tour.getOptions()[key] : null);
     },
 
     /**
@@ -95,17 +108,15 @@
      * the default value is used (which is `true`).
      */
     isEnabled: function(tour) {
-      var tourExtOptions;
+      var scopedOption = [ this.id, 'enabled' ].join('.');
 
       if (tour) {
-        tourExtOptions = tour.options[this.id] || {};
-
-        if (_.isBoolean(tourExtOptions.enabled)) {
-          return tourExtOptions.enabled;
+        if (tour.hasOption(scopedOption)) {
+          return tour.isOptionOn(scopedOption);
         }
       }
 
-      return !!this.getOptions().enabled;
+      return this.isOptionOn('enabled');
     },
 
     /**
@@ -127,7 +138,8 @@
      * their defaults.
      */
     reset: function() {
-      this.options = _.clone(this.defaults);
+      this.options = {};
+      this.setOptions(this.defaults);
     },
 
     remove: function() {}

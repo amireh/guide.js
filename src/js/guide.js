@@ -60,7 +60,6 @@
       _.extend(this, {
         $container: $('body'),
         $el:        $('<div id="gjs" />'),
-        options: _.clone(this.defaults),
         extensions: [],
 
         /**
@@ -84,7 +83,10 @@
         tours: [],
 
         /** @property {Tour} tour The active tour */
-        tour: null
+        tour: null,
+
+        platforms: [],
+        platform: null
       });
 
       console.log('guide.js: running');
@@ -143,7 +145,7 @@
       var tour;
 
       tour =_.find(this.tours, function(tour) {
-        return tour.options.isDefault;
+        return tour.isOn('isDefault');
       });
 
       if (tour) {
@@ -335,7 +337,7 @@
     show: function(inOptions, inCallback) {
       var options     = inOptions || {},
           that        = this,
-          animeMs     = this.options.withAnimations ? this.options.animeDuration:0;
+          animeMs     = this.isOn('withAnimations') ? this.getOption('animeDuration') : 0;
 
       if (this.isShown()) {
         return this;
@@ -378,7 +380,9 @@
      */
     hide: function() {
       var that     = this,
-          animeMs  = this.options.withAnimations ? this.options.animeDuration:0;
+          animeMs  = this.isOn('withAnimations') ?
+            this.getOption('animeDuration') :
+            0;
 
       if (!this.isShown()) {
         return this;
@@ -407,7 +411,7 @@
     },
 
     refresh: function() {
-      _.invoke(this.extensions, 'refresh');
+      // _.invoke(this.extensions, 'refresh');
 
       if (this.tour) {
         this.tour.refresh();
@@ -435,7 +439,8 @@
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
 
-      this.options = _.clone(this.defaults);
+      this.options = {};
+      this.setOptions(this.defaults);
 
       this.tours  = [];
       this.tour   = this.defineTour('Default Tour');
@@ -459,14 +464,14 @@
      *
      */
     toggleOverlayMode: function(doToggle) {
-      var option = this.options.withOverlay;
+      var option = this.isOn('withOverlay');
 
       if (doToggle) {
-        this.options.withOverlay = !this.options.withOverlay;
+        this.setOption('withOverlay', !this.isOn('withOverlay'));
       }
 
       if (this.tour && this.tour.hasOption('withOverlay')) {
-        option = this.tour.getOptions().withOverlay;
+        option = this.tour.getOption('withOverlay');
       }
 
       if (option) {
@@ -518,7 +523,7 @@
     },
 
     log: function() {
-      if (this.options.debug) {
+      if (this.isOn('debug')) {
         console.log.apply(console, arguments);
       }
     }

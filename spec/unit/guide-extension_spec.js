@@ -16,7 +16,7 @@ describe("guide", function() {
 
     it("should enable and disable manually", function() {
       expect(e.isEnabled()).toBeTruthy();
-
+      console.log(e.getOptions());
       e.setOptions({
         enabled: false
       });

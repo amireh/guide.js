@@ -2,6 +2,7 @@
   'use strict';
 
   var
+  Guide = guide,
   /**
    * @class Guide.Markers
    * @extends Guide.Extension
@@ -90,13 +91,13 @@
           }), 'marker');
       };
 
-      guide.Spot.prototype.addOption('withMarker', true);
-
       // We must manually assign the options to the default tour as it has
       // already been created.
       if (guide.tour) {
-        guide.tour.addOption('alwaysMark', true);
+        guide.tour.setOption('alwaysMark', true);
       }
+
+      guide.Spot.prototype.addOption('withMarker', true);
 
       guide.$.on('add', _.bind(this.addMarker, this));
 
@@ -106,7 +107,7 @@
     addMarker: function(e, spot, attributes) {
       var marker;
 
-      if (!spot.options.withMarker) {
+      if (!spot.isOn('withMarker')) {
         return null;
       }
       else if (!this.isEnabled(spot.tour)) {
@@ -127,15 +128,11 @@
         return;
       }
 
-      this.onGuideHide();
-
       if (!this.isEnabled()) {
         return;
       }
 
-      this.onGuideShow();
-
-      if (guide.tour) {
+      if (guide.tour && this.isEnabled(guide.tour)) {
         this.onTourStop(guide.tour);
         this.onTourStart(guide.tour);
       }
@@ -149,7 +146,7 @@
      * See #repositionMarkers for the repositioning logic.
      */
     onTourStart: function(tour) {
-      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function(e) {
+      $(document.body).on(this.nsEvent('click'), '.gjs-marker', function() {
         var marker = $(this).data('gjs-marker');
 
         if (marker) {
@@ -157,7 +154,7 @@
             marker.spot.tour.focus(marker.spot);
           }
 
-          return $.consume(e);
+          // return $.consume(e);
         }
 
         return true;
@@ -166,9 +163,9 @@
       $(window).on(this.nsEvent('resize'),
         _.throttle(
           _.bind(this.repositionMarkers, this),
-          this.options.refreshFrequency));
+          this.getOption('refreshFrequency')));
 
-      if (tour.options.alwaysMark) {
+      if (tour.isOn('alwaysMark')) {
         _.invoke(tour.getMarkers(), 'show');
       }
     },
@@ -233,7 +230,7 @@
    *
    * @alternateClassName Marker
    */
-  _.extend(Marker.prototype, {
+  _.extend(Marker.prototype, Guide.Optionable, {
     defaults: {
 
       /**
@@ -294,19 +291,20 @@
     constructor: function(spot, attributes) {
       _.extend(this, attributes, {
         id: ++idGenerator,
-        spot: spot,
-        options: _.extend({ },
-          // lowest priority: our defaults
-          this.defaults,
-
-          (attributes || {}).options,
-          // then, guide's global marker options,
-          guide.getOptions().marker,
-          // then, the spot's tour options,
-          spot.tour.getOptions().marker,
-          // and highest priority: the spot's options
-          spot.getOptions().marker)
+        spot: spot
       });
+
+      this.setOptions(_.extend({},
+        // lowest priority: our defaults
+        this.defaults,
+
+        (attributes || {}).options,
+        // then, guide's global marker options,
+        guide.getOptions('marker'),
+        // then, the spot's tour options,
+        spot.tour.getOptions('marker'),
+        // and highest priority: the spot's options
+        spot.getOptions('marker')));
 
       spot.marker = this;
 
@@ -333,8 +331,9 @@
      */
     build: function() {
       var $el, template, rtl_pos,
-      rtl   = guide.options.RTL,
-      spot  = this.spot;
+      rtl   = guide.isOn('RTL'),
+      spot  = this.spot,
+      options = this.getOptions();
 
       // Shouldn't build a marker for a spot target that's not (yet) visible.
       if (!spot || !spot.isVisible()) {
@@ -345,31 +344,17 @@
         return false;
       }
 
-      // If spot has explicitly asked for no text, or doesn't have
-      // any textual content, then we should respect the setting when
-      // highlighted.
-      //
-      // See #highlight.
-      this.withText = this.options.withText && spot.hasContent();
-
-      this.width = this.options.width || this.defaults.width;
-
-      this.spot_klasses = [
-        'gjs-spot-' + this.options.placement,
-        'gjs-spot-' + this.options.position
-      ].join(' ');
-
       // Parse placement and position modes.
-      switch(this.options.placement) {
+      switch(options.placement) {
         case 'inline':  this.placement = PMT_INLINE; break;
         case 'sibling': this.placement = PMT_SIBLING; break;
         case 'overlay': this.placement = PMT_OVERLAY; break;
         default:
-          throw 'guide-marker.js: bad placement "'+this.options.placement+'"';
+          throw 'guide-marker.js: bad placement "' + this.getOption('placement') + '"';
       }
 
       if (rtl) {
-        switch(this.options.position) {
+        switch(this.getOption('position')) {
           case 'topleft':     rtl_pos = 'topright'; break;
           case 'topright':    rtl_pos = 'topleft'; break;
           case 'right':       rtl_pos = 'left'; break;
@@ -377,13 +362,17 @@
           case 'bottomleft':  rtl_pos = 'bottomright'; break;
           case 'left':        rtl_pos = 'right'; break;
           default:
-            rtl_pos = this.options.position;
+            rtl_pos = this.getOption('position');
         }
 
-        this.options.position = rtl_pos;
+        this.setOptions({
+          position: rtl_pos
+        });
+
+        options.position = rtl_pos;
       }
 
-      switch(this.options.position) {
+      switch(options.position) {
         case 'topleft':     this.position = rtl ? POS_TR  : POS_TL; break;
         case 'top':         this.position = POS_T; break;
         case 'topright':    this.position = rtl ? POS_TL  : POS_TR; break;
@@ -393,12 +382,23 @@
         case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
         case 'left':        this.position = rtl ? POS_R   : POS_L; break;
         default:
-          throw 'guide-marker.js: bad position "' + this.options.position + '"';
+          throw 'guide-marker.js: bad position "' + options.position + '"';
       }
 
+      // If spot has explicitly asked for no text, or doesn't have
+      // any textual content, then we should respect the setting when
+      // highlighted.
+      //
+      // See #highlight.
+      this.withText     = !!options.withText && spot.hasContent();
+      this.spot_klasses = [
+        'gjs-spot-' + options.placement,
+        'gjs-spot-' + options.position
+      ].join(' ');
+
       // Determine which template we should use.
-      if (_.isFunction(this.options.template)) {
-        template = this.options.template;
+      if (_.isFunction(options.template)) {
+        template = options.template;
       }
       else if (spot.hasCaption()) {
         template = JST_WITH_CAPTION;
@@ -435,8 +435,8 @@
         .addClass([
           'gjs-marker',
           guide.entityKlass(),
-          this.options.placement + '-marker',
-          this.options.position
+          options.placement + '-marker',
+          options.position
         ].join(' '))
 
         // Attach the marker to the jQuery object, necessary for handling events
@@ -504,7 +504,7 @@
           this.$text.show();
           this.$caption.show();
           this.$el.css({
-            width: this.width
+            width: this.getOption('width') || this.defaults.width
           });
         }
 
@@ -542,7 +542,7 @@
       // removed (options.completely), then we'll roll-back our changes,
       // detach ourselves, and unwrap if viable.
       //
-      if (!this.spot.tour.options.alwaysMark || options.completely) {
+      if (!this.spot.tour.isOn('alwaysMark') || options.completely) {
         // Restore the spot's target's CSS classes
         this.spot.$el.removeClass(this.spot_klasses);
 
@@ -597,11 +597,11 @@
         return false;
       }
 
-      if (!spot.tour.isActive() || !spot.options.withMarker) {
+      if (!spot.tour.isActive() || !spot.isOn('withMarker')) {
         return false;
       }
 
-      if (!spot.tour.options.alwaysMark && !spot.isFocused()) {
+      if (!spot.tour.isOn('alwaysMark') && !spot.isFocused()) {
         return false;
       }
 
@@ -704,7 +704,7 @@
         break;
       }
 
-      // if (this.options.smart && !dontBeSmart) {
+      // if (this.isOn('smart') && !dontBeSmart) {
         // this.beSmart();
       // }
     },
@@ -763,10 +763,11 @@
           center = ($marker.outerWidth() / 2);
           margin = -1 * center;
 
-          if (origin.left < center) {
-            margin = -1 * (center - query.o.left) / 2;
-          }
-          else if (origin.left + query.w > query.vw) {
+          // if (origin.left < center) {
+            // margin = -1 * (center - origin.left) / 2;
+          // }
+          // else if (origin.left + query.w > query.vw) {
+          if (origin.left + query.w > query.vw) {
             margin = -1 * (origin.left + query.w - query.vw);
           }
 
@@ -857,7 +858,7 @@
       offset        = this.spot.$el.offset(),
       anchorWidth   = this.spot.$el.outerWidth(),
       anchorHeight  = this.spot.$el.outerHeight(),
-      margin        = this.options.margin;
+      margin        = this.getOption('margin');
 
       // We must explicitly reset the marker element's offset before querying
       // its dimensions.
@@ -902,11 +903,11 @@
       }
 
       // Move the marker.
-      if (guide.options.withAnimations) {
+      if (guide.isOn('withAnimations')) {
         // Prevent the spot from autoScrolling to the marker since it'll be
         // moving still while animated.
-        scrollLock = this.spot.options.autoScroll;
-        this.spot.options.autoScroll = false;
+        scrollLock = this.spot.isOn('autoScroll');
+        this.spot.setOptions({ autoScroll: false }, null, true);
 
         this.$el.offset(origin);
         this.$el
@@ -917,19 +918,21 @@
             250,
             // Restore the autoScroll option.
             _.bind(function() {
-              this.spot.options.autoScroll = scrollLock;
+              this.spot.setOptions({ autoScroll: scrollLock }, null, true);
             }, this));
 
         // Scroll the marker into view if needed
         if (this.spot.isFocused() && !this.spot.$el.is(':in_viewport')) {
           $('html, body').animate({
             scrollTop: offset.top * 0.9
-          }, guide.options.withAnimations ? 250 : 0);
+          }, guide.isOn('withAnimations') ? 250 : 0);
         }
       }
       else {
         this.$el.offset(offset);
       }
+
+      return offset;
     },
 
     /**
@@ -949,7 +952,7 @@
 
       // Build the container by either 'mimicking' the target, or by building
       // a plain <div>:
-      if (this.options.mimic) {
+      if (this.isOn('mimic')) {
         // We'll try to replicate the target element, so we won't break any CSS/JS
         // that uses the tag as an identifier, we'll do that by cloning the tag
         // and stripping some of its properties.
@@ -976,7 +979,7 @@
         .addClass('gjs-container gjs-container-' + (this.spot.index+1))
         // Try to mimic the display type of the target element
         .css({
-          display: this.options.mimicDisplay ? $spot.css('display') : 'inherit',
+          display: this.isOn('mimicDisplay') ? $spot.css('display') : 'inherit',
         })
         // Place the container right where the target is, and
         // move the target and (later) the marker inside of it.

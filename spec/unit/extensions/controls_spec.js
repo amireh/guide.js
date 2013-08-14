@@ -7,7 +7,11 @@ describe("Extensions", function() {
       var nrSpots = nrSpots || 5,
           i = 0;
 
-      tour = guide.defineTour('Controls Fixture');
+      tour = guide.defineTour('Controls Fixture').setOptions({
+        controls: {
+          enabled: true
+        }
+      });
 
       for (i = 0; i < nrSpots; ++i) {
         mkVisibleSpot(null, tour);
@@ -15,14 +19,6 @@ describe("Extensions", function() {
 
       return tour;
     };
-
-    afterEach(function() {
-      if (tour) {
-        _.each(tour.spots, function(spot) {
-          spot.$el.remove();
-        });
-      }
-    });
 
     it('should move forwards', function() {
       var tour = fixtureTour(3);
@@ -38,11 +34,12 @@ describe("Extensions", function() {
       var tour = fixtureTour(3);
 
       tour.start();
+      expect(ext.$fwd.is(":disabled")).toBeFalsy();
+
       tour.focus(2);
 
       expect(ext.$fwd.is(":disabled")).toBeTruthy();
       ext.$fwd.click();
-      expect(tour.cursor).toEqual(2);
     });
 
     it('should move backwards', function() {

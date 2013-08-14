@@ -47,7 +47,47 @@
        */
       noPositioningFix: false,
 
+      /**
+       * @cfg {Boolean} [dynamic=true]
+       * Indicates that the spot's target is (re)created dynamically and might not
+       * be visible all the time. If that's the case, and this option is enabled,
+       * Guide.js will attempt to dynamically locate the target everytime the spot
+       * is visited.
+       *
+       * See Tour#focus for more details on this behaviour.
+       *
+       * You can further control this by tuning the
+       * {@link Tour#refreshInterval refreshInterval} tour option and the #bouncable
+       * option.
+       */
       dynamic: true,
+
+      /**
+       * @cfg {Boolean} [bouncable=true]
+       * Turning this on will allow the tour to look for an alternative spot to
+       * focus if this spot isn't visible and couldn't be located.
+       *
+       * See the #dynamic option.
+       *
+       * *This option has no effect if either #dynamic is turned off.*
+       */
+      bouncable: true,
+
+      /**
+       * @cfg {String/Number} [bounce="forward"]
+       * In case we're bouncing off to a new spot, this option controls which
+       * spot to focus exactly if you specify a number, or gives a hint by specifying
+       * 'forwards' or 'backwards'.
+       *
+       * **Accepted values:**
+       *
+       * - a number: the spot index to bounce to
+       * - a string: 'forward' or 'backward', the preferred direction in which
+       *   to look for a match (a visible spot)
+       *
+       * *This option has no effect if #bouncable is turned off.*
+       */
+      bounce: 'both',
 
       /**
        * @cfg {Boolean} [disco=false]
@@ -195,20 +235,13 @@
          *
          * This could be modified by extensions. Use #setScrollAnchor for overriding.
          */
-        $scrollAnchor: $el,
-
-        options: _.extend({}, this.defaults, tour.options.spots, options)
+        $scrollAnchor: $el
       });
 
-      if (this.options.disco) {
-        this.$disco = $(this.templates.disco({}));
-      }
-      if (this.options.flashy) {
-        this.$flashy = $(this.templates.flashy({}));
-        if (this.options.flashy === 'once') {
-          this.$flashy.addClass('flash-once');
-        }
-      }
+      this.setOptions(_.extend({},
+        this.defaults,
+        tour.getOptions('spots'),
+        options));
 
       // Install handlers that were passed manually for convenience.
       if (_.isFunction(options.preFocus)) {
@@ -295,10 +328,10 @@
         }
       }
 
-      if (!this.options.highlight) {
+      if (!this.isOn('highlight')) {
         return false;
       }
-      else if (!this.tour.options.alwaysHighlight && !this.__isCurrent()) {
+      else if (!this.tour.isOn('alwaysHighlight') && !this.__isCurrent()) {
         return false;
       }
 
@@ -306,9 +339,9 @@
       // to be able to properly highlight the target, it must be positioned
       // as one of 'relative', 'absolute', or 'fixed' so that we can apply
       // the necessary CSS style.
-      if (!this.options.noPositioningFix &&
-          !this.tour.isOptionOn('spots.noPositioningFix') &&
-          !guide.isOptionOn('spots.noPositioningFix')) {
+      if (!this.isOn('noPositioningFix') &&
+          !this.tour.isOn('spots.noPositioningFix') &&
+          !guide.isOn('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
@@ -336,7 +369,9 @@
         force: false
       });
 
-      if (options.force || !this.tour.options.alwaysHighlight) {
+      if (options.force ||
+        !this.tour.isOn('alwaysHighlight') ||
+        !this.tour.isOn('alwaysMark')) {
         this.$el.removeClass([
           KLASS_TARGET,
           KLASS_ENTITY,
@@ -360,12 +395,20 @@
     focus: function(prev_spot) {
       this.highlight();
 
-      if (this.options.disco) {
+      if (this.isOn('disco')) {
+        if (!this.$disco) {
+          this.$disco = $(this.templates.disco({}));
+        }
         this.$disco.appendTo(this.$el);
       }
 
-      if (this.options.flashy) {
+      if (this.isOn('flashy')) {
+        if (!this.$flashy) {
+          this.$flashy = $(this.templates.flashy({}));
+        }
+
         this.$flashy.appendTo(this.$el);
+        this.$flashy.toggleClass('flash-once', this.getOption('flashy') === 'once');
       }
 
       this.$el
@@ -388,7 +431,7 @@
 
       this.$.triggerHandler('focus', [ this, prev_spot ]);
 
-      if (this.options.autoScroll) {
+      if (this.isOn('autoScroll')) {
         _.defer(_.bind(this.scrollIntoView, this));
       }
 
@@ -439,7 +482,7 @@
 
       $('html, body').animate({
         scrollTop: this.$scrollAnchor.offset().top * 0.9
-      }, guide.options.withAnimations ? 250 : 0);
+      }, guide.isOn('withAnimations') ? 250 : 0);
 
       return true;
     },
@@ -536,7 +579,7 @@
      * @private
      */
     toString: function() {
-      return this.tour.id + '#' + this.index;
+      return this.tour.id + '#' + (this.index+1);
     },
   });
 

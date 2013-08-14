@@ -32,8 +32,6 @@
     id: 'toggler',
 
     constructor: function() {
-      this.options = _.defaults({}, this.defaults);
-
       this.$container = guide.$container;
 
       this.$el = $(JST({}));
@@ -96,7 +94,7 @@
     },
 
     launchTour: function() {
-      if (this.options.resetOnStart) {
+      if (this.isOn('resetOnStart')) {
         if (guide.tour) {
           guide.tour.reset();
         }

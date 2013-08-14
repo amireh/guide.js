@@ -34,7 +34,7 @@
        * @cfg {Number} [refreshInterval=10]
        *
        * Milliseconds to wait for a spot's element that's not visible to show up
-       * before looking for an alternative spot to focus.
+       * before looking for an alternative spot to focus, or "bouncing".
        *
        * See Spot#dynamic and Tour#focus for more details on this behaviour.
        */
@@ -82,7 +82,9 @@
 
         id: label, // TODO: unique constraints on tour IDs
 
-        options: _.extend({}, guide.options.tours, this.defaults),
+        options: {
+          'default': _.extend({}, this.defaults, guide.getOptions('tours'))
+        },
 
         spots: [],
 
@@ -98,11 +100,11 @@
 
       // console.log('guide.js: tour defined: ', this.id);
 
-      if (_.isFunction(this.options.onStart)) {
-        this.$.on('start.user', _.bind(this.options.onStart, this));
+      if (_.isFunction(this.getOption('onStart'))) {
+        this.$.on('start.user', _.bind(this.getOption('onStart'), this));
       }
-      if (_.isFunction(this.options.onStop)) {
-        this.$.on('stop.user', _.bind(this.options.onStop, this));
+      if (_.isFunction(this.getOption('onStop'))) {
+        this.$.on('stop.user', _.bind(this.getOption('onStop'), this));
       }
       return this;
     },
@@ -115,11 +117,15 @@
      * @fires start
      */
     start: function(options) {
-      options = _.defaults(options || {}, {
-        // Set a default spot to focus if none was specified, we'll default to
-        // the current one (if resuming) or the first.
-        spot: this.current || this.spots[0]
-      });
+      // Set a default spot to focus if none was specified, we'll default to
+      // the current one (if resuming) or the first.
+      var spot = this.current || this.spots[0];
+
+      options = options || {};
+
+      if (undefined !== options.spot) {
+        spot = options.spot;
+      }
 
       if (!guide.isShown()) {
         guide.runTour(this, options);
@@ -136,8 +142,8 @@
       _.invoke(this.spots, 'highlight');
 
       // Focus a spot if possible.
-      if (options.spot) {
-        this.focus(this.__getSpot(options.spot));
+      if (spot) {
+        this.focus(this.__getSpot(spot));
       }
 
       /**
@@ -225,7 +231,7 @@
         _.invoke(this.spots, 'remove');
 
         this.spots = [];
-        this.options = _.clone(this.defaults);
+        this.setOptions( _.clone(this.defaults) );
       }
 
       return this;
@@ -341,7 +347,8 @@
      *
      * Current spot will be defocused, and in case the given spot is not currently
      * visible, an attempt to 'refresh' it will be made, and if that fails,
-     * an alternative spot will be searched for and used if found.
+     * an alternative spot will be searched for and used if found, unless
+     * the spot isn't {@link Spot#bouncable bouncable}.
      *
      * @param {Number/Spot} index
      * The spot, or an index of a spot, that should be focused.
@@ -370,11 +377,14 @@
       }
 
       // de-focus the last spot
-      if (this.current) {
+      if (this.current && this.current.isFocused()) {
         this.__defocus(spot);
       }
 
-      if (!this.hasJustRefreshed) {
+      if (!this._prepared) {
+        guide.log('tour: preparing spot ' + spot + ' for focusing.');
+        this._prepared = true;
+
         /**
          * @event pre-focus
          * Fired when a spot is about to be focused. See Spot#preFocus for
@@ -401,8 +411,8 @@
         //
         // We'll give the spot a space of 10ms to refresh by default, otherwise
         // see #refreshInterval.
-        if (spot.options.dynamic && !spot.isVisible()) {
-          guide.log('tour: spot#' + spot.index, 'isnt visible, looking for one that is');
+        if (spot.isOn('dynamic') && !spot.isVisible()) {
+          guide.log('tour: spot#' + (spot.index+1), 'isnt visible, attempting to refresh...');
 
           setTimeout(_.bind(function() {
             // This is a necessary evil for specs as in some cases, a spot gets
@@ -413,29 +423,33 @@
               return;
             }
 
-            // Refresh...
+            // Refresh
             if (spot.__refreshTarget() && spot.isVisible()) {
-              this.hasJustRefreshed = true;
-              this.focus(spot);
+              guide.log('tour: \tspot is now visible, focusing.');
+              return this.focus(spot);
             }
-            // Look for an alternative:
-            else {
-              spot = this.__closest(spot, spot.options.fallback);
+            // Or, look for an alternative:
+            else if (spot.isOn('bouncable')) {
+              guide.log('tour: \tspot still isnt visible, looking for an alternative...');
+              spot = this.__closest(spot, spot.getOption('bounce'));
 
               if (spot) {
-                this.hasJustRefreshed = false;
-                this.focus(spot);
-              }
+                guide.log('tour: \t\talternative found: ' + spot + ', focusing.');
 
-              // Nothing we can do.
+                this._prepared = false;
+                this.focus(spot);
+              } else {
+                guide.log('tour: \t\tno alternative found, focusing aborted.');
+              }
             }
-          }, this), this.options.refreshInterval);
+            // Nothing we can do.
+          }, this), this.getOption('refreshInterval'));
 
           return false;
         } // visibility test
       } // refreshing block
 
-      this.hasJustRefreshed = false;
+      this._prepared = false;
 
       this.current = spot;
       this.cursor  = spot.index;
@@ -463,7 +477,7 @@
       this.$.triggerHandler('focus', [ spot, this.previous ]);
       guide.$.triggerHandler('focus', [ spot, this.previous ]);
 
-      console.log('guide.js: visiting tour spot #', spot.index);
+      console.log('guide.js: visiting tour spot #', spot.index+1);
 
       return true;
     },
@@ -502,11 +516,11 @@
     /**
      * Attempt to find the closest visible spot to the given one.
      *
-     * @param {Number/String} [direction='forwards']
+     * @param {Number/String} [direction='forward']
      * The first direction to seek a match in:
      *
-     * - `forwards`: will look for spots that follow the anchor
-     * - `backwards`: will look for spots that precede the anchor
+     * - `forward`: will look for spots that follow the anchor
+     * - `backward`: will look for spots that precede the anchor
      * - Number: will use the spot at the given index, see Spot#index
      *
      * If the direction yields no visible spot, the opposite direction is then
@@ -525,7 +539,7 @@
       seek = _.bind(function(direction) {
         var i, spot;
 
-        if (direction === 'backwards') {
+        if (direction === 'backward') {
           for (i = anchor-1; i >= 0; --i) {
             spot = this.spots[i];
 
@@ -551,14 +565,17 @@
         return null;
       }
 
-      if (_.contains([ 'forwards', 'backwards' ], direction)) {
+      if (_.isNumber(direction)) {
+        return this.__getSpot(direction);
+      }
+      else if (_.contains([ 'forward', 'backward' ], direction)) {
         return seek(direction);
       } else {
-        if (this.spots.length > anchor && (spot = seek('forwards'))) {
+        if (this.spots.length > anchor && (spot = seek('forward'))) {
           return spot;
         }
 
-        if (anchor > 0 && (spot = seek('backwards'))) {
+        if (anchor > 0 && (spot = seek('backward'))) {
           return spot;
         }
       }

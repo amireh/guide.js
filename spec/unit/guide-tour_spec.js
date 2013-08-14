@@ -3,9 +3,13 @@ describe("guide", function() {
     var tour, $target;
 
     beforeEach(function() {
-      guide.reset();
       tour = guide.tour;
       $target = $('<div />');
+
+      guide.setOptions({
+        markers: { enabled: false },
+        controls: { enabled: false }
+      })
     });
 
     afterEach(function() {
@@ -16,23 +20,87 @@ describe("guide", function() {
       }
     });
 
-    describe('#addSpot', function() {
-      // it('should reject building multiple spots for the same $target', function() {
-      //   expect(tour.addSpot($target)).toBeTruthy();
+    describe('Focusing', function() {
+      it('should focus a spot', function() {
+        mkVisibleSpot();
+        mkVisibleSpot();
 
-      //   expect(function() {
-      //     tour.addSpot($target);
-      //   }).toThrow('guide.js: duplicate spot, see console for more information');
+        guide.show({ noAutorun: true });
+        expect( tour.isActive() ).toBeFalsy();
 
-      //   expect(guide.tour.spots.length).toEqual(1);
-      // });
+        expect( tour.start() ).toBeTruthy();
+        expect( tour.isActive() ).toBeTruthy();
+        expect( tour.spots[0].isFocused() ).toBeTruthy();
+
+        expect( tour.focus(1) ).toBeTruthy();
+        expect( tour.spots[1].isFocused() ).toBeTruthy();
+      });
     });
 
-    describe('Focusing', function() {
-    })
+    describe('Events', function() {
 
-    describe('#closest', function() {
-      it('should go #backwards', function() {
+      it('should trigger #pre-focus', function() {
+        var listener = {
+          handler: function() {}
+        };
+
+        spyOn(listener, 'handler');
+
+        mkVisibleSpot(null, null, {
+          preFocus: listener.handler
+        });
+
+        expect(listener.handler).not.toHaveBeenCalled();
+
+        tour.start({ spot: null });
+        tour.focus(0);
+
+        expect(listener.handler).toHaveBeenCalled();
+      });
+
+      it('should trigger #pre-focus, #focus, and #defocus', function() {
+        var spies = [ 'onPrefocus', 'onFocus', 'onDefocus' ];
+        var listener = {
+        };
+
+        _.each(spies, function(spy) {
+          listener[spy] = function() {}
+          spyOn(listener, spy);
+        });
+
+        mkVisibleSpot(null, null, {
+          preFocus:   listener.onPrefocus,
+          onFocus:    listener.onFocus,
+          onDefocus:  listener.onDefocus
+        });
+
+        mkVisibleSpot();
+
+        tour.start({ spot: null });
+        tour.first();
+
+        expect(listener.onPrefocus).toHaveBeenCalled();
+        expect(listener.onFocus).toHaveBeenCalled();
+        expect(listener.onDefocus).not.toHaveBeenCalled();
+
+        _.each(spies, function(spy) { listener[spy].reset(); });
+
+        tour.next();
+        expect(listener.onPrefocus).not.toHaveBeenCalled();
+        expect(listener.onFocus).not.toHaveBeenCalled();
+        expect(listener.onDefocus).toHaveBeenCalled();
+
+        _.each(spies, function(spy) { listener[spy].reset(); });
+
+        tour.prev();
+        expect(listener.onPrefocus).toHaveBeenCalled();
+        expect(listener.onFocus).toHaveBeenCalled();
+        expect(listener.onDefocus).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Bouncing', function() {
+      it('should bounce #backward', function() {
         var alt, anchor;
 
         mkVisibleSpot();
@@ -41,32 +109,32 @@ describe("guide", function() {
         mkVisibleSpot();
 
         anchor = tour.spots[3];
-        alt    = tour.__closest(anchor, anchor.options.fallback);
+        alt    = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(2);
 
         anchor = tour.spots[2];
-        anchor.options.fallback = 'backwards';
-        alt    = tour.__closest(anchor, anchor.options.fallback);
+        anchor.setOption('bounce', 'backward');
+        alt    = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
 
         anchor = tour.spots[0];
-        anchor.options.fallback = 'backwards';
-        alt = tour.__closest(anchor, anchor.options.fallback);
+        anchor.setOption('bounce', 'backward');
+        alt = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeFalsy();
 
-        delete anchor.options.fallback;
+        anchor.setOption('bounce', null);
 
-        alt = tour.__closest(anchor, anchor.options.fallback);
+        alt = tour.__closest(anchor, anchor.getOption('bounce'));
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
       });
 
-      it('should go #forwards', function() {
+      it('should bounce #forward', function() {
         var alt, anchor;
 
         mkVisibleSpot();
@@ -75,29 +143,44 @@ describe("guide", function() {
         mkVisibleSpot();
 
         anchor = tour.spots[0];
-        alt    = tour.__closest(anchor, anchor.options.fallback);
+        alt    = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(1);
 
         anchor = tour.spots[2];
-        anchor.options.fallback = 'forwards';
-        alt    = tour.__closest(anchor, anchor.options.fallback);
+        anchor.setOption('bounce', 'forward');
+        alt    = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(3);
 
         anchor = tour.spots[3];
-        anchor.options.fallback = 'forwards';
-        alt = tour.__closest(anchor, anchor.options.fallback);
+        anchor.setOption('bounce', 'forward');
+        alt = tour.__closest(anchor, anchor.getOption('bounce'));
 
         expect( alt ).toBeFalsy();
 
-        delete anchor.options.fallback;
+        anchor.setOption('bounce', null);
 
-        alt = tour.__closest(anchor, anchor.options.fallback);
+        alt = tour.__closest(anchor, anchor.getOption('bounce'));
         expect( alt ).toBeTruthy();
         expect( alt.index ).toEqual(2);
+      });
+
+      it('should bounce to an index', function() {
+        var alt, anchor;
+
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+
+        anchor = tour.spots[0];
+        anchor.setOption('bounce', 3);
+        alt = tour.__closest(anchor, anchor.getOption('bounce'));
+
+        expect( alt ).toEqual( tour.spots[3] );
       });
 
 
@@ -120,7 +203,7 @@ describe("guide", function() {
         // guide.hide();
       });
 
-      it('should go backwards', function() {
+      it('should go backward', function() {
         mkVisibleSpot();
         mkVisibleSpot();
         mkVisibleSpot();
