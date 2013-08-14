@@ -23,11 +23,17 @@ module.exports = function(grunt) {
     watch: {
       scripts: {
         files: [ 'src/js/**/*' ],
-        tasks: [ 'jshint', 'docs', 'concat', 'uglify' ]
+        tasks: [ 'jshint', 'concat', 'uglify', 'docs' ]
       },
+
+      docs: {
+        files: [ 'docs/guides/**/*.md', 'docs/*' ],
+        tasks: [ 'docs' ]
+      },
+
       css: {
         files: [ 'src/css/**/*' ],
-        tasks: [ 'less' ]
+        tasks: [ 'less', 'docs' ]
       }
     },
 
@@ -149,7 +155,9 @@ module.exports = function(grunt) {
           'warnings': [],
           'external': [ 'XMLHttpRequest', 'jQuery', '$', '_' ],
           'images': 'docs/images',
-          'eg-iframe': 'docs/gjs-iframe.html'
+          'eg-iframe': 'docs/gjs-iframe.html',
+          'guides': 'docs/guides.json',
+          'head-html': 'docs/head.html'
         }
       }
     },
