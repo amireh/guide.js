@@ -27,8 +27,8 @@
      * The set of options to override. If the parameter is a String, it will
      * be parsed into an object using _#parseOptions if it's valid.
      */
-    setOptions: function(options, inPlatform, silent) {
-      var overrides, platform;
+    setOptions: function(options, platform, silent) {
+      var _platform;
 
       if (_.isString(options)) {
         options = _.parseOptions(options);
@@ -42,16 +42,16 @@
         this.options = {};
       }
 
-      if (options['overrides']) {
-        for (platform in options['overrides']) {
-          this.setOptions(options['overrides'][platform], platform, true);
+      if (options.overrides) {
+        for (_platform in options.overrides) {
+          this.setOptions(options.overrides[_platform], _platform, true);
         }
 
-        delete options['overrides'];
+        delete options.overrides;
       }
 
-      platform = inPlatform || 'default';
-      this.options[platform] = _.extend(this.options[platform] || {}, options);
+      _platform = platform || 'default';
+      this.options[_platform] = _.extend(this.options[_platform] || {}, options);
 
       if (!silent && this.refresh) {
         this.refresh();

@@ -698,8 +698,6 @@
     },
 
     refresh: function() {
-      // _.invoke(this.extensions, 'refresh');
-
       if (this.tour) {
         this.tour.refresh();
       }
@@ -726,7 +724,6 @@
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
 
-      this.platform = null;
       this.options = {};
       this.setOptions(this.defaults);
 
@@ -862,7 +859,7 @@
      * be parsed into an object using _#parseOptions if it's valid.
      */
     setOptions: function(options, platform, silent) {
-      platform = platform || 'default';
+      var _platform;
 
       if (_.isString(options)) {
         options = _.parseOptions(options);
@@ -876,7 +873,16 @@
         this.options = {};
       }
 
-      this.options[platform] = _.extend(this.options[platform] || {}, options);
+      if (options.overrides) {
+        for (_platform in options.overrides) {
+          this.setOptions(options.overrides[_platform], _platform, true);
+        }
+
+        delete options.overrides;
+      }
+
+      _platform = platform || 'default';
+      this.options[_platform] = _.extend(this.options[_platform] || {}, options);
 
       if (!silent && this.refresh) {
         this.refresh();
@@ -994,15 +1000,17 @@
       // Make sure an `enabled` option always exists
       this.defaults = _.defaults(this.defaults || {}, { enabled: true });
 
-      _.extend(this, {
-        $:        $(this),
-        // options:  _.extend({}, this.defaults, this.options)
-      });
+      // An event delegator.
+      this.$ = $(this);
 
+      this.options = {};
       this.setOptions(_.extend({}, this.defaults));
 
       // Uninstall extension on Guide.js dismissal
       guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
+
+      // Refresh it on option updates
+      guide.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
 
       // If implemented, hook into Guide#show and Guide#hide:
       //
@@ -1036,6 +1044,10 @@
             }
           }
         }, this));
+      }
+
+      if (this.install) {
+        this.install();
       }
     },
 
@@ -3728,9 +3740,13 @@
       .on(this.nsEvent('hiding'), _.bind(this.expand, this))
       .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
-      this.show().expand();
-
       return this;
+    },
+
+    install: function() {
+      if (this.isEnabled()) {
+        this.show().expand();
+      }
     },
 
     show: function() {
