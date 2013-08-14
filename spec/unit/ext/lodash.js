@@ -17,7 +17,8 @@ describe("lodash", function() {
       a: {
         b: {
           c: true,
-          d: 123
+          d: 123,
+          e: false
         }
       }
     };
@@ -25,6 +26,8 @@ describe("lodash", function() {
     expect(_.dotGet('foo', o)).toEqual('bar');
     expect(_.dotGet('a.b', o)).toEqual(o.a.b);
     expect(_.dotGet('a.b.c', o)).toEqual(true);
+    expect(_.dotGet('a.b.d', o)).toEqual(123);
+    expect(_.dotGet('a.b.e', o)).toEqual(false);
     expect(_.dotGet('a.b.xyz', o)).toEqual(undefined);
   });
 

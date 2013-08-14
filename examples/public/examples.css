@@ -292,3 +292,12 @@ pre .regexp {
   -moz-box-shadow: none;
   box-shadow: none;
 }
+
+iframe {
+  border: 1px dotted #aaa;
+  padding: 40px;
+}
+hr {
+  border: none;
+  border-bottom: 1px solid #ccc;
+}

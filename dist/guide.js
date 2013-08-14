@@ -116,7 +116,7 @@
  *
  * guide.js lodash extensions
  */
-(function(_) {
+(function(_, undefined) {
   'use strict';
 
   (function() {
@@ -128,7 +128,7 @@
     for (ext_iter = 0; ext_iter < EXTENSIONS.length; ++ext_iter) {
       ext = EXTENSIONS[ext_iter];
 
-      if (void 0 !== _[ext]) {
+      if (undefined !== _[ext]) {
         throw 'guide.js: existing _.' + ext + ' implementation!';
       }
     }
@@ -193,7 +193,9 @@
 
       o = o[token];
 
-      if (!o) { return undefined; }
+      if (undefined === o) {
+        return undefined;
+      }
     }
 
     return o;
@@ -371,8 +373,7 @@
         /** @property {Tour} tour The active tour */
         tour: null,
 
-        platforms: [],
-        platform: null
+        platforms: []
       });
 
       console.log('guide.js: running');
@@ -725,6 +726,7 @@
       _.invoke(this.extensions, 'reset', true);
       _.invoke(this.tours,      'reset', true);
 
+      this.platform = null;
       this.options = {};
       this.setOptions(this.defaults);
 

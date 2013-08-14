@@ -198,7 +198,6 @@
 }
 .gjs-marker.focused {
   cursor: auto;
-  min-width: 120px;
 }
 .gjs-marker.inline-marker {
   position: absolute;

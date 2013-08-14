@@ -1,0 +1,59 @@
+<div class="example">
+  <p id="platform"><strong>Guide.js platform: </strong><code></code></p>
+  <p>Options that were overridden based on the platform:</p>
+  <pre class="text-left" data-language="javascript"></pre>
+  <hr />
+
+  <div class="text-center">
+    <p id="greeting">Make a choice:</p>
+
+    <button id="seek">Seek</button>
+    <button id="destroy">Destroy</button>
+  </div>
+</div>
+
+<script>
+  $(function() {
+    $('h1').hide();
+
+    guide.platform = "<%= platform %>";
+    guide.setOptions({
+      tutor: {
+        enabled: false
+      },
+      controls: {
+        enabled: false
+      },
+      toggler: {
+        enabled: false
+      }
+    });
+
+    guide.addSpot($('#seek'), {
+      marker: {
+        position: 'left'
+      },
+      overrides: {
+        mobile: 'marker.position: bottom'
+      }
+    });
+
+    guide.addSpot($('#destroy'), {
+      marker: {
+        position: 'right'
+      },
+      overrides: {
+        mobile: 'marker.position: bottom'
+      }
+    });
+
+    guide.show();
+
+    $('pre').html(JSON.stringify(
+      _.pick(guide.tour.spots[1].getOptions(),'marker'),
+      null,
+      2)
+    );
+    $('p#platform code').text(guide.platform);
+  });
+</script>

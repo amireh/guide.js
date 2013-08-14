@@ -46,9 +46,13 @@
       .on(this.nsEvent('hiding'), _.bind(this.expand, this))
       .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
-      this.show().expand();
-
       return this;
+    },
+
+    install: function() {
+      if (this.isEnabled()) {
+        this.show().expand();
+      }
     },
 
     show: function() {

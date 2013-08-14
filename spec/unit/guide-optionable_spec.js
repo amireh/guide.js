@@ -57,8 +57,61 @@ describe("guide", function() {
         expect(function() {
           o.setOptions(null);
         }).toThrow();
-
       });
+
+      it('should scope per platform', function() {
+        o.setOptions({
+          foo: 'a'
+        });
+
+        expect( o.getOption('foo') ).toEqual('a');
+
+        o.setOptions({
+          foo: 'b',
+          bar: {
+            a: true,
+            b: false
+          }
+        }, 'mobile');
+
+        expect( o.getOption('foo') ).toEqual('a');
+        expect( o.getOption('bar.a') ).toEqual(undefined);
+        expect( o.getOption('bar.b') ).toEqual(undefined);
+
+        guide.platform = 'mobile';
+        console.log(o.getOptions('bar.a'));
+        expect( o.getOption('foo') ).toEqual('b');
+        expect( o.getOption('bar.a') ).toEqual(true);
+        expect( o.getOption('bar.b') ).toEqual(false);
+      });
+
+      it('should accept overrides', function() {
+        o.setOptions({
+          foo: 'a',
+          overrides: {
+            mobile: {
+              foo: 'b',
+              bar: {
+                a: true,
+                b: false
+              }
+            }
+          }
+        });
+
+        guide.platform = 'desktop';
+        console.log(o.getOptions());
+        expect( o.getOption('foo') ).toEqual('a');
+        expect( o.getOption('bar.a') ).toEqual(undefined);
+        expect( o.getOption('bar.b') ).toEqual(undefined);
+
+        guide.platform = 'mobile';
+
+        console.log(o.getOptions());
+        expect( o.getOption('foo') ).toEqual('b');
+        expect( o.getOption('bar.a') ).toEqual(true);
+        expect( o.getOption('bar.b') ).toEqual(false);
+      })
     });
 
     describe('#getOptions', function() {

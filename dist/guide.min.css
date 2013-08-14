@@ -9,7 +9,7 @@
 .gjs-marker{color:white;background-color:#33b5e5;background:rgba(51,181,229,0.3);text-decoration:none;font-size:12px;line-height:1.4;text-shadow:none;-webkit-transition:background-color 0.25s ease-in;-moz-transition:background-color 0.25s ease-in;-o-transition:background-color 0.25s ease-in;-ms-transition:background-color 0.25s ease-in;transition:background-color 0.25s ease-in;cursor:pointer;padding:10px;display:inline-block;z-index:102;}.gjs-marker .index{font-size:32px}
 .gjs-marker .caption,.gjs-marker .text{display:none;color:#fff;white-space:normal;cursor:inherit}
 .gjs-marker:hover,.gjs-marker.focused{z-index:106;background:rgba(51,181,229,0.95)}
-.gjs-marker.focused{cursor:auto;min-width:120px}
+.gjs-marker.focused{cursor:auto}
 .gjs-marker.inline-marker{position:absolute}.gjs-marker.inline-marker.topleft{bottom:100%;margin-bottom:15px;left:0}
 .gjs-marker.inline-marker.top{bottom:100%;margin-bottom:15px;left:50%}
 .gjs-marker.inline-marker.topright{bottom:100%;margin-bottom:15px;right:0}

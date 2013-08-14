@@ -85,8 +85,7 @@
         /** @property {Tour} tour The active tour */
         tour: null,
 
-        platforms: [],
-        platform: null
+        platforms: []
       });
 
       console.log('guide.js: running');
@@ -411,8 +410,6 @@
     },
 
     refresh: function() {
-      // _.invoke(this.extensions, 'refresh');
-
       if (this.tour) {
         this.tour.refresh();
       }

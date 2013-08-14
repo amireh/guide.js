@@ -3,7 +3,7 @@
  *
  * guide.js lodash extensions
  */
-(function(_) {
+(function(_, undefined) {
   'use strict';
 
   (function() {
@@ -15,7 +15,7 @@
     for (ext_iter = 0; ext_iter < EXTENSIONS.length; ++ext_iter) {
       ext = EXTENSIONS[ext_iter];
 
-      if (void 0 !== _[ext]) {
+      if (undefined !== _[ext]) {
         throw 'guide.js: existing _.' + ext + ' implementation!';
       }
     }
@@ -80,7 +80,9 @@
 
       o = o[token];
 
-      if (!o) { return undefined; }
+      if (undefined === o) {
+        return undefined;
+      }
     }
 
     return o;

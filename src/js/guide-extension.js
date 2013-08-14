@@ -21,15 +21,17 @@
       // Make sure an `enabled` option always exists
       this.defaults = _.defaults(this.defaults || {}, { enabled: true });
 
-      _.extend(this, {
-        $:        $(this),
-        // options:  _.extend({}, this.defaults, this.options)
-      });
+      // An event delegator.
+      this.$ = $(this);
 
+      this.options = {};
       this.setOptions(_.extend({}, this.defaults));
 
       // Uninstall extension on Guide.js dismissal
       guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
+
+      // Refresh it on option updates
+      guide.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
 
       // If implemented, hook into Guide#show and Guide#hide:
       //
@@ -63,6 +65,10 @@
             }
           }
         }, this));
+      }
+
+      if (this.install) {
+        this.install();
       }
     },
 

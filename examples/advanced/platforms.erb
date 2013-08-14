@@ -1,0 +1,24 @@
+<p>This example shows how the same tour can be customized to render
+  differently based on the platform Guide.js was told to run in.
+</p>
+
+<p>This is extremely handy for designing tours that should run on multiple devices,
+  like desktop browsers, mobile phones, and tablets.
+</p>
+
+<section>
+  <h2>Desktop</h2>
+  <iframe src="/advanced/platforms/desktop.html" width="720" height="640"></iframe>
+</section>
+
+<section>
+  <h2>Mobile</h2>
+  <iframe src="/advanced/platforms/mobile.html" width="320" height="480"></iframe>
+</section>
+
+
+<script>
+  $(function() {
+    guide.dismiss();
+  });
+</script>
