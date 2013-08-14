@@ -66,7 +66,9 @@
        * This callback will be invoked with the tour object being `thisArg`,
        * and will also receive the tour object as its second parameter.
        */
-      onStop: null
+      onStop: null,
+
+      available: true
     },
 
     constructor: function(label) {
@@ -309,37 +311,55 @@
      * Focuses the next spot, if any.
      */
     next: function() {
+      var nextSpot = this.hasNext();
+
       if (!this.hasNext()) {
         return false;
       }
 
-      return this.focus(this.cursor + 1);
+      return this.focus(nextSpot);
     },
 
     hasNext: function() {
       var ln = this.spots.length;
 
-      return ln !== 1 && this.cursor < ln-1;
-    },
-
-    prev: function() {
-      if (!this.hasPrev()) {
+      if (ln === 1 || this.cursor === ln - 1) {
         return false;
       }
 
-      return this.focus(this.cursor - 1);
+      return _.first( this._availableSpots( _.rest(this.spots, this.cursor + 1) ) );
+    },
+
+    prev: function() {
+      var prevSpot = this.hasPrev();
+
+      if (!prevSpot) {
+        return false;
+      }
+
+      return this.focus(prevSpot);
     },
 
     hasPrev: function() {
-      return this.spots.length !== 1 && this.cursor > 0;
+      if (this.spots.length === 1 || this.cursor === 0) {
+        return false;
+      }
+
+      return _.last( this._availableSpots( _.head(this.spots, this.cursor) ) );
     },
 
     first: function() {
-      return this.focus(0);
+      return this.focus( _.first( this._availableSpots() ) );
     },
 
     last: function() {
-      return this.focus(this.spots.length-1);
+      return this.focus( _.last( this._availableSpots() ) );
+    },
+
+    _availableSpots: function(set) {
+      return _.filter(set || this.spots, function(spot) {
+        return spot.isOn('available');
+      });
     },
 
     /**
@@ -452,7 +472,7 @@
       this._prepared = false;
 
       this.current = spot;
-      this.cursor  = spot.index;
+      this.cursor  = _.indexOf(this.spots, spot);
 
       spot.focus(this.previous);
 
@@ -595,7 +615,7 @@
       }
       else if (index instanceof guide.Spot) {
         // We need to do the lookup because it might be a spot in another tour.
-        return _.find(this.spots || [], index);
+        return _.find(this.spots, index);
       }
 
       return null;

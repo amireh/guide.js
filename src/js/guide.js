@@ -131,7 +131,9 @@
     },
 
     allTours: function() {
-      return _.reject(this.tours, function(tour) { return !tour.spots.length; });
+      return _.filter(this.tours, function(tour) {
+        return tour.spots.length > 0 && tour.isOn('available');
+      });
     },
 
     /**
@@ -144,7 +146,7 @@
       var tour;
 
       tour =_.find(this.tours, function(tour) {
-        return tour.isOn('isDefault');
+        return tour.isOn('available') && tour.isOn('isDefault');
       });
 
       if (tour) {
@@ -152,14 +154,16 @@
       }
 
       tour =_.find(this.tours, function(tour) {
-        return tour.spots.length > 0;
+        return tour.isOn('available') && tour.spots.length > 0;
       });
 
       if (tour) {
         return tour;
       }
 
-      return this.tour || this.tours[0];
+      return this.tour || _.find(this.tours, function(tour) {
+        return tour.isOn('available');
+      });
     },
 
     /** @private */
@@ -179,6 +183,10 @@
 
       if (!(tour = this.getTour(id))) {
         throw 'guide.js: undefined tour "' + id + '", did you call #defineTour()?';
+      }
+      else if (!tour.isOn('available')) {
+        console.log('guide.js: tour', tour.id, 'is not available.');
+        return false;
       }
 
       // Must show first then start the tour.

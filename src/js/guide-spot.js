@@ -155,7 +155,9 @@
        * This callback will be invoked with the spot object being `thisArg`,
        * and will also receive the spot object as its second parameter.
        */
-      onDefocus: null
+      onDefocus: null,
+
+      available: true
     },
 
     templates: {
@@ -238,6 +240,10 @@
         $scrollAnchor: $el
       });
 
+      if (!_.isNumber(index) || index < 0) {
+        throw 'guide.js: bad spot index ' + index;
+      }
+
       this.setOptions(_.extend({},
         this.defaults,
         tour.getOptions('spots'),
@@ -299,7 +305,7 @@
      * Check if the target is currently existent *and* visible in the DOM.
      */
     isVisible: function() {
-      return this.$el.length && this.$el.is(':visible');
+      return this.isOn('available') && this.$el.length && this.$el.is(':visible');
     },
 
     /**

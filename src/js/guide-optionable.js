@@ -87,8 +87,18 @@
     /**
      * Retrieve a mutable set of the current options of the object.
      */
-    getOptions: function(scope) {
-      var set = _.extend({}, this.options['default'], this.options[Guide.platform]);
+    getOptions: function(scope, source) {
+      var set,
+          platform = Guide.platform;
+
+      source = source || this.options;
+
+      set = _.extend({}, source['default'], source[platform]);
+
+      if (set.overrides) {
+        _.extend(set, set.overrides[platform]);
+        delete set.overrides;
+      }
 
       if (scope) {
         return this.getOption(scope, set);

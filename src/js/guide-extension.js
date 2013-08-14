@@ -95,15 +95,23 @@
      *   3. the extensions' options specified in the current tour's option set
      */
     getOptions: function(tour) {
-      var key = this.id;
+      var set,
+          key = this.id;
 
       tour = tour || guide.tour;
 
-      return _.extend({},
+      set = _.extend({},
         this.options['default'],
         this.options[Guide.platform],
         Guide.getOptions()[key],
         tour ? tour.getOptions()[key] : null);
+
+      if (set.overrides) {
+        _.extend(set, set.overrides[Guide.platform]);
+        delete set.overrides;
+      }
+
+      return set;
     },
 
     /**
