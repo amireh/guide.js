@@ -42,15 +42,14 @@ describe("guide", function() {
     });
 
     it('should cleanly remove itself', function() {
-      var spot = mkSpot(), $el = spot.$el;
+      var $el = $('<div>');
+      var klasses = $el[0].className;
 
-      expect($el.data()).toEqual({
-        gjsSpot: spot
-      });
-
+      var spot = mkSpot($el);
       spot.remove();
 
-      expect($el.data()).toEqual({});
+      expect($el[0].className).toEqual(klasses);
+      $el.remove();
     });
 
     describe('Callbacks', function() {

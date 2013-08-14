@@ -145,6 +145,7 @@ a:visited {
 .example .edge .left-edge { position: absolute; left: 0; }
 .example .edge .right-edge { position: absolute; right: 0; }
 .example .edge .top-right-edge { position: absolute; top: 0; right: 0; }
+.example .edge .top-left-edge { position: absolute; top: 0; left: 0; }
 
 .slideshow #gjs_tutor {
   padding: 20px 10px;

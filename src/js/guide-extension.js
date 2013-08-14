@@ -7,6 +7,8 @@
    * @inheritable
    *
    * An interface, and some helpers, for extensions to mount inside guide.js.
+   *
+   * @alternateClassName Extension
    */
   var Extension = _.extend({}, guide.Optionable, {
     __initExtension: function() {
