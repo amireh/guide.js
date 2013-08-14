@@ -341,7 +341,7 @@
 
       RTL: false,
 
-      debug: true
+      debug: false
     },
 
     constructor: function() {
@@ -419,7 +419,9 @@
     },
 
     allTours: function() {
-      return _.reject(this.tours, function(tour) { return !tour.spots.length; });
+      return _.filter(this.tours, function(tour) {
+        return tour.spots.length > 0 && tour.isOn('available');
+      });
     },
 
     /**
@@ -432,7 +434,7 @@
       var tour;
 
       tour =_.find(this.tours, function(tour) {
-        return tour.isOn('isDefault');
+        return tour.isOn('available') && tour.isOn('isDefault');
       });
 
       if (tour) {
@@ -440,14 +442,16 @@
       }
 
       tour =_.find(this.tours, function(tour) {
-        return tour.spots.length > 0;
+        return tour.isOn('available') && tour.spots.length > 0;
       });
 
       if (tour) {
         return tour;
       }
 
-      return this.tour || this.tours[0];
+      return this.tour || _.find(this.tours, function(tour) {
+        return tour.isOn('available');
+      });
     },
 
     /** @private */
@@ -467,6 +471,10 @@
 
       if (!(tour = this.getTour(id))) {
         throw 'guide.js: undefined tour "' + id + '", did you call #defineTour()?';
+      }
+      else if (!tour.isOn('available')) {
+        console.log('guide.js: tour', tour.id, 'is not available.');
+        return false;
       }
 
       // Must show first then start the tour.
@@ -816,7 +824,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.5.0';
+  Guide.VERSION = '1.5.1';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -918,8 +926,18 @@
     /**
      * Retrieve a mutable set of the current options of the object.
      */
-    getOptions: function(scope) {
-      var set = _.extend({}, this.options['default'], this.options[Guide.platform]);
+    getOptions: function(scope, source) {
+      var set,
+          platform = Guide.platform;
+
+      source = source || this.options;
+
+      set = _.extend({}, source['default'], source[platform]);
+
+      if (set.overrides) {
+        _.extend(set, set.overrides[platform]);
+        delete set.overrides;
+      }
 
       if (scope) {
         return this.getOption(scope, set);
@@ -1074,15 +1092,23 @@
      *   3. the extensions' options specified in the current tour's option set
      */
     getOptions: function(tour) {
-      var key = this.id;
+      var set,
+          key = this.id;
 
       tour = tour || guide.tour;
 
-      return _.extend({},
+      set = _.extend({},
         this.options['default'],
         this.options[Guide.platform],
         Guide.getOptions()[key],
         tour ? tour.getOptions()[key] : null);
+
+      if (set.overrides) {
+        _.extend(set, set.overrides[Guide.platform]);
+        delete set.overrides;
+      }
+
+      return set;
     },
 
     /**
@@ -1201,7 +1227,9 @@
        * This callback will be invoked with the tour object being `thisArg`,
        * and will also receive the tour object as its second parameter.
        */
-      onStop: null
+      onStop: null,
+
+      available: true
     },
 
     constructor: function(label) {
@@ -1444,37 +1472,55 @@
      * Focuses the next spot, if any.
      */
     next: function() {
+      var nextSpot = this.hasNext();
+
       if (!this.hasNext()) {
         return false;
       }
 
-      return this.focus(this.cursor + 1);
+      return this.focus(nextSpot);
     },
 
     hasNext: function() {
       var ln = this.spots.length;
 
-      return ln !== 1 && this.cursor < ln-1;
-    },
-
-    prev: function() {
-      if (!this.hasPrev()) {
+      if (ln === 1 || this.cursor === ln - 1) {
         return false;
       }
 
-      return this.focus(this.cursor - 1);
+      return _.first( this._availableSpots( _.rest(this.spots, this.cursor + 1) ) );
+    },
+
+    prev: function() {
+      var prevSpot = this.hasPrev();
+
+      if (!prevSpot) {
+        return false;
+      }
+
+      return this.focus(prevSpot);
     },
 
     hasPrev: function() {
-      return this.spots.length !== 1 && this.cursor > 0;
+      if (this.spots.length === 1 || this.cursor === 0) {
+        return false;
+      }
+
+      return _.last( this._availableSpots( _.head(this.spots, this.cursor) ) );
     },
 
     first: function() {
-      return this.focus(0);
+      return this.focus( _.first( this._availableSpots() ) );
     },
 
     last: function() {
-      return this.focus(this.spots.length-1);
+      return this.focus( _.last( this._availableSpots() ) );
+    },
+
+    _availableSpots: function(set) {
+      return _.filter(set || this.spots, function(spot) {
+        return spot.isOn('available');
+      });
     },
 
     /**
@@ -1587,7 +1633,7 @@
       this._prepared = false;
 
       this.current = spot;
-      this.cursor  = spot.index;
+      this.cursor  = _.indexOf(this.spots, spot);
 
       spot.focus(this.previous);
 
@@ -1730,7 +1776,7 @@
       }
       else if (index instanceof guide.Spot) {
         // We need to do the lookup because it might be a spot in another tour.
-        return _.find(this.spots || [], index);
+        return _.find(this.spots, index);
       }
 
       return null;
@@ -1915,7 +1961,9 @@
        * This callback will be invoked with the spot object being `thisArg`,
        * and will also receive the spot object as its second parameter.
        */
-      onDefocus: null
+      onDefocus: null,
+
+      available: true
     },
 
     templates: {
@@ -1998,6 +2046,10 @@
         $scrollAnchor: $el
       });
 
+      if (!_.isNumber(index) || index < 0) {
+        throw 'guide.js: bad spot index ' + index;
+      }
+
       this.setOptions(_.extend({},
         this.defaults,
         tour.getOptions('spots'),
@@ -2059,7 +2111,7 @@
      * Check if the target is currently existent *and* visible in the DOM.
      */
     isVisible: function() {
-      return this.$el.length && this.$el.is(':visible');
+      return this.isOn('available') && this.$el.length && this.$el.is(':visible');
     },
 
     /**

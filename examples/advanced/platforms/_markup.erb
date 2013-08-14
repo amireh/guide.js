@@ -9,12 +9,16 @@
 
     <button id="seek">Seek</button>
     <button id="destroy">Destroy</button>
+
+    <div class="freespace"></div>
+    <p id="desktop_element">This will be visited only in desktop mode.</p>
   </div>
 </div>
 
 <script>
   $(function() {
     $('h1').hide();
+    $('body').css({ overflow: 'hidden' });
 
     guide.platform = "<%= platform %>";
     guide.setOptions({
@@ -22,7 +26,12 @@
         enabled: false
       },
       controls: {
-        enabled: false
+        enabled: false,
+        overrides: {
+          mobile: {
+            enabled: true
+          }
+        }
       },
       toggler: {
         enabled: false
@@ -47,6 +56,19 @@
       }
     });
 
+    guide.addSpot($('#desktop_element'), {
+      text: "You can only visit this spot while using a desktop.",
+      marker: {
+        position: 'bottom'
+      },
+
+      overrides: {
+        mobile: {
+          available: false
+        }
+      }
+    });
+
     guide.show();
 
     $('pre').html(JSON.stringify(
@@ -54,6 +76,7 @@
       null,
       2)
     );
+
     $('p#platform code').text(guide.platform);
   });
 </script>

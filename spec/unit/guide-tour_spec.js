@@ -209,6 +209,9 @@ describe("guide", function() {
         mkVisibleSpot();
         mkVisibleSpot();
 
+        xtour = tour;
+
+        // throw '';
         tour.start();
         tour.focus(1);
 
@@ -267,6 +270,32 @@ describe("guide", function() {
         expect(tour.last()).toBeTruthy();
         expect(tour.first()).toBeTruthy();
         expect(tour.last()).toBeTruthy();
+      });
+
+      it('should jump over an unavailable spot', function() {
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+        mkVisibleSpot();
+
+        tour.spots[2].setOptions({ available: false });
+
+        tour.start();
+
+        expect(tour.next()).toBeTruthy();
+        expect(tour.cursor).toEqual(1);
+        expect(tour.next()).toBeTruthy();
+        expect(tour.cursor).toEqual(3);
+        expect(tour.prev()).toBeTruthy();
+        expect(tour.cursor).toEqual(1);
+
+        tour.spots[3].setOptions({ available: false });
+
+        expect(tour.next()).toBeTruthy();
+        expect(tour.cursor).toEqual(4);
+        expect(tour.prev()).toBeTruthy();
+        expect(tour.cursor).toEqual(1);
       });
     });
 

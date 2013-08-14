@@ -23,7 +23,7 @@ module.exports = function(grunt) {
     watch: {
       scripts: {
         files: [ 'src/js/**/*' ],
-        tasks: [ 'jshint', 'concat', 'uglify', 'docs' ]
+        tasks: [ 'build', 'docs' ]
       },
 
       docs: {
@@ -173,6 +173,17 @@ module.exports = function(grunt) {
             replacement: "$1uide.VERSION = '<%= grunt.config.get('pkg.version') %>';"
           }]
         }
+      },
+      debug_flags: {
+        files: {
+          'dist/guide.js': [ 'dist/guide.js' ]
+        },
+        options: {
+          replacements: [{
+            pattern: /debug:(\s*)true/,
+            replacement: "debug:$1false"
+          }]
+        }
       }
     }
   });
@@ -190,9 +201,16 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-string-replace');
 
   grunt.registerTask('test', [ 'jsvalidate', 'jshint', 'jasmine' ]);
-  grunt.registerTask('build', [ 'concat', 'uglify', 'test', 'less' ]);
-  grunt.registerTask('docs', [ 'jsduck', 'docs_assets' ]);
+  grunt.registerTask('build', [
+    'test',
+    'concat',
+    'string-replace:debug_flags',
+    'uglify',
+    'test',
+    'less'
+  ]);
 
+  grunt.registerTask('docs', [ 'jsduck', 'docs_assets' ]);
   grunt.registerTask('default', ['test']);
 
   grunt.registerTask('updatePkg', function () {

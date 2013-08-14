@@ -28,14 +28,14 @@ describe("guide", function() {
     it('should be created', function() {
       $target.appendTo($('body'));
 
-      var spot = new guide.Spot($target, tour);
+      var spot = new guide.Spot($target, tour, 0);
 
       expect(spot).toBeTruthy();
       expect(spot.isVisible()).toBeTruthy();
     });
 
     it('should be created with a detached element', function() {
-      var spot = new guide.Spot($target, tour);
+      var spot = new guide.Spot($target, tour, 0);
 
       expect(spot).toBeTruthy();
       expect(spot.isVisible()).toBeFalsy();
