@@ -46,6 +46,8 @@
     '</div>'
   ].join('')),
 
+  JST_CONTAINER = _.template('<div style="position: relative;"></div>'),
+
   // Placement modes
   PMT_INLINE = 1,
   PMT_SIBLING = 2,
@@ -941,49 +943,43 @@
     wrap: function() {
       var $spot = this.spot.$el;
 
-      if (this.$container) {
+      if (this.isWrapped()) {
         this.unwrap();
       }
 
-      // Build the container:
-      this.$container =
-        $(this.options.mimic ?
-            // Instead of building a plain `<div/>`, we'll try to replicate the
-            // target element, so we won't break any CSS/JS that uses the tag as
-            // an identifier, we'll do that by cloning the tag and stripping
-            // some properties from it.
-            $spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div ') :
-            '<div />'
-        )
-        // Empty it, we only need the tag and its structure
-        .html('')
-        .attr({
-          'id': null,
+      // Build the container by either 'mimicking' the target, or by building
+      // a plain <div>:
+      if (this.options.mimic) {
+        // We'll try to replicate the target element, so we won't break any CSS/JS
+        // that uses the tag as an identifier, we'll do that by cloning the tag
+        // and stripping some of its properties.
+        this.$container =
+          $($spot[0].outerHTML.replace(/(<\/?)\w+\s/, '$1div '))
+          // Empty it, we only need the tag and its structure
+          .html('')
+          .attr({
+            'id': null,
+            // Remove any gjs- related classes from the container
+            'class': $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim()
+          })
+          // The container must be relatively positioned
+          .css({
+            position: 'relative'
+          });
+      }
+      else {
+        this.$container = $(JST_CONTAINER({}));
+      }
 
-          // Remove any gjs- related classes from the container
-          'class': this.options.mimic ?
-                   $spot[0].className.replace(/(gjs(\-?\w+)+)/g, '').trim() :
-                   ''
-        })
+      this.$container
+        // Classify it so the user can override its css if needed
+        .addClass('gjs-container gjs-container-' + (this.spot.index+1))
+        // Try to mimic the display type of the target element
         .css({
-          // Try to mimic the alignment of the target element
           display: this.options.mimicDisplay ? $spot.css('display') : 'inherit',
-
-          // The container must be relatively positioned, since
-          // we're positioning the marker using margins.
-          position: 'relative'
         })
-
-        .addClass('gjs-container-' + (this.spot.index+1))
-
-        // Set a flag so we can tell whether the spot target is
-        // already wrapped so that we will properly clean up
-        //
-        // See #isWrapped and #remove.
-        .data('gjs-container', true)
-
-        // Position the container right where the target is, and
-        // move the target and the marker inside of it.
+        // Place the container right where the target is, and
+        // move the target and (later) the marker inside of it.
         .insertBefore($spot)
         .append($spot);
 
