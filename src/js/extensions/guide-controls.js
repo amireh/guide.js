@@ -245,6 +245,10 @@
           .html(this.templates.tourList({ tours: guide.tours }))
           .toggle(guide.tours.length > 1)
           .find('[value="' + tour.id + '"]').prop('selected', true);
+
+        if (this.$tour_selector.children().length === 1) {
+          this.$tour_selector.hide();
+        }
       }
       else {
         this.$tour_selector.hide();
