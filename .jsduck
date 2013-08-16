@@ -18,6 +18,7 @@
         "classes": [
           "Guide.Markers",
           "Guide.Marker",
+          "Guide.SmartMarkers",
           "Guide.Toggler",
           "Guide.Tutor",
           "Guide.Controls"
@@ -25,7 +26,7 @@
       },
 
       {
-        "name": "Vendor Extensions",
+        "name": "Vendor Mods",
         "classes": [
           "jQuery",
           "jQuery.Event",

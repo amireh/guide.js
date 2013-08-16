@@ -22,17 +22,17 @@ module.exports = function(grunt) {
 
     watch: {
       scripts: {
-        files: [ 'src/js/**/*' ],
-        tasks: [ 'build', 'docs' ]
+        files: [ 'src/js/**/*.js' ],
+        tasks: [ 'build' ]
       },
 
       docs: {
-        files: [ 'docs/guides/**/*.md', 'docs/*' ],
+        files: [ 'src/js/**/*.js', 'docs/guides/**/*.md', 'docs/*', '.jsduck' ],
         tasks: [ 'docs' ]
       },
 
       css: {
-        files: [ 'src/css/**/*' ],
+        files: [ 'src/css/**/*.less' ],
         tasks: [ 'less', 'docs' ]
       }
     },

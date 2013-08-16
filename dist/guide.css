@@ -161,6 +161,9 @@
 
   /*.gjs-transition(background-color; 0.25s; ease-in);*/
 
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
   -webkit-transition: background-color 0.25s ease-in;
   -moz-transition: background-color 0.25s ease-in;
   -o-transition: background-color 0.25s ease-in;
@@ -242,6 +245,11 @@
   margin-right: 15px;
   top: 50%;
 }
+.gjs-marker.center {
+  left: 50%;
+  top: 50%;
+  text-align: center;
+}
 .gjs-marker.sibling-marker {
   position: absolute;
 }
@@ -305,7 +313,8 @@
   */
 
 }
-.gjs-marker:after {
+.gjs-marker:after,
+.gjs-marker .gjs-arrow {
   content: " ";
   position: absolute;
   display: block;
@@ -314,60 +323,73 @@
   opacity: 0.5;
 }
 .gjs-marker:hover:after,
-.gjs-marker.focused:after {
+.gjs-marker.focused:after,
+.gjs-marker:hover .gjs-arrow,
+.gjs-marker.focused .gjs-arrow {
   opacity: 1;
 }
-.gjs-marker.topleft:after {
+.gjs-marker.topleft:after,
+.gjs-marker.topleft .gjs-arrow {
   border-top: 15px solid rgba(51, 181, 229, 0.3);
   border-right: 15px solid transparent;
   bottom: -15px;
   left: 0;
 }
-.gjs-marker.top:after {
+.gjs-marker.top:after,
+.gjs-marker.top .gjs-arrow {
   border: 8.5px solid transparent;
   border-top: 15px solid rgba(51, 181, 229, 0.3);
   bottom: -23px;
   left: 50%;
   margin-left: -7.5px;
 }
-.gjs-marker.topright:after {
+.gjs-marker.topright:after,
+.gjs-marker.topright .gjs-arrow {
   border-top: 15px solid rgba(51, 181, 229, 0.3);
   border-right: 15px solid transparent;
   bottom: -15px;
   right: 0;
 }
-.gjs-marker.right:after {
+.gjs-marker.right:after,
+.gjs-marker.right .gjs-arrow {
   border: 8.5px solid transparent;
   border-right: 15px solid rgba(51, 181, 229, 0.3);
   left: -23px;
   top: 50%;
   margin-top: -7.5px;
 }
-.gjs-marker.bottomright:after {
+.gjs-marker.bottomright:after,
+.gjs-marker.bottomright .gjs-arrow {
   border-bottom: 15px solid rgba(51, 181, 229, 0.3);
   border-right: 15px solid transparent;
   right: 0;
   top: -15px;
 }
-.gjs-marker.bottom:after {
+.gjs-marker.bottom:after,
+.gjs-marker.bottom .gjs-arrow {
   border: 8.5px solid transparent;
   border-bottom: 15px solid rgba(51, 181, 229, 0.3);
   left: 50%;
   top: -23px;
   margin-left: -7.5px;
 }
-.gjs-marker.bottomleft:after {
+.gjs-marker.bottomleft:after,
+.gjs-marker.bottomleft .gjs-arrow {
   border-bottom: 15px solid rgba(51, 181, 229, 0.3);
   border-right: 15px solid transparent;
   left: 0;
   top: -15px;
 }
-.gjs-marker.left:after {
+.gjs-marker.left:after,
+.gjs-marker.left .gjs-arrow {
   border: 8.5px solid transparent;
   border-left: 15px solid rgba(51, 181, 229, 0.3);
   right: -23px;
   top: 50%;
   margin-top: -7.5px;
+}
+.gjs-marker.no-arrow:after {
+  display: none;
 }
 #gjs_controls {
   position: fixed;

@@ -299,10 +299,10 @@
 
   /**
    * @class Guide
-   * The primary interface for creating and managing guide.js tours.
-   *
    * @mixins Guide.Optionable
    * @singleton
+   *
+   * The primary interface for creating and managing guide.js tours.
    */
   Guide = function() {
     this.constructor.apply(this, arguments);
@@ -621,7 +621,14 @@
       var
       $tour   = $ref.parents('[data-guide-tour]:first'),
       $target = $($ref.detach().attr('data-guide-spot')),
+      caption = $ref.attr('data-guide-caption'),
       options = _.parseOptions($ref.attr('data-guide-options'));
+
+      if (caption) {
+        _.extend(options, {
+          caption: caption
+        });
+      }
 
       this.fromNode($target, _.extend(options, {
         text: $ref.attr('data-guide-spot', null)[0].outerHTML,
@@ -824,7 +831,7 @@
   }); // guide.prototype
 
   Guide = new Guide();
-  Guide.VERSION = '1.5.1';
+  Guide.VERSION = '1.5.2';
 
   // expose the instance to everybody
   if (typeof exports !== 'undefined') {
@@ -1002,6 +1009,7 @@
    * @class Guide.Extension
    * @mixins Guide.Optionable
    * @inheritable
+   * @abstract
    *
    * An interface, and some helpers, for extensions to mount inside guide.js.
    *
@@ -1137,6 +1145,8 @@
      * implementation exists.
      *
      * This method is implicitly called in Guide#refresh and Optionable#setOptions.
+     *
+     * @template
      */
     refresh: function() {
     },
@@ -1147,13 +1157,21 @@
      *
      * The stock #reset behaviour merely resets the Extension's options to
      * their defaults.
+     *
+     * @template
      */
     reset: function() {
       this.options = {};
       this.setOptions(this.defaults);
     },
 
-    remove: function() {}
+    /**
+     * Uninstall the extension.
+     *
+     * @template
+     */
+    remove: function() {
+    }
   });
 
   guide.Extension = Extension;
@@ -1165,6 +1183,7 @@
   var
   /**
    * @class Guide.Tour
+   * @mixins Guide.Optionable
    *
    * A guide.js tour is a collection of {@link Spot tour spots} which provides
    * an interface for navigating between the spots and focusing them.
@@ -1246,7 +1265,7 @@
         id: label, // TODO: unique constraints on tour IDs
 
         options: {
-          'default': _.extend({}, this.defaults, guide.getOptions('tours'))
+          'default': _.merge({}, this.defaults, guide.getOptions('tours'))
         },
 
         spots: [],
@@ -1300,6 +1319,27 @@
       }
 
       this.active = true;
+
+      /**
+       * @event starting
+       *
+       * Fired when the tour is starting, ie: no spots have yet been highlighted
+       * or focused.
+       *
+       * **This event is triggered on the tour delegator, Tour#$.**
+       *
+       * @param {Tour} tour This tour.
+       */
+      this.$.triggerHandler('starting', [ this ]);
+
+      /**
+       * @event starting_tours
+       *
+       * See Tour#event-starting.
+       *
+       * **This event is triggered on Guide#$, the guide event delegator.**
+       */
+      guide.$.triggerHandler('starting.tours', [ this ]);
 
       // Ask the spots to highlight themselves if they should; see Spot#highlight
       _.invoke(this.spots, 'highlight');
@@ -1521,6 +1561,22 @@
       return _.filter(set || this.spots, function(spot) {
         return spot.isOn('available');
       });
+    },
+
+    rebuild: function() {
+      this._rebuilding = true;
+
+      _.each(this.spots, function(spot) {
+        spot.$.triggerHandler('remove', [ spot ]);
+        spot.__rebuild();
+      }, this);
+
+      _.each(this.spots, function(spot) {
+        this.$.triggerHandler('add', [ spot ]);
+        guide.$.triggerHandler('add', [ spot ]);
+      }, this);
+
+      this._rebuilding = false;
     },
 
     /**
@@ -1786,6 +1842,10 @@
      * @private
      */
     __removeSpot: function(e, spot) {
+      if (this._rebuilding) {
+        return;
+      }
+
       this.spots = _.without(this.spots, spot);
 
       if (spot === this.current) {
@@ -1810,6 +1870,7 @@
 
   /**
    * @class Guide.Spot
+   * @mixins Guide.Optionable
    *
    * A tour spot represents an element in the DOM that will be visited in a
    * {@link Tour tour}.
@@ -2050,7 +2111,7 @@
         throw 'guide.js: bad spot index ' + index;
       }
 
-      this.setOptions(_.extend({},
+      this.setOptions(_.merge({},
         this.defaults,
         tour.getOptions('spots'),
         options));
@@ -2088,7 +2149,7 @@
     },
 
     getText: function() {
-      return this.text;
+      return this.getOption('text');
     },
 
     hasText: function() {
@@ -2096,7 +2157,7 @@
     },
 
     getCaption: function() {
-      return this.caption;
+      return this.getOption('caption');
     },
 
     hasCaption: function() {
@@ -2355,6 +2416,12 @@
       }
 
       return this;
+    },
+
+    __rebuild: function() {
+      this.setOptions(_.extend({},
+        this.defaults,
+        this.tour.getOptions('spots')));
     },
 
     setScrollAnchor: function($el) {
@@ -2694,6 +2761,7 @@
   /**
    * @class Guide.Markers
    * @extends Guide.Extension
+   * @singleton
    *
    * A guide.js extension that provides interactive {@link Marker markers} that
    * can be attached to {@link Spot tour spots}.
@@ -2750,7 +2818,8 @@
   POS_BR  = 5,
   POS_B   = 6,
   POS_BL  = 7,
-  POS_L   = 8;
+  POS_L   = 8,
+  POS_C   = 9;
 
   _.extend(Extension.prototype, guide.Extension, {
     id: 'markers',
@@ -2883,6 +2952,7 @@
 
   /**
    * @class Guide.Marker
+   * @mixins Guide.Optionable
    *
    * A single marker object attached to a Tour Spot. Markers show up around
    * a tour spot, and can show the index of the spot, its content when highlighted,
@@ -3069,6 +3139,7 @@
         case 'bottom':      this.position = POS_B; break;
         case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
         case 'left':        this.position = rtl ? POS_R   : POS_L; break;
+        case 'center':      this.position = POS_C; break;
         default:
           throw 'guide-marker.js: bad position "' + options.position + '"';
       }
@@ -3197,6 +3268,9 @@
         }
 
         guide.$.triggerHandler('marked.gjs_markers', [ this ]);
+      } else if (this.withText) {
+        this.$text.hide();
+        this.$caption.hide();
       }
 
       // Mark the spot as being highlighted by a marker
@@ -3432,7 +3506,7 @@
      * positions `POS_L` and `POS_R` will cause vertical centering.
      */
     hvCenter: function() {
-      var dir, center,
+      var center,
           $marker = this.$el,
           margin  = 0,
           origin  = this.spot.$el.offset(),
@@ -3444,32 +3518,27 @@
             vh: $(window).height()  - 20
           };
 
-      switch(this.position) {
-        case POS_T:
-        case POS_B:
-          dir = 'left';
-          center = ($marker.outerWidth() / 2);
-          margin = -1 * center;
+      if (_.contains( [ POS_T, POS_C, POS_B ], this.position)) {
+        center = ($marker.outerWidth() / 2);
+        margin = -1 * center;
 
-          // if (origin.left < center) {
-            // margin = -1 * (center - origin.left) / 2;
-          // }
-          // else if (origin.left + query.w > query.vw) {
-          if (origin.left + query.w > query.vw) {
-            margin = -1 * (origin.left + query.w - query.vw);
-          }
+        // if (origin.left < center) {
+          // margin = -1 * (center - origin.left) / 2;
+        // }
+        // else if (origin.left + query.w > query.vw) {
+        if (origin.left + query.w > query.vw) {
+          margin = -1 * (origin.left + query.w - query.vw);
+        }
 
-        break;
-
-        case POS_R:
-        case POS_L:
-          dir = 'top';
-          center = ($marker.outerHeight() / 2);
-          margin = -1 * center;
-        break;
+        $marker.css('margin-left', margin);
       }
 
-      $marker.css('margin-' + dir, margin);
+      if (_.contains( [ POS_R, POS_C, POS_L ], this.position)) {
+        center = ($marker.outerHeight() / 2);
+        margin = -1 * center;
+
+        $marker.css('margin-top', margin);
+      }
     },
 
     negateMargins: function() {
@@ -3588,6 +3657,10 @@
           offset.top  += (anchorHeight / 2) - (markerHeight/2);
           offset.left -= markerWidth + margin;
         break;
+        case POS_C:
+          offset.top -= anchorHeight/2;
+          offset.left += -1*markerWidth/2 + anchorWidth/2;
+          break;
       }
 
       // Move the marker.
@@ -3744,6 +3817,138 @@
 
 })(_, jQuery, window.guide);
 
+(function(_, $, guide, MarkersExt) {
+  'use strict';
+
+  if (!MarkersExt) {
+    throw 'guide.js: Smart Markers requires the Markers extension to be loaded.';
+  }
+
+  var
+  /**
+   * @class Guide.SmartMarkers
+   * @extends Guide.Extension
+   * @singleton
+   *
+   * A an extension that adds a "smartness" layer to {@link Guide.Marker guide.js markers}.
+   */
+  Extension = function() {
+    return this.constructor();
+  },
+  JST_ARROW = _.template([
+    '<div class="gjs-arrow"></div>'
+  ].join(''));
+
+  _.extend(Extension.prototype, guide.Extension, {
+    defaults: {
+      enabled: true,
+
+      /**
+       * @cfg {Boolean} [adjustArrows=true]
+       * Re-position the marker's arrow to always point at the middle of the
+       * target.
+       */
+      adjustArrows: true,
+
+      arrowDim: 15
+    },
+
+    id: 'smart_markers',
+
+    constructor: function() {
+      return this;
+    },
+
+    install: function() {
+      guide.$.on(this.nsEvent('starting.tours'), _.bind(function(e, tour) {
+        if (this.isEnabled(tour)) {
+          this.onTourStarting(tour);
+
+          // Bind the clean-up handler to the tour stop event, if implemented:
+          if (this.onTourStop) {
+            tour.$.one(this.nsEvent('stop'), _.bind(this.onTourStop, this, tour));
+          }
+        }
+      }, this));
+    },
+
+    onTourStarting: function() {
+      if (this.isOn('adjustArrows')) {
+        guide.$.on(this.nsEvent('marked.gjs_markers'), _.bind(function(e, marker) {
+          _.defer(_.bind(this.adjustArrows, this, e, marker));
+        }, this));
+      }
+    },
+
+    onTourStop: function() {
+      guide.$.off(this.nsEvent('marked.gjs_markers'));
+    },
+
+    adjustArrows: function(e, marker) {
+      if (!marker.canShow() || !marker.$el) {
+        return false;
+      }
+
+      var
+      adjusted = false,
+      // the arrow we might be creating and aligning
+      $arrow,
+      // the size of the arrow
+      arrowDim = this.getOption('arrowDim'),
+      $marker = marker.$el,
+      $spot = marker.spot.$el,
+      // a query object we'll be using later
+      q = {},
+      // the marker's position
+      position = marker.positionToString(marker.position);
+
+      if (_.contains([ 'top', 'bottom' ], position)) {
+        $arrow = $marker.$arrow;
+
+        q = {
+          marker: {
+            width: $marker.outerWidth(),
+            offset: $marker.offset()
+          },
+          spot: {
+            width: $spot.outerWidth(),
+            offset: $spot.offset()
+          }
+        };
+
+        // If the marker's centre point is farther to the right than where the
+        // target is (from a horizontal axis, offset.left),
+        // then we need to move the arrow to the center of the target.
+        //
+        if (q.marker.offset.left + q.marker.width / 2 + arrowDim >= q.spot.offset.left ) {
+          if (!$arrow) {
+            $arrow = $( JST_ARROW({}) ).addClass(position).appendTo($marker);
+            $marker.addClass('no-arrow');
+
+            // We'll keep a reference so we don't re-create the arrow
+            marker.$arrow = $arrow;
+          }
+
+          // Centre the arrow
+          $arrow.css('left', (q.spot.offset.left - q.marker.offset.left) + q.spot.width / 2);
+          adjusted = true;
+        } else {
+          if ($arrow) {
+            $marker.removeClass('no-arrow');
+            $arrow.remove();
+
+            delete marker.$arrow;
+          }
+        }
+      }
+
+      return adjusted;
+    }
+  });
+
+  guide.addExtension(new Extension());
+})(_, jQuery, window.guide, window.guide.getExtension('markers'));
+
 (function(_, $, guide) {
   'use strict';
 
@@ -3751,6 +3956,7 @@
   /**
    * @class Guide.Toggler
    * @extends Guide.Extension
+   * @singleton
    *
    * A guide.js extension that installs a toggle button that plays and stops tours.
    */
@@ -3865,6 +4071,7 @@
   /**
    * @class Guide.Tutor
    * @extends Guide.Extension
+   * @singleton
    *
    * A widget that displays the focused spot's content in a static
    * place on the bottom of the page.

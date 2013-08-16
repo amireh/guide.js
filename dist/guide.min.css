@@ -6,7 +6,7 @@
 #gjs_tutor .bwd{-webkit-transform:rotate(-180deg) scale(1) skewX(0) skewY(0) translate(0);-moz-transform:rotate(-180deg) scale(1) skewX(0) skewY(0) translate(0);-o-transform:rotate(-180deg) scale(1) skewX(0) skewY(0) translate(0);-ms-transform:rotate(-180deg) scale(1) skewX(0) skewY(0) translate(0);transform:rotate(-180deg) scale(1) skewX(0) skewY(0) translate(0)}
 #gjs_tutor span{background:rgba(51,181,229,0.95);-webkit-border-radius:3px;-moz-border-radius:3px;-o-border-radius:3px;border-radius:3px;display:inline-block;font-size:32px;height:46px;line-height:50px;overflow:hidden;vertical-align:middle;text-align:center;width:50px}
 #gjs_tutor.spanner{left:0;right:0;-webkit-border-radius:0;-moz-border-radius:0;-o-border-radius:0;border-radius:0}#gjs_tutor.spanner #gjs_close_tutor{top:auto;bottom:10px;right:10px}
-.gjs-marker{color:white;background-color:#33b5e5;background:rgba(51,181,229,0.3);text-decoration:none;font-size:12px;line-height:1.4;text-shadow:none;-webkit-transition:background-color 0.25s ease-in;-moz-transition:background-color 0.25s ease-in;-o-transition:background-color 0.25s ease-in;-ms-transition:background-color 0.25s ease-in;transition:background-color 0.25s ease-in;cursor:pointer;padding:10px;display:inline-block;z-index:102;}.gjs-marker .index{font-size:32px}
+.gjs-marker{color:white;background-color:#33b5e5;background:rgba(51,181,229,0.3);text-decoration:none;font-size:12px;line-height:1.4;text-shadow:none;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;-webkit-transition:background-color .25s ease-in;-moz-transition:background-color .25s ease-in;-o-transition:background-color .25s ease-in;-ms-transition:background-color .25s ease-in;transition:background-color .25s ease-in;cursor:pointer;padding:10px;display:inline-block;z-index:102;}.gjs-marker .index{font-size:32px}
 .gjs-marker .caption,.gjs-marker .text{display:none;color:#fff;white-space:normal;cursor:inherit}
 .gjs-marker:hover,.gjs-marker.focused{z-index:106;background:rgba(51,181,229,0.95)}
 .gjs-marker.focused{cursor:auto}
@@ -18,6 +18,7 @@
 .gjs-marker.inline-marker.bottom{top:100%;margin-top:15px;left:50%}
 .gjs-marker.inline-marker.bottomleft{top:100%;margin-top:15px;left:0}
 .gjs-marker.inline-marker.left{right:100%;margin-right:15px;top:50%}
+.gjs-marker.center{left:50%;top:50%;text-align:center}
 .gjs-marker.sibling-marker{position:absolute}.gjs-marker.sibling-marker.topleft{bottom:100%;left:0;margin-bottom:15px}
 .gjs-marker.sibling-marker.top{bottom:100%;left:50%;margin-bottom:15px}
 .gjs-marker.sibling-marker.topright{right:0;bottom:100%;margin-bottom:15px}
@@ -27,16 +28,17 @@
 .gjs-marker.sibling-marker.bottomright{top:100%;right:0;margin-top:15px}
 .gjs-marker.sibling-marker.left{right:100%;top:50%;margin-right:15px}
 .gjs-marker.overlay-marker{position:absolute}
-.gjs-marker{}.gjs-marker:after{content:" ";position:absolute;display:block;height:0;width:0;opacity:0.5}
-.gjs-marker:hover:after,.gjs-marker.focused:after{opacity:1}
-.gjs-marker.topleft:after{border-top:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;bottom:-15px;left:0}
-.gjs-marker.top:after{border:8.5px solid transparent;border-top:15px solid rgba(51,181,229,0.3);bottom:-23px;left:50%;margin-left:-7.5px}
-.gjs-marker.topright:after{border-top:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;bottom:-15px;right:0}
-.gjs-marker.right:after{border:8.5px solid transparent;border-right:15px solid rgba(51,181,229,0.3);left:-23px;top:50%;margin-top:-7.5px}
-.gjs-marker.bottomright:after{border-bottom:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;right:0;top:-15px}
-.gjs-marker.bottom:after{border:8.5px solid transparent;border-bottom:15px solid rgba(51,181,229,0.3);left:50%;top:-23px;margin-left:-7.5px}
-.gjs-marker.bottomleft:after{border-bottom:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;left:0;top:-15px}
-.gjs-marker.left:after{border:8.5px solid transparent;border-left:15px solid rgba(51,181,229,0.3);right:-23px;top:50%;margin-top:-7.5px}
+.gjs-marker{}.gjs-marker:after,.gjs-marker .gjs-arrow{content:" ";position:absolute;display:block;height:0;width:0;opacity:0.5}
+.gjs-marker:hover:after,.gjs-marker.focused:after,.gjs-marker:hover .gjs-arrow,.gjs-marker.focused .gjs-arrow{opacity:1}
+.gjs-marker.topleft:after,.gjs-marker.topleft .gjs-arrow{border-top:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;bottom:-15px;left:0}
+.gjs-marker.top:after,.gjs-marker.top .gjs-arrow{border:8.5px solid transparent;border-top:15px solid rgba(51,181,229,0.3);bottom:-23px;left:50%;margin-left:-7.5px}
+.gjs-marker.topright:after,.gjs-marker.topright .gjs-arrow{border-top:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;bottom:-15px;right:0}
+.gjs-marker.right:after,.gjs-marker.right .gjs-arrow{border:8.5px solid transparent;border-right:15px solid rgba(51,181,229,0.3);left:-23px;top:50%;margin-top:-7.5px}
+.gjs-marker.bottomright:after,.gjs-marker.bottomright .gjs-arrow{border-bottom:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;right:0;top:-15px}
+.gjs-marker.bottom:after,.gjs-marker.bottom .gjs-arrow{border:8.5px solid transparent;border-bottom:15px solid rgba(51,181,229,0.3);left:50%;top:-23px;margin-left:-7.5px}
+.gjs-marker.bottomleft:after,.gjs-marker.bottomleft .gjs-arrow{border-bottom:15px solid rgba(51,181,229,0.3);border-right:15px solid transparent;left:0;top:-15px}
+.gjs-marker.left:after,.gjs-marker.left .gjs-arrow{border:8.5px solid transparent;border-left:15px solid rgba(51,181,229,0.3);right:-23px;top:50%;margin-top:-7.5px}
+.gjs-marker.no-arrow:after{display:none}
 #gjs_controls{position:fixed;height:32px;line-height:32px;-webkit-box-sizing:content-box;-moz-box-sizing:content-box;box-sizing:content-box;bottom:0;left:0;right:0;text-align:center;padding:5px 10px;overflow-x:auto;overflow-y:hidden;white-space:nowrap;z-index:104;background:rgba(0,0,0,0.85)}#gjs_controls *{line-height:18px}
 #gjs_controls div{display:inline-block;vertical-align:middle}
 #gjs_controls button{-webkit-appearance:none;-moz-appearance:none;-o-appearance:none;appearance:none;-webkit-box-shadow:0 0 1px 0 #121212;-moz-box-shadow:0 0 1px 0 #121212;-o-box-shadow:0 0 1px 0 #121212;box-shadow:0 0 1px 0 #121212;border:1px solid rgba(255,255,255,0.1);background:#2a2a2a;color:white;padding:0px 10px;font-size:10px;font-weight:bold;margin:0 5px 0 0;cursor:pointer;height:auto;text-shadow:none}#gjs_controls button:hover{background:#333}
