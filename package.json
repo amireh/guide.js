@@ -1,5 +1,5 @@
 {
-  "name": "guide",
+  "name": "user-guide",
   "description": "Elegant, interactive, and dynamic JavaScript user guides and tutorials.",
   "version": "1.5.2",
   "homepage": "https://github.com/amireh/guide.js",
@@ -25,11 +25,17 @@
     "url": "git://github.com/amireh/guide.js.git"
   },
   "bugs": {
-    "url": "https://github.com/amireh/guide.js/issues"
+    "url": "https://github.com/amireh/guide.js/issues",
+    "email": "ahmad@amireh.net"
   },
   "main": "dist/guide.js",
   "scripts": {
-    "test": "grunt test"
+    "test": "grunt test",
+    "install": "grunt build"
+  },
+  "directories": {
+    "lib": "src/js",
+    "example": "examples"
   },
   "devDependencies": {
     "grunt": "~0.4.0",
