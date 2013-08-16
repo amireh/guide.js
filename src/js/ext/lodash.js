@@ -1,7 +1,7 @@
 /**
  * @class lodash
  *
- * guide.js lodash extensions
+ * Guide.js lodash extensions
  */
 (function(_, undefined) {
   'use strict';
@@ -16,7 +16,7 @@
       ext = EXTENSIONS[ext_iter];
 
       if (undefined !== _[ext]) {
-        throw 'guide.js: existing _.' + ext + ' implementation!';
+        throw 'Guide.js: existing _.' + ext + ' implementation!';
       }
     }
   }());

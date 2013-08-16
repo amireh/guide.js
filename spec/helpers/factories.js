@@ -13,7 +13,7 @@ specCallbacks.push(function() {
 
 function mkSpot($inEl, inTour, options) {
   var $el   = $inEl,
-      tour  = inTour || guide.tour;
+      tour  = inTour || Guide.tour;
 
   if (!$el) {
     $el = $('<div [data-spec]>Fixture</div>');
@@ -33,7 +33,7 @@ function mkVisibleSpot($el, tour, options) {
 
 function mkBlankSpot($inEl, inTour) {
   var $el = $inEl || $('<div [data-spec]>Fixture</div>')
-      tour = inTour || guide.tour;
+      tour = inTour || Guide.tour;
 
-  return new guide.Spot($el, tour, tour.spots.length);
+  return new Guide.Spot($el, tour, tour.spots.length);
 };

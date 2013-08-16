@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   /**
@@ -8,7 +8,6 @@
    * @alternateClassName Optionable
    */
   var
-  Guide = guide,
   Optionable = {
 
     /**
@@ -34,7 +33,7 @@
         options = _.parseOptions(options);
       }
       else if (!_.isObject(options)) {
-        throw 'guide.js: bad options passed to #setOptions; expected an Object' +
+        throw 'Guide.js: bad options passed to #setOptions; expected an Object' +
               ' or a String, but got: ' + typeof(options);
       }
 
@@ -134,7 +133,7 @@
      * Define a new option that the object will understand from now on.
      *
      * This is useful for extensions that enable new options to be assigned on
-     * core guide.js entities.
+     * core Guide.js entities.
      *
      * @param {String} key          The option key.
      * @param {Mixed} default_value The default, *and initial*, value to assign.
@@ -149,9 +148,13 @@
   };
 
   // expose the Optionable interface for other components to re-use
-  guide.Optionable = Optionable;
+  Guide.Optionable = Optionable;
 
   // guide itself requires this functionality so we add it manually
-  _.extend(guide, _.omit(Optionable, 'defaults'));
-  guide.setOptions(guide.defaults);
-})(_, jQuery, window.guide);
+  _.extend(Guide, _.omit(Optionable, 'defaults'), {
+    options: {
+      defaults: Guide.defaults
+    }
+  });
+  // Guide.setOptions(Guide.defaults, null, true);
+})(_, jQuery, window.Guide);

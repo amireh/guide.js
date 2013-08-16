@@ -1,13 +1,13 @@
-describe("guide", function() {
+describe("Guide", function() {
   describe("Extension", function() {
     var e;
 
     beforeEach(function() {
-      guide.reset();
+      Guide.reset();
 
       e = new Object();
 
-      _.extend(e, guide.Extension, {
+      _.extend(e, Guide.Extension, {
         id: 'mock_extension'
       });
 
@@ -24,10 +24,10 @@ describe("guide", function() {
       expect(e.isEnabled()).toBeFalsy();
     });
 
-    it("should enable and disable based on guide config", function() {
+    it("should enable and disable based on Guide config", function() {
       expect(e.isEnabled()).toBeTruthy();
 
-      guide.setOptions({
+      Guide.setOptions({
         mock_extension: {
           enabled: false
         }
@@ -37,7 +37,7 @@ describe("guide", function() {
     });
 
     it("should enable and disable based on current tour config", function() {
-      var tour = guide.tour;
+      var tour = Guide.tour;
 
       expect(e.isEnabled()).toBeTruthy();
 
@@ -49,13 +49,13 @@ describe("guide", function() {
 
       tour.addSpot($('<div />'), { text: 'Hello' });
 
-      guide.runTour('Default Tour');
+      Guide.runTour('Default Tour');
 
       expect(e.isEnabled()).toBeFalsy();
     });
 
     it("should enable and disable based on any tour config", function() {
-      var tour = guide.tour;
+      var tour = Guide.tour;
 
       expect(e.isEnabled()).toBeTruthy();
 
@@ -69,25 +69,25 @@ describe("guide", function() {
     });
 
     it("should prioritize options", function() {
-      var tour = guide.tour;
+      var tour = Guide.tour;
 
-      // guide config > self config
+      // Guide config > self config
       e.setOptions({ enabled: false });
       expect(e.isEnabled()).toBeFalsy();
-      guide.setOptions({ mock_extension: { enabled: true } });
+      Guide.setOptions({ mock_extension: { enabled: true } });
       expect(e.isEnabled()).toBeTruthy();
-      guide.setOptions({ mock_extension: { enabled: false } });
+      Guide.setOptions({ mock_extension: { enabled: false } });
       e.setOptions({ enabled: true });
       expect(e.isEnabled()).toBeFalsy();
 
-      // tour config > guide config
+      // tour config > Guide config
       tour.setOptions({ mock_extension: { enabled: true } });
-      guide.setOptions({ mock_extension: { enabled: false } });
+      Guide.setOptions({ mock_extension: { enabled: false } });
       e.setOptions({ enabled: false });
       expect(e.isEnabled(tour)).toBeTruthy();
 
       tour.setOptions({ mock_extension: { enabled: false } });
-      guide.setOptions({ mock_extension: { enabled: true } });
+      Guide.setOptions({ mock_extension: { enabled: true } });
       e.setOptions({ enabled: true });
       expect(e.isEnabled(tour)).toBeFalsy();
     });

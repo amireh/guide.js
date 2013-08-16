@@ -12,7 +12,7 @@
   $("#show_spot").on('click', function() {
     $(this).after($('<p id="invisible">Hi there.</p>'));
     $(this).off('click');
-    guide.refresh();
+    Guide.refresh();
   });
 
   $("#add_spot").on('click', function() {
@@ -21,18 +21,18 @@
 
     $('#spots').append($('<li>dynamic element#' + (index+1) + '</li>'));
 
-    guide.addSpot($("#spots li:last"), {
+    Guide.addSpot($("#spots li:last"), {
       text: "This element has been created dynamically and added to the tour.",
       marker: {
         position: left ? 'left' : 'right'
       }
     });
 
-    guide.refresh();
+    Guide.refresh();
   });
 
   $(function() {
-    guide.addSpot($("#invisible"), {
+    Guide.addSpot($("#invisible"), {
       text: "This element has been added as a tour spot even though it did" +
             " not exist at the time the tour was started.",
       marker: {
@@ -41,18 +41,18 @@
       }
     });
 
-    guide.setOptions({
+    Guide.setOptions({
       tutor: { enabled: false }
     });
 
-    guide.fromDOM();
-    guide.show();
-    guide.tour.setOptions({
+    Guide.fromDOM();
+    Guide.show();
+    Guide.tour.setOptions({
       alwaysHighlight: false,
       alwaysMark: false
     });
 
-    guide.refresh();
+    Guide.refresh();
   });
 </script>
 

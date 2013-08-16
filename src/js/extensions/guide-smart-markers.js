@@ -1,9 +1,5 @@
-(function(_, $, guide, MarkersExt) {
+(function(_, $, Guide) {
   'use strict';
-
-  if (!MarkersExt) {
-    throw 'guide.js: Smart Markers requires the Markers extension to be loaded.';
-  }
 
   var
   /**
@@ -11,7 +7,7 @@
    * @extends Guide.Extension
    * @singleton
    *
-   * A an extension that adds a "smartness" layer to {@link Guide.Marker guide.js markers}.
+   * A an extension that adds a "smartness" layer to {@link Guide.Marker Guide.js markers}.
    */
   Extension = function() {
     return this.constructor();
@@ -20,7 +16,7 @@
     '<div class="gjs-arrow"></div>'
   ].join(''));
 
-  _.extend(Extension.prototype, guide.Extension, {
+  _.extend(Extension.prototype, Guide.Extension, {
     defaults: {
       enabled: true,
 
@@ -41,7 +37,11 @@
     },
 
     install: function() {
-      guide.$.on(this.nsEvent('starting.tours'), _.bind(function(e, tour) {
+      if (!Guide.getExtension('markers')) {
+        throw 'Guide.js: Smart Markers requires the Markers extension to be loaded.';
+      }
+
+      Guide.$.on(this.nsEvent('starting.tours'), _.bind(function(e, tour) {
         if (this.isEnabled(tour)) {
           this.onTourStarting(tour);
 
@@ -55,14 +55,14 @@
 
     onTourStarting: function() {
       if (this.isOn('adjustArrows')) {
-        guide.$.on(this.nsEvent('marked.gjs_markers'), _.bind(function(e, marker) {
+        Guide.$.on(this.nsEvent('marked.gjs_markers'), _.bind(function(e, marker) {
           _.defer(_.bind(this.adjustArrows, this, e, marker));
         }, this));
       }
     },
 
     onTourStop: function() {
-      guide.$.off(this.nsEvent('marked.gjs_markers'));
+      Guide.$.off(this.nsEvent('marked.gjs_markers'));
     },
 
     adjustArrows: function(e, marker) {
@@ -127,5 +127,5 @@
     }
   });
 
-  guide.addExtension(new Extension());
-})(_, jQuery, window.guide, window.guide.getExtension('markers'));
+  Guide.addExtension(new Extension());
+})(_, jQuery, window.Guide);

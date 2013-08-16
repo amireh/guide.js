@@ -1,13 +1,13 @@
 describe("Extensions", function() {
   describe("Controls", function() {
-    var ext = guide.getExtension('controls');
+    var ext = Guide.getExtension('controls');
     var tour;
 
     var fixtureTour = function(nrSpots) {
       var nrSpots = nrSpots || 5,
           i = 0;
 
-      tour = guide.defineTour('Controls Fixture').setOptions({
+      tour = Guide.defineTour('Controls Fixture').setOptions({
         controls: {
           enabled: true
         }

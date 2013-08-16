@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   /**
@@ -7,16 +7,15 @@
    * @inheritable
    * @abstract
    *
-   * An interface, and some helpers, for extensions to mount inside guide.js.
+   * An interface, and some helpers, for extensions to mount inside Guide.js.
    *
    * @alternateClassName Extension
    */
   var
-  Guide = guide,
-  Extension = _.extend({}, guide.Optionable, {
+  Extension = _.extend({}, Guide.Optionable, {
     __initExtension: function() {
       if (!this.id) {
-        throw 'guide.js: bad extension, missing #id';
+        throw 'Guide.js: bad extension, missing #id';
       }
 
       // Make sure an `enabled` option always exists
@@ -29,22 +28,22 @@
       this.setOptions(_.extend({}, this.defaults));
 
       // Uninstall extension on Guide.js dismissal
-      guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
+      Guide.$.on(this.nsEvent('dismiss'), _.bind(this.remove, this));
 
       // Refresh it on option updates
-      guide.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
+      Guide.$.on(this.nsEvent('refresh'), _.bind(this.refresh, this));
 
       // If implemented, hook into Guide#show and Guide#hide:
       //
       // The handlers will be invoked only if the extension is enabled.
       if (this.onGuideShow) {
-        guide.$.on(this.nsEvent('show'), _.bind(function() {
+        Guide.$.on(this.nsEvent('show'), _.bind(function() {
           if (this.isEnabled()) {
             this.onGuideShow();
 
             // Bind the clean-up handler to the guide hide event, if implemented:
             if (this.onGuideHide) {
-              guide.$.one(this.nsEvent('hide'), _.bind(this.onGuideHide, this));
+              Guide.$.one(this.nsEvent('hide'), _.bind(this.onGuideHide, this));
             }
           }
         }, this));
@@ -56,7 +55,7 @@
       // disabled for the active tour. This saves the extension from doing the
       // needed tests in the handlers.
       if (this.onTourStart) {
-        guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
+        Guide.$.on(this.nsEvent('start.tours'), _.bind(function(e, tour) {
           if (this.isEnabled(tour)) {
             this.onTourStart(tour);
 
@@ -88,18 +87,18 @@
      * extension id. So for an extension IDed as 'foo', its options in the
      * global guide instance would be specified as:
      *
-     *  guide.setOptions({ foo: { option: value }})
+     *  Guide.setOptions({ foo: { option: value }})
      *
      * The option set is prioritized as follows (from lowest to highest):
      *   1. the extensions' current options, or its defaults
-     *   2. the extensions' options specified in the guide.js global option set
+     *   2. the extensions' options specified in the Guide.js global option set
      *   3. the extensions' options specified in the current tour's option set
      */
     getOptions: function(tour) {
       var set,
           key = this.id;
 
-      tour = tour || guide.tour;
+      tour = tour || Guide.tour;
 
       set = _.extend({},
         this.options['default'],
@@ -149,7 +148,7 @@
 
     /**
      * Restore all internal state/context of the extension to the point where
-     * guide.js has not been used yet.
+     * Guide.js has not been used yet.
      *
      * The stock #reset behaviour merely resets the Extension's options to
      * their defaults.
@@ -170,5 +169,5 @@
     }
   });
 
-  guide.Extension = Extension;
-})(_, jQuery, window.guide);
+  Guide.Extension = Extension;
+})(_, jQuery, this.Guide);

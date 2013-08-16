@@ -1,6 +1,6 @@
 describe("Extensions", function() {
   describe("Markers", function() {
-    var ext = guide.getExtension('markers');
+    var ext = Guide.getExtension('markers');
     var spot, tour, marker;
 
     it('should be created', function() {
@@ -249,7 +249,7 @@ describe("Extensions", function() {
 
         marker.show();
 
-        expect(marker.$el.parent()[0]).toEqual(guide.$el[0]);
+        expect(marker.$el.parent()[0]).toEqual(Guide.$el[0]);
       });
 
     });

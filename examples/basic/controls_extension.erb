@@ -4,7 +4,7 @@
 
 <script>
   $(function() {
-    guide.defineTour('Controls')
+    Guide.defineTour('Controls')
       .setOptions({
         isDefault: true,
         alwaysHighlight: false,
@@ -15,7 +15,7 @@
       .addSpots([
         {
           $el: $('#gjs_controls'),
-          text: 'This is the guide.js controls extension, it allows the user to ' +
+          text: 'This is the Guide.js controls extension, it allows the user to ' +
                 'navigate around the tour.',
           marker: { placement: 'inline' }
         },
@@ -31,13 +31,13 @@
         },
         {
           $el: $('#gjs_controls select[name="tour"]'),
-          text: 'You can choose the tour you\'d like to take, if guide.js has more ' +
+          text: 'You can choose the tour you\'d like to take, if Guide.js has more ' +
                 'than one tour available.',
           marker: { width: 120 }
         }
       ]);
 
-    guide.defineTour('Tutor Controls')
+    Guide.defineTour('Tutor Controls')
       .setOptions({
         alwaysHighlight: false,
 
@@ -66,7 +66,7 @@
       }
     ]);
 
-    guide.defineTour('Marker Controls')
+    Guide.defineTour('Marker Controls')
       .setOptions({
         tutor: {
           enabled: false
@@ -101,7 +101,7 @@
 
     $(".example p").hide();
 
-    guide.show();
-    guide.refresh();
+    Guide.show();
+    Guide.refresh();
   });
 </script>

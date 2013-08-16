@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
   var
 
@@ -19,10 +19,10 @@
   },
 
   KLASS_TARGET  = 'gjs-spot',
-  KLASS_ENTITY  = guide.entityKlass(),
+  KLASS_ENTITY  = Guide.entityKlass(),
   KLASS_FOCUSED = 'gjs-spot-focused';
 
-  _.extend(Spot.prototype, guide.Optionable, {
+  _.extend(Spot.prototype, Guide.Optionable, {
     defaults: {
 
       /**
@@ -194,10 +194,10 @@
       options = options || {};
 
       if (!$el) {
-        throw 'guide.js: expected `$el` to be specified for a new Spot, got none';
+        throw 'Guide.js: expected `$el` to be specified for a new Spot, got none';
       }
       if (!tour) {
-        throw 'guide.js: expected `tour` to be specified for a new Spot, got none';
+        throw 'Guide.js: expected `tour` to be specified for a new Spot, got none';
       }
 
       _.extend(this, {
@@ -242,7 +242,7 @@
       });
 
       if (!_.isNumber(index) || index < 0) {
-        throw 'guide.js: bad spot index ' + index;
+        throw 'Guide.js: bad spot index ' + index;
       }
 
       this.setOptions(_.merge({},
@@ -348,7 +348,7 @@
       // the necessary CSS style.
       if (!this.isOn('noPositioningFix') &&
           !this.tour.isOn('spots.noPositioningFix') &&
-          !guide.isOn('spots.noPositioningFix')) {
+          !Guide.isOn('spots.noPositioningFix')) {
 
         positionQuery = this.$el.css('position');
 
@@ -489,7 +489,7 @@
 
       $('html, body').animate({
         scrollTop: this.$scrollAnchor.offset().top * 0.9
-      }, guide.isOn('withAnimations') ? 250 : 0);
+      }, Guide.isOn('withAnimations') ? 250 : 0);
 
       return true;
     },
@@ -499,13 +499,13 @@
      * have been modified by the spot.
      */
     remove: function() {
-      guide.log('Spot ' + this + ' is being removed.');
+      Guide.log('Spot ' + this + ' is being removed.');
 
       /**
        * @event remove
        *
        * Fired when the spot is being entirely removed from a tour. Once a spot
-       * is removed, its target must be _completely_ restored as if guide.js has
+       * is removed, its target must be _completely_ restored as if Guide.js has
        * never been shown.
        *
        * Use this callback to clean-up any DOM mods.
@@ -596,7 +596,7 @@
     },
   });
 
-  guide.Spot = Spot;
+  Guide.Spot = Spot;
 
   /**
    * @event focus
@@ -612,4 +612,4 @@
    * @event pre-focus
    * @inheritdoc Tour#pre-focus
    */
-})(_, jQuery, window.guide);
+})(_, jQuery, window.Guide);

@@ -1,10 +1,10 @@
-describe("guide", function() {
+describe("Guide", function() {
   describe("Optionable", function() {
     var o;
 
     beforeEach(function() {
       o = new Object();
-      _.extend(o, guide.Optionable, {
+      _.extend(o, Guide.Optionable, {
         $: $(o),
         options: {}
       });
@@ -78,7 +78,7 @@ describe("guide", function() {
         expect( o.getOption('bar.a') ).toEqual(undefined);
         expect( o.getOption('bar.b') ).toEqual(undefined);
 
-        guide.platform = 'mobile';
+        Guide.platform = 'mobile';
         console.log(o.getOptions('bar.a'));
         expect( o.getOption('foo') ).toEqual('b');
         expect( o.getOption('bar.a') ).toEqual(true);
@@ -99,13 +99,13 @@ describe("guide", function() {
           }
         });
 
-        guide.platform = 'desktop';
+        Guide.platform = 'desktop';
         console.log(o.getOptions());
         expect( o.getOption('foo') ).toEqual('a');
         expect( o.getOption('bar.a') ).toEqual(undefined);
         expect( o.getOption('bar.b') ).toEqual(undefined);
 
-        guide.platform = 'mobile';
+        Guide.platform = 'mobile';
 
         console.log(o.getOptions());
         expect( o.getOption('foo') ).toEqual('b');

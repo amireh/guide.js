@@ -7,7 +7,7 @@
     <div class="freespace"></div>
     <p><strong>Code</strong></p>
     <pre data-language="javascript">
-guide.addSpots([{
+Guide.addSpots([{
   $el: $('#via_js'),
   text: "I'm a Tour Step built from JavaScript!",
   marker: {
@@ -49,7 +49,7 @@ guide.addSpots([{
   This is content taken from a separate HTML &lt;code&gt;div&lt;/code&gt; element.
 
   &lt;p&gt;As you can see, you can use any kind of markup to embed inside
-    a guide.js marker.
+    a Guide.js marker.
   &lt;/p&gt;
 
   &lt;p&gt;Here's a list for illustration:&lt;/p&gt;
@@ -68,7 +68,7 @@ guide.addSpots([{
   This is content taken from a separate HTML <code>div</code> element.
 
   <p>As you can see, you can use any kind of markup to embed inside
-    a guide.js marker.
+    a Guide.js marker.
   </p>
 
   <p>Here's a list for illustration:</p>
@@ -82,7 +82,7 @@ guide.addSpots([{
 
 <script>
   $(function() {
-    guide.getTour('Default Tour').setOptions({
+    Guide.getTour('Default Tour').setOptions({
       alwaysMark: false,
       marker: {
         placement: 'sibling',
@@ -98,7 +98,7 @@ guide.addSpots([{
       }
     });
 
-    guide.addSpots([
+    Guide.addSpots([
       {
         $el: $('#via_js'),
         text: "I'm a Tour Step built from JavaScript!",
@@ -111,9 +111,9 @@ guide.addSpots([{
     ]);
 
     // parse tour spots from the DOM/markup
-    guide.fromDOM('body');
+    Guide.fromDOM('body');
 
-    guide.show();
+    Guide.show();
   });
 
 </script>

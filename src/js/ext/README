@@ -1,4 +1,4 @@
-Files in this directory are guide.js extensions to vendor libraries, like
+Files in this directory are Guide.js mods to vendor libraries, like
 jQuery and underscore/lodash.
 
 If the extention finds an existing implementation for any of the methods it is

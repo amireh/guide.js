@@ -1,14 +1,13 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   var
-  Guide = guide,
   /**
    * @class Guide.Markers
    * @extends Guide.Extension
    * @singleton
    *
-   * A guide.js extension that provides interactive {@link Marker markers} that
+   * A Guide.js extension that provides interactive {@link Marker markers} that
    * can be attached to {@link Spot tour spots}.
    *
    * @alternateClassName Markers
@@ -66,7 +65,7 @@
   POS_L   = 8,
   POS_C   = 9;
 
-  _.extend(Extension.prototype, guide.Extension, {
+  _.extend(Extension.prototype, Guide.Extension, {
     id: 'markers',
 
     defaults: {
@@ -86,8 +85,8 @@
     },
 
     constructor: function() {
-      guide.Tour.prototype.addOption('alwaysMark', true);
-      guide.Tour.prototype.getMarkers = function() {
+      Guide.Tour.prototype.addOption('alwaysMark', true);
+      Guide.Tour.prototype.getMarkers = function() {
         return _.pluck(_.filter(this.spots, function(spot) {
             return !!spot.marker;
           }), 'marker');
@@ -95,13 +94,13 @@
 
       // We must manually assign the options to the default tour as it has
       // already been created.
-      if (guide.tour) {
-        guide.tour.setOption('alwaysMark', true);
+      if (Guide.tour) {
+        Guide.tour.setOption('alwaysMark', true);
       }
 
-      guide.Spot.prototype.addOption('withMarker', true);
+      Guide.Spot.prototype.addOption('withMarker', true);
 
-      guide.$.on('add', _.bind(this.addMarker, this));
+      Guide.$.on('add', _.bind(this.addMarker, this));
 
       return this;
     },
@@ -126,7 +125,7 @@
     },
 
     refresh: function() {
-      if (!guide.isShown()) {
+      if (!Guide.isShown()) {
         return;
       }
 
@@ -134,9 +133,9 @@
         return;
       }
 
-      if (guide.tour && this.isEnabled(guide.tour)) {
-        this.onTourStop(guide.tour);
-        this.onTourStart(guide.tour);
+      if (Guide.tour && this.isEnabled(Guide.tour)) {
+        this.onTourStop(Guide.tour);
+        this.onTourStart(Guide.tour);
       }
     },
 
@@ -180,7 +179,7 @@
     },
 
     repositionMarkers: function() {
-      var tour = guide.tour;
+      var tour = Guide.tour;
 
       if (!tour) {
         return true;
@@ -212,14 +211,14 @@
    *       $('<button>Hi</button>').appendTo($('body'));
    *
    *       // Enable the Markers extension:
-   *       guide.setOptions({
+   *       Guide.setOptions({
    *         markers: {
    *           enabled: true
    *         }
    *       });
    *
    *       // Create a spot with a marker:
-   *       guide.tour.addSpot($('button'), {
+   *       Guide.tour.addSpot($('button'), {
    *         text: "I'm a button full of awesome.",
    *         withMarker: true,
    *         marker: {
@@ -228,7 +227,7 @@
    *         }
    *       });
    *
-   *       guide.show();
+   *       Guide.show();
    *     });
    *
    * @alternateClassName Marker
@@ -303,7 +302,7 @@
 
         (attributes || {}).options,
         // then, guide's global marker options,
-        guide.getOptions('marker'),
+        Guide.getOptions('marker'),
         // then, the spot's tour options,
         spot.tour.getOptions('marker'),
         // and highest priority: the spot's options
@@ -318,7 +317,7 @@
 
       this.build();
 
-      guide.log('Marker', this.id, 'created for spot', this.spot.toString());
+      Guide.log('Marker', this.id, 'created for spot', this.spot.toString());
 
       return this;
     },
@@ -334,7 +333,7 @@
      */
     build: function() {
       var $el, template, rtl_pos,
-      rtl   = guide.isOn('RTL'),
+      rtl   = Guide.isOn('RTL'),
       spot  = this.spot,
       options = this.getOptions();
 
@@ -438,7 +437,7 @@
         // Expose the marker mode as CSS classes for some control
         .addClass([
           'gjs-marker',
-          guide.entityKlass(),
+          Guide.entityKlass(),
           options.placement + '-marker',
           options.position
         ].join(' '))
@@ -468,7 +467,7 @@
         throw 'marker being removed twice?!';
       }
 
-      guide.log('Marker', this.id, 'removed for spot', this.spot.toString());
+      Guide.log('Marker', this.id, 'removed for spot', this.spot.toString());
 
       this.hide({
         completely: true
@@ -498,7 +497,7 @@
 
 
       if (this.spot.isFocused()) {
-        guide.$.triggerHandler('marking.gjs_markers', [ this ]);
+        Guide.$.triggerHandler('marking.gjs_markers', [ this ]);
 
         this.$el.addClass('focused');
 
@@ -512,7 +511,7 @@
           });
         }
 
-        guide.$.triggerHandler('marked.gjs_markers', [ this ]);
+        Guide.$.triggerHandler('marked.gjs_markers', [ this ]);
       } else if (this.withText) {
         this.$text.hide();
         this.$caption.hide();
@@ -524,7 +523,7 @@
       this.attach();
       this.place();
 
-      guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
+      Guide.log('Marker',this.id,'highlighted for spot', this.spot.toString());
 
     },
 
@@ -543,7 +542,7 @@
         completely: false
       });
 
-      guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
+      Guide.$.triggerHandler('unmarking.gjs_markers', [ this ]);
 
       // If the tour doesn't want markers to always be shown, or we're being
       // removed (options.completely), then we'll roll-back our changes,
@@ -584,7 +583,7 @@
         _.defer(_.bind(this.show, this));
       }
 
-      guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
+      Guide.$.triggerHandler('unmarked.gjs_markers', [ this ]);
     },
 
     /**
@@ -737,7 +736,7 @@
           this.$container[method](this.$el);
         break;
         case PMT_OVERLAY:
-          guide.$el.append(this.$el);
+          Guide.$el.append(this.$el);
         break;
       }
 
@@ -909,7 +908,7 @@
       }
 
       // Move the marker.
-      if (guide.isOn('withAnimations')) {
+      if (Guide.isOn('withAnimations')) {
         // Prevent the spot from autoScrolling to the marker since it'll be
         // moving still while animated.
         scrollLock = this.spot.isOn('autoScroll');
@@ -931,7 +930,7 @@
         if (this.spot.isFocused() && !this.spot.$el.is(':in_viewport')) {
           $('html, body').animate({
             scrollTop: offset.top * 0.9
-          }, guide.isOn('withAnimations') ? 250 : 0);
+          }, Guide.isOn('withAnimations') ? 250 : 0);
         }
       }
       else {
@@ -992,7 +991,7 @@
         .insertBefore($spot)
         .append($spot);
 
-      guide.log('Marker',this.id,'wrapped');
+      Guide.log('Marker',this.id,'wrapped');
     },
 
     /**
@@ -1001,7 +1000,7 @@
      */
     unwrap: function() {
       if (this.$container) {
-        guide.log('Marker',this.id,'unwrapping');
+        Guide.log('Marker',this.id,'unwrapping');
 
         if (this.$el) {
           this.$el.detach();
@@ -1039,7 +1038,7 @@
 
   });
 
-  guide.addExtension(new Extension());
+  Guide.addExtension(new Extension());
 
   /**
    * @class Guide.Spot
@@ -1060,4 +1059,4 @@
    * **This option is available only if the Markers extension is enabled.**
    */
 
-})(_, jQuery, window.guide);
+})(_, jQuery, window.Guide);

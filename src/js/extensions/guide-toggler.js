@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   var
@@ -7,7 +7,7 @@
    * @extends Guide.Extension
    * @singleton
    *
-   * A guide.js extension that installs a toggle button that plays and stops tours.
+   * A Guide.js extension that installs a toggle button that plays and stops tours.
    */
   Extension = function() {
     return this.constructor();
@@ -19,13 +19,13 @@
     '</div>'
   ].join(''));
 
-  _.extend(Extension.prototype, guide.Extension, {
+  _.extend(Extension.prototype, Guide.Extension, {
     defaults: {
       enabled: true,
 
       /**
        * @cfg {Boolean} [resetOnStart=true]
-       * Reset the current tour when the toggler is used to launch guide.js.
+       * Reset the current tour when the toggler is used to launch Guide.js.
        */
       resetOnStart: true
     },
@@ -33,16 +33,16 @@
     id: 'toggler',
 
     constructor: function() {
-      this.$container = guide.$container;
+      this.$container = Guide.$container;
 
       this.$el = $(JST({}));
-      this.$el.addClass(guide.entityKlass());
+      this.$el.addClass(Guide.entityKlass());
       this.$indicator = this.$el.find('button');
 
       this.$el.on('click', '.show', _.bind(this.launchTour, this));
-      this.$el.on('click', '.hide', _.bind(guide.hide, guide));
+      this.$el.on('click', '.hide', _.bind(Guide.hide, Guide));
 
-      guide.$
+      Guide.$
       .on(this.nsEvent('showing'), _.bind(this.collapse, this))
       .on(this.nsEvent('hiding'), _.bind(this.expand, this))
       .on(this.nsEvent('dismiss'), _.bind(this.remove, this));
@@ -100,15 +100,15 @@
 
     launchTour: function() {
       if (this.isOn('resetOnStart')) {
-        if (guide.tour) {
-          guide.tour.reset();
+        if (Guide.tour) {
+          Guide.tour.reset();
         }
       }
 
-      guide.show();
+      Guide.show();
     }
 
   }); // tutor.prototype
 
-  guide.addExtension(new Extension());
-})(_, jQuery, window.guide);
+  Guide.addExtension(new Extension());
+})(_, jQuery, window.Guide);

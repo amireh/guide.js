@@ -1,7 +1,7 @@
 /**
  * @class jQuery
  *
- * guide.js jQuery extensions.
+ * Guide.js jQuery extensions.
  */
 (function($) {
   'use strict';
@@ -17,8 +17,8 @@
     ext = EXTENSIONS[i];
 
     if (void 0 !== $[ext] || void 0 !== $.fn[ext]) {
-      // throw 'guide.js: existing $.' + ext + ' implementation!';
-      console.log('guide.js: existing $.' + ext + ' implementation!');
+      // throw 'Guide.js: existing $.' + ext + ' implementation!';
+      console.log('Guide.js: existing $.' + ext + ' implementation!');
     }
   }
 
@@ -90,11 +90,11 @@
    * See Guide#addSpot for more info on options.
    */
   $.fn.guide = function(inOptions) {
-    var instance  = window.guide;
+    var instance  = window.Guide;
 
     if (!instance) {
-      throw 'guide.js: bad $.fn.guide call, global guide has not been setup,' +
-            'have you forgotten to initialize guide.js?';
+      throw 'Guide.js: bad $.fn.guide call, global guide has not been setup,' +
+            'have you forgotten to initialize Guide.js?';
     }
 
     instance.addSpot($(this), inOptions || {});

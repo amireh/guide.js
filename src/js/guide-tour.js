@@ -1,4 +1,4 @@
-(function(_, $, guide, undefined) {
+(function(_, $, Guide, undefined) {
   'use strict';
 
   var
@@ -6,7 +6,7 @@
    * @class Guide.Tour
    * @mixins Guide.Optionable
    *
-   * A guide.js tour is a collection of {@link Spot tour spots} which provides
+   * A Guide.js tour is a collection of {@link Spot tour spots} which provides
    * an interface for navigating between the spots and focusing them.
    *
    * @alternateClassName Tour
@@ -15,7 +15,7 @@
     return this.constructor.apply(this, arguments);
   };
 
-  _.extend(Tour.prototype, guide.Optionable, {
+  _.extend(Tour.prototype, Guide.Optionable, {
     defaults: {
       /**
        * @cfg {Boolean} [alwaysHighlight=true]
@@ -26,7 +26,7 @@
 
       /**
        * @cfg {Boolean} [isDefault=false]
-       * guide.js will run the default tour if no tour is specified, and falls
+       * Guide.js will run the default tour if no tour is specified, and falls
        * back to a blank 'Default Tour' if no tour has #isDefault specified.
        */
       isDefault: false,
@@ -86,7 +86,7 @@
         id: label, // TODO: unique constraints on tour IDs
 
         options: {
-          'default': _.merge({}, this.defaults, guide.getOptions('tours'))
+          'default': _.merge({}, this.defaults, Guide.getOptions('tours'))
         },
 
         spots: [],
@@ -101,7 +101,7 @@
         active: false
       });
 
-      // console.log('guide.js: tour defined: ', this.id);
+      // console.log('Guide.js: tour defined: ', this.id);
 
       if (_.isFunction(this.getOption('onStart'))) {
         this.$.on('start.user', _.bind(this.getOption('onStart'), this));
@@ -130,8 +130,8 @@
         spot = options.spot;
       }
 
-      if (!guide.isShown()) {
-        guide.runTour(this, options);
+      if (!Guide.isShown()) {
+        Guide.runTour(this, options);
 
         return false;
       }
@@ -160,7 +160,7 @@
        *
        * **This event is triggered on Guide#$, the guide event delegator.**
        */
-      guide.$.triggerHandler('starting.tours', [ this ]);
+      Guide.$.triggerHandler('starting.tours', [ this ]);
 
       // Ask the spots to highlight themselves if they should; see Spot#highlight
       _.invoke(this.spots, 'highlight');
@@ -188,7 +188,7 @@
        *
        * @param {Tour} tour This tour.
        */
-      guide.$.triggerHandler('start.tours', [ this ]);
+      Guide.$.triggerHandler('start.tours', [ this ]);
 
       return true;
     },
@@ -227,11 +227,11 @@
        * Fired when the tour has been stopped: the spots have been dehighlighted
        * and de-focused.
        *
-       * **This event is triggered on `guide.$`, the guide event delegator.**
+       * **This event is triggered on `Guide.$`, the guide event delegator.**
        *
        * @param {Tour} tour This tour.
        */
-      guide.$.triggerHandler('stop.tours', [ this ]);
+      Guide.$.triggerHandler('stop.tours', [ this ]);
 
       return true;
     },
@@ -298,10 +298,10 @@
       }
 
       if (!($el instanceof jQuery)) {
-        throw 'guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
+        throw 'Guide.js: bad Spot target, expected a jQuery object, ' + 'got ' + typeof($el);
       }
 
-      spot = new guide.Spot($el, this, this.spots.length, options);
+      spot = new Guide.Spot($el, this, this.spots.length, options);
       this.spots.push(spot);
 
       // Stop tracking it if it gets removed
@@ -312,14 +312,14 @@
       }
 
       this.$.triggerHandler('add', [ spot ]);
-      guide.$.triggerHandler('add', [ spot ]);
+      Guide.$.triggerHandler('add', [ spot ]);
 
       return spot;
     },
 
     addSpots: function(spots) {
       if (!_.isArray(spots)) {
-        throw 'guide.js: bad spots, expected Array,' + ' got: ' + typeof(spots);
+        throw 'Guide.js: bad spots, expected Array,' + ' got: ' + typeof(spots);
       }
 
       _.each(spots, function(definition) {
@@ -394,7 +394,7 @@
 
       _.each(this.spots, function(spot) {
         this.$.triggerHandler('add', [ spot ]);
-        guide.$.triggerHandler('add', [ spot ]);
+        Guide.$.triggerHandler('add', [ spot ]);
       }, this);
 
       this._rebuilding = false;
@@ -426,7 +426,7 @@
       }
 
       if (!spot) {
-        throw 'guide.js: bad spot @ ' + index + ' to focus';
+        throw 'Guide.js: bad spot @ ' + index + ' to focus';
       }
       else if (spot.isFocused()) {
         spot.refresh();
@@ -440,7 +440,7 @@
       }
 
       if (!this._prepared) {
-        guide.log('tour: preparing spot ' + spot + ' for focusing.');
+        Guide.log('tour: preparing spot ' + spot + ' for focusing.');
         this._prepared = true;
 
         /**
@@ -461,7 +461,7 @@
          */
         spot.$.triggerHandler('pre-focus', [ spot ]);
         this.$.triggerHandler('pre-focus', [ spot ]);
-        guide.$.triggerHandler('pre-focus', [ spot, this ]);
+        Guide.$.triggerHandler('pre-focus', [ spot, this ]);
 
         // If the spot target isn't currently visible, we'll try to refresh
         // the selector in case the element has just been created, and if it still
@@ -470,7 +470,7 @@
         // We'll give the spot a space of 10ms to refresh by default, otherwise
         // see #refreshInterval.
         if (spot.isOn('dynamic') && !spot.isVisible()) {
-          guide.log('tour: spot#' + (spot.index+1), 'isnt visible, attempting to refresh...');
+          Guide.log('tour: spot#' + (spot.index+1), 'isnt visible, attempting to refresh...');
 
           setTimeout(_.bind(function() {
             // This is a necessary evil for specs as in some cases, a spot gets
@@ -483,21 +483,21 @@
 
             // Refresh
             if (spot.__refreshTarget() && spot.isVisible()) {
-              guide.log('tour: \tspot is now visible, focusing.');
+              Guide.log('tour: \tspot is now visible, focusing.');
               return this.focus(spot);
             }
             // Or, look for an alternative:
             else if (spot.isOn('bouncable')) {
-              guide.log('tour: \tspot still isnt visible, looking for an alternative...');
+              Guide.log('tour: \tspot still isnt visible, looking for an alternative...');
               spot = this.__closest(spot, spot.getOption('bounce'));
 
               if (spot) {
-                guide.log('tour: \t\talternative found: ' + spot + ', focusing.');
+                Guide.log('tour: \t\talternative found: ' + spot + ', focusing.');
 
                 this._prepared = false;
                 this.focus(spot);
               } else {
-                guide.log('tour: \t\tno alternative found, focusing aborted.');
+                Guide.log('tour: \t\tno alternative found, focusing aborted.');
               }
             }
             // Nothing we can do.
@@ -533,9 +533,9 @@
        * The spot that was previously focused, if any.
        */
       this.$.triggerHandler('focus', [ spot, this.previous ]);
-      guide.$.triggerHandler('focus', [ spot, this.previous ]);
+      Guide.$.triggerHandler('focus', [ spot, this.previous ]);
 
-      console.log('guide.js: visiting tour spot #', spot.index+1);
+      console.log('Guide.js: visiting tour spot #', spot.index+1);
 
       return true;
     },
@@ -565,7 +565,7 @@
        * The spot that will soon be focused, if any.
        */
       this.$.triggerHandler('defocus',  [ this.current, nextSpot ]);
-      guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
+      Guide.$.triggerHandler('defocus', [ this.current, nextSpot ]);
 
       this.previous = this.current;
       this.current = null;
@@ -651,7 +651,7 @@
       else if (!index /* undefined arg */) {
         return null;
       }
-      else if (index instanceof guide.Spot) {
+      else if (index instanceof Guide.Spot) {
         // We need to do the lookup because it might be a spot in another tour.
         return _.find(this.spots, index);
       }
@@ -679,8 +679,8 @@
     }
   });
 
-  guide.Tour = Tour;
+  Guide.Tour = Tour;
 
   // The default tour
-  guide.tour = guide.defineTour('Default Tour');
-})(_, jQuery, window.guide);
+  Guide.tour = Guide.defineTour('Default Tour');
+})(_, jQuery, window.Guide);

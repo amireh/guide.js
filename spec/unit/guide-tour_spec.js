@@ -1,12 +1,12 @@
-describe("guide", function() {
+describe("Guide", function() {
   describe("Tour", function() {
     var tour, $target;
 
     beforeEach(function() {
-      tour = guide.tour;
+      tour = Guide.tour;
       $target = $('<div />');
 
-      guide.setOptions({
+      Guide.setOptions({
         markers: { enabled: false },
         controls: { enabled: false }
       })
@@ -25,7 +25,7 @@ describe("guide", function() {
         mkVisibleSpot();
         mkVisibleSpot();
 
-        guide.show({ noAutorun: true });
+        Guide.show({ noAutorun: true });
         expect( tour.isActive() ).toBeFalsy();
 
         expect( tour.start() ).toBeTruthy();
@@ -200,7 +200,7 @@ describe("guide", function() {
         expect(tour.cursor).toEqual(1);
         expect(tour.current.index).toEqual(1);
 
-        // guide.hide();
+        // Guide.hide();
       });
 
       it('should go backward', function() {

@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   var
@@ -15,7 +15,7 @@
     return this.constructor();
   };
 
-  _.extend(Extension.prototype, guide.Extension, {
+  _.extend(Extension.prototype, Guide.Extension, {
     defaults: {
       enabled: true,
       inMarkers:  false,
@@ -34,7 +34,7 @@
           '<button data-action="tour.prev">&lt;</button>',
           '<button data-action="tour.next">&gt;</button>',
           '<button data-action="tour.last">Last</button>',
-          '<button data-action="guide.hide">Close</button>',
+          '<button data-action="Guide.hide">Close</button>',
           '<select name="tour" data-action="switchTour"></select>',
         '</div>'
       ].join('')),
@@ -49,12 +49,12 @@
     },
 
     constructor: function() {
-      this.$container = guide.$el;
-      this.guide = guide;
+      this.$container = Guide.$el;
+      this.Guide = Guide;
       this.tour = null;
 
       this.$el = $(this.templates.controls({}));
-      this.$el.addClass(guide.entityKlass());
+      this.$el.addClass(Guide.entityKlass());
 
       _.extend(this, {
         $bwd:   this.$el.find('[data-action*=prev]'),
@@ -65,7 +65,7 @@
         $tour_selector:  this.$el.find('[data-action="switchTour"]')
       });
 
-      guide.$
+      Guide.$
         .on(this.nsEvent('focus'), _.bind(function() {
           this.$el.on(this.nsEvent('click'), '[data-action]', _.bind(this.proxy, this));
         }, this))
@@ -107,7 +107,7 @@
     remove: function() {
       if (this.$el) {
         this.$el.remove();
-        guide.$
+        Guide.$
           .off(this.nsEvent('marking.gjs_markers'))
           .off(this.nsEvent('unmarking.gjs_markers'));
       }
@@ -134,9 +134,9 @@
 
     refresh: function() {
       var
-      tour        = guide.tour,
-      extTutor    = guide.getExtension('tutor'),
-      extMarkers  = guide.getExtension('markers'),
+      tour        = Guide.tour,
+      extTutor    = Guide.getExtension('tutor'),
+      extMarkers  = Guide.getExtension('markers'),
       options     = this.getOptions();
 
       if (extMarkers && extMarkers.isEnabled(tour) && options.inMarkers) {
@@ -153,10 +153,10 @@
     },
 
     classicMode: function() {
-      var extTutor    = guide.getExtension('tutor'),
-          extMarkers  = guide.getExtension('markers');
+      var extTutor    = Guide.getExtension('tutor'),
+          extMarkers  = Guide.getExtension('markers');
 
-      this.$container = guide.$el;
+      this.$container = Guide.$el;
 
       if (extTutor) {
         extTutor.$el
@@ -165,7 +165,7 @@
       }
 
       if (extMarkers) {
-        guide.$
+        Guide.$
           .off(this.nsEvent('marking.gjs_markers'))
           .off(this.nsEvent('unmarking.gjs_markers'));
       }
@@ -177,7 +177,7 @@
 
       this.$container = $();
 
-      guide.$
+      Guide.$
         .on(this.nsEvent('marking.gjs_markers'), function(e, marker) {
           that.attachToMarker(marker);
         })
@@ -187,8 +187,8 @@
 
       // If we're embedding into markers and a spot is currently marked,
       // attach ourselves to the marker.
-      if (guide.tour && guide.tour.current && guide.tour.current.marker) {
-        marker = guide.tour.current.marker;
+      if (Guide.tour && Guide.tour.current && Guide.tour.current.marker) {
+        marker = Guide.tour.current.marker;
 
         this.attachToMarker(marker);
 
@@ -242,8 +242,8 @@
 
       if (options.withTourSelector) {
         this.$tour_selector
-          .html(this.templates.tourList({ tours: guide.tours }))
-          .toggle(guide.tours.length > 1)
+          .html(this.templates.tourList({ tours: Guide.tours }))
+          .toggle(Guide.tours.length > 1)
           .find('[value="' + tour.id + '"]').prop('selected', true);
 
         if (this.$tour_selector.children().length === 1) {
@@ -256,11 +256,11 @@
     },
 
     switchTour: function() {
-      var tour = guide.getTour(this.$tour_selector.find(':selected').val());
+      var tour = Guide.getTour(this.$tour_selector.find(':selected').val());
 
       if (tour && !tour.isActive()) {
         tour.reset();
-        return guide.runTour(tour);
+        return Guide.runTour(tour);
       }
 
       return false;
@@ -268,5 +268,5 @@
 
   }); // Extension.prototype
 
-  guide.addExtension(new Extension());
-})(_, jQuery, window.guide);
+  Guide.addExtension(new Extension());
+})(_, jQuery, window.Guide);

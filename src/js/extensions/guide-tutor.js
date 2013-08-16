@@ -1,4 +1,4 @@
-(function(_, $, guide) {
+(function(_, $, Guide) {
   'use strict';
 
   var
@@ -34,7 +34,7 @@
     '</div>'
   ].join(''), null, { variable: 'spot' });
 
-  _.extend(Extension.prototype, guide.Extension, {
+  _.extend(Extension.prototype, Guide.Extension, {
     id: 'tutor',
 
     defaults: {
@@ -43,12 +43,12 @@
     },
 
     constructor: function() {
-      this.$container = guide.$el;
+      this.$container = Guide.$el;
 
       this.$el = $(JST_TUTOR({}));
 
       this.$el.attr({
-        'class': guide.entityKlass()
+        'class': Guide.entityKlass()
       });
 
       _.extend(this, {
@@ -59,7 +59,7 @@
         $fwd: this.$el.find('.fwd')
       });
 
-      guide.$.on('dismiss', _.bind(this.remove, this));
+      Guide.$.on('dismiss', _.bind(this.remove, this));
 
       return this;
     },
@@ -81,7 +81,7 @@
     },
 
     refresh: function() {
-      var tour = guide.tour,
+      var tour = Guide.tour,
           options = this.getOptions();
 
       this.$el.toggleClass('spanner', options.spanner);
@@ -122,7 +122,7 @@
       }
 
       if (!spot) {
-        throw 'guide.js: no spot?';
+        throw 'Guide.js: no spot?';
       }
 
       this.$content.html(JST_SPOT(spot));
@@ -151,5 +151,5 @@
     },
   }); // tutor.prototype
 
-  guide.addExtension(new Extension());
-})(_, jQuery, window.guide);
+  Guide.addExtension(new Extension());
+})(_, jQuery, window.Guide);

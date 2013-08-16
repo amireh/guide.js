@@ -1,4 +1,4 @@
-guide.js
+Guide.js
 ========
 
 [![Build Status](https://travis-ci.org/amireh/guide.js.png)](https://travis-ci.org/amireh/guide.js)

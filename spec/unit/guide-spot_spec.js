@@ -1,9 +1,9 @@
-describe("guide", function() {
+describe("Guide", function() {
   describe("Spot", function() {
     var tour, $target;
 
     beforeEach(function() {
-      tour = guide.tour;
+      tour = Guide.tour;
       $target = $('<div />');
     });
 
@@ -14,28 +14,28 @@ describe("guide", function() {
     describe('#constructor', function() {
       it('should require an $element', function() {
         expect(function() {
-          new guide.Spot();
-        }).toThrow('guide.js: expected `$el` to be specified for a new Spot, got none');
+          new Guide.Spot();
+        }).toThrow('Guide.js: expected `$el` to be specified for a new Spot, got none');
       });
 
       it('should require a tour', function() {
         expect(function() {
-          new guide.Spot($());
-        }).toThrow('guide.js: expected `tour` to be specified for a new Spot, got none');
+          new Guide.Spot($());
+        }).toThrow('Guide.js: expected `tour` to be specified for a new Spot, got none');
       });
     });
 
     it('should be created', function() {
       $target.appendTo($('body'));
 
-      var spot = new guide.Spot($target, tour, 0);
+      var spot = new Guide.Spot($target, tour, 0);
 
       expect(spot).toBeTruthy();
       expect(spot.isVisible()).toBeTruthy();
     });
 
     it('should be created with a detached element', function() {
-      var spot = new guide.Spot($target, tour, 0);
+      var spot = new Guide.Spot($target, tour, 0);
 
       expect(spot).toBeTruthy();
       expect(spot.isVisible()).toBeFalsy();
@@ -90,7 +90,7 @@ describe("guide", function() {
       var spot;
 
       beforeEach(function() {
-        // guide.tour.setOptions(guide.tour.defaults);
+        // Guide.tour.setOptions(Guide.tour.defaults);
         spot = mkVisibleSpot();
       });
 

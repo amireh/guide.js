@@ -20,8 +20,8 @@
     $('h1').hide();
     $('body').css({ overflow: 'hidden' });
 
-    guide.platform = "<%= platform %>";
-    guide.setOptions({
+    Guide.platform = "<%= platform %>";
+    Guide.setOptions({
       tutor: {
         enabled: false
       },
@@ -38,7 +38,7 @@
       }
     });
 
-    guide.addSpot($('#seek'), {
+    Guide.addSpot($('#seek'), {
       marker: {
         position: 'left'
       },
@@ -47,7 +47,7 @@
       }
     });
 
-    guide.addSpot($('#destroy'), {
+    Guide.addSpot($('#destroy'), {
       marker: {
         position: 'right'
       },
@@ -56,7 +56,7 @@
       }
     });
 
-    guide.addSpot($('#desktop_element'), {
+    Guide.addSpot($('#desktop_element'), {
       text: "You can only visit this spot while using a desktop.",
       marker: {
         position: 'bottom'
@@ -69,14 +69,14 @@
       }
     });
 
-    guide.show();
+    Guide.show();
 
     $('pre').html(JSON.stringify(
-      _.pick(guide.tour.spots[1].getOptions(),'marker'),
+      _.pick(Guide.tour.spots[1].getOptions(),'marker'),
       null,
       2)
     );
 
-    $('p#platform code').text(guide.platform);
+    $('p#platform code').text(Guide.platform);
   });
 </script>

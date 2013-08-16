@@ -1,10 +1,10 @@
 describe("Extensions", function() {
   describe("Smart Markers", function() {
-    var ext = guide.getExtension('smart_markers');
+    var ext = Guide.getExtension('smart_markers');
     var spot, tour, marker;
 
     beforeEach(function() {
-      guide.setOptions({
+      Guide.setOptions({
         markers: {
           enabled: true
         },

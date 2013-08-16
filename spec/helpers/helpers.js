@@ -1,5 +1,5 @@
 var
-  guideOptions = {
+  GuideOptions = {
     withAnimations: false,
     animeDuration: 0,
     debug: true
@@ -9,11 +9,11 @@ var
   nr_nodes_sel = ':not(#HTMLReporter, #HTMLReporter *, #specContainer)';
 
 beforeEach(function() {
-  _.extend(guide.defaults, guideOptions);
-  guide.setOptions(guideOptions);
+  _.extend(Guide.defaults, GuideOptions);
+  Guide.setOptions(GuideOptions);
 
-  if (!guide.$container.length) {
-    guide.$container = $(guide.$container.selector);
+  if (!Guide.$container.length) {
+    Guide.$container = $(Guide.$container.selector);
   }
 
   nr_nodes = $(nr_nodes_sel).length;
@@ -26,7 +26,7 @@ afterEach(function() {
     callback();
   });
 
-  guide.reset();
+  Guide.reset();
 
   $('[data-spec]').remove();
 

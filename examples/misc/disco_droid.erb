@@ -34,11 +34,11 @@
 <script>
   $(function() {
 
-    guide.setOptions({
+    Guide.setOptions({
       withAnimations: false
     });
 
-    guide.tour.setOptions({
+    Guide.tour.setOptions({
       alwaysHighlight: false,
       spots: {
         flashy: true
@@ -48,7 +48,7 @@
       }
     });
 
-    guide.addSpot('.droid .head', {
+    Guide.addSpot('.droid .head', {
       text: 'This is what a droid\'s head looks like.',
       highlight: false,
       marker: {
@@ -57,7 +57,7 @@
       }
     });
 
-    guide.addSpot('.droid .arm.left', {
+    Guide.addSpot('.droid .arm.left', {
       text: "A droid's arm.",
       disco: true,
       marker: {
@@ -66,7 +66,7 @@
         width: 80
       }
     });
-    guide.addSpot('.droid .right.leg', {
+    Guide.addSpot('.droid .right.leg', {
       text: "And a droid's leg.",
       flashy: true,
       disco: true,
@@ -77,6 +77,6 @@
       }
     });
 
-    guide.show();
+    Guide.show();
   });
 </script

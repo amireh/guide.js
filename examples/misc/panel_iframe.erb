@@ -40,7 +40,7 @@
   $(function() {
     $('h1').hide();
 
-    guide.setOptions({
+    Guide.setOptions({
       tutor: { enabled: false },
       toggler: { enabled: false },
       controls: {
@@ -61,7 +61,7 @@
       }
     });
 
-    guide.fromDOM();
-    guide.runTour('Actions');
+    Guide.fromDOM();
+    Guide.runTour('Actions');
   })
 </script>
