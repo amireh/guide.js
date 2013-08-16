@@ -62,7 +62,8 @@
   POS_BR  = 5,
   POS_B   = 6,
   POS_BL  = 7,
-  POS_L   = 8;
+  POS_L   = 8,
+  POS_C   = 9;
 
   _.extend(Extension.prototype, guide.Extension, {
     id: 'markers',
@@ -381,6 +382,7 @@
         case 'bottom':      this.position = POS_B; break;
         case 'bottomleft':  this.position = rtl ? POS_BR  : POS_BL; break;
         case 'left':        this.position = rtl ? POS_R   : POS_L; break;
+        case 'center':      this.position = POS_C; break;
         default:
           throw 'guide-marker.js: bad position "' + options.position + '"';
       }
@@ -509,6 +511,9 @@
         }
 
         guide.$.triggerHandler('marked.gjs_markers', [ this ]);
+      } else if (this.withText) {
+        this.$text.hide();
+        this.$caption.hide();
       }
 
       // Mark the spot as being highlighted by a marker
@@ -744,7 +749,7 @@
      * positions `POS_L` and `POS_R` will cause vertical centering.
      */
     hvCenter: function() {
-      var dir, center,
+      var center,
           $marker = this.$el,
           margin  = 0,
           origin  = this.spot.$el.offset(),
@@ -756,32 +761,27 @@
             vh: $(window).height()  - 20
           };
 
-      switch(this.position) {
-        case POS_T:
-        case POS_B:
-          dir = 'left';
-          center = ($marker.outerWidth() / 2);
-          margin = -1 * center;
+      if (_.contains( [ POS_T, POS_C, POS_B ], this.position)) {
+        center = ($marker.outerWidth() / 2);
+        margin = -1 * center;
 
-          // if (origin.left < center) {
-            // margin = -1 * (center - origin.left) / 2;
-          // }
-          // else if (origin.left + query.w > query.vw) {
-          if (origin.left + query.w > query.vw) {
-            margin = -1 * (origin.left + query.w - query.vw);
-          }
+        // if (origin.left < center) {
+          // margin = -1 * (center - origin.left) / 2;
+        // }
+        // else if (origin.left + query.w > query.vw) {
+        if (origin.left + query.w > query.vw) {
+          margin = -1 * (origin.left + query.w - query.vw);
+        }
 
-        break;
-
-        case POS_R:
-        case POS_L:
-          dir = 'top';
-          center = ($marker.outerHeight() / 2);
-          margin = -1 * center;
-        break;
+        $marker.css('margin-left', margin);
       }
 
-      $marker.css('margin-' + dir, margin);
+      if (_.contains( [ POS_R, POS_C, POS_L ], this.position)) {
+        center = ($marker.outerHeight() / 2);
+        margin = -1 * center;
+
+        $marker.css('margin-top', margin);
+      }
     },
 
     negateMargins: function() {
@@ -900,6 +900,10 @@
           offset.top  += (anchorHeight / 2) - (markerHeight/2);
           offset.left -= markerWidth + margin;
         break;
+        case POS_C:
+          offset.top -= anchorHeight/2;
+          offset.left += -1*markerWidth/2 + anchorWidth/2;
+          break;
       }
 
       // Move the marker.
