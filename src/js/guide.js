@@ -333,7 +333,14 @@
       var
       $tour   = $ref.parents('[data-guide-tour]:first'),
       $target = $($ref.detach().attr('data-guide-spot')),
+      caption = $ref.attr('data-guide-caption'),
       options = _.parseOptions($ref.attr('data-guide-options'));
+
+      if (caption) {
+        _.extend(options, {
+          caption: caption
+        });
+      }
 
       this.fromNode($target, _.extend(options, {
         text: $ref.attr('data-guide-spot', null)[0].outerHTML,
