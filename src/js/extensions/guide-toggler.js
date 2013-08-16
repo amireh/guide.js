@@ -5,6 +5,7 @@
   /**
    * @class Guide.Toggler
    * @extends Guide.Extension
+   * @singleton
    *
    * A guide.js extension that installs a toggle button that plays and stops tours.
    */

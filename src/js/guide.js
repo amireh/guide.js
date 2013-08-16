@@ -11,10 +11,10 @@
 
   /**
    * @class Guide
-   * The primary interface for creating and managing guide.js tours.
-   *
    * @mixins Guide.Optionable
    * @singleton
+   *
+   * The primary interface for creating and managing guide.js tours.
    */
   Guide = function() {
     this.constructor.apply(this, arguments);

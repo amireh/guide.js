@@ -4,6 +4,7 @@
   var
   /**
    * @class Guide.Tour
+   * @mixins Guide.Optionable
    *
    * A guide.js tour is a collection of {@link Spot tour spots} which provides
    * an interface for navigating between the spots and focusing them.

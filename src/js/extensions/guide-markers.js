@@ -6,6 +6,7 @@
   /**
    * @class Guide.Markers
    * @extends Guide.Extension
+   * @singleton
    *
    * A guide.js extension that provides interactive {@link Marker markers} that
    * can be attached to {@link Spot tour spots}.
@@ -196,6 +197,7 @@
 
   /**
    * @class Guide.Marker
+   * @mixins Guide.Optionable
    *
    * A single marker object attached to a Tour Spot. Markers show up around
    * a tour spot, and can show the index of the spot, its content when highlighted,

@@ -7,8 +7,9 @@
 
   var
   /**
-   * @class Guide.Extensions.SmartMarkers
+   * @class Guide.SmartMarkers
    * @extends Guide.Extension
+   * @singleton
    *
    * A an extension that adds a "smartness" layer to {@link Guide.Marker guide.js markers}.
    */

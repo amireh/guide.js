@@ -4,6 +4,7 @@
 
   /**
    * @class Guide.Spot
+   * @mixins Guide.Optionable
    *
    * A tour spot represents an element in the DOM that will be visited in a
    * {@link Tour tour}.

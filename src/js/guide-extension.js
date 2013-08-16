@@ -5,6 +5,7 @@
    * @class Guide.Extension
    * @mixins Guide.Optionable
    * @inheritable
+   * @abstract
    *
    * An interface, and some helpers, for extensions to mount inside guide.js.
    *
@@ -140,6 +141,8 @@
      * implementation exists.
      *
      * This method is implicitly called in Guide#refresh and Optionable#setOptions.
+     *
+     * @template
      */
     refresh: function() {
     },
@@ -150,13 +153,21 @@
      *
      * The stock #reset behaviour merely resets the Extension's options to
      * their defaults.
+     *
+     * @template
      */
     reset: function() {
       this.options = {};
       this.setOptions(this.defaults);
     },
 
-    remove: function() {}
+    /**
+     * Uninstall the extension.
+     *
+     * @template
+     */
+    remove: function() {
+    }
   });
 
   guide.Extension = Extension;

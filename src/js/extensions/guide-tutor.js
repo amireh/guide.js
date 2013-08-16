@@ -5,6 +5,7 @@
   /**
    * @class Guide.Tutor
    * @extends Guide.Extension
+   * @singleton
    *
    * A widget that displays the focused spot's content in a static
    * place on the bottom of the page.
