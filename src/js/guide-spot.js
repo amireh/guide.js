@@ -282,7 +282,7 @@
     },
 
     getText: function() {
-      return this.text;
+      return this.getOption('text');
     },
 
     hasText: function() {
@@ -290,7 +290,7 @@
     },
 
     getCaption: function() {
-      return this.caption;
+      return this.getOption('caption');
     },
 
     hasCaption: function() {
