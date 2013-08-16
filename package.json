@@ -1,6 +1,6 @@
 {
-  "name": "guide.js",
-  "description": "Elegant, interactive, and dynamic JavaScript user guiding and tutorial library.",
+  "name": "guide",
+  "description": "Elegant, interactive, and dynamic JavaScript user guides and tutorials.",
   "version": "1.5.2",
   "homepage": "https://github.com/amireh/guide.js",
   "author": {
