@@ -15,8 +15,8 @@
   /*.gjs-box-shadow(0, 2px, 10px, 1px, rgba(0, 0, 0, 0.4));*/
   /*.gjs-transition(background-color; 0.25s; ease-in);*/
 
-  @targs: "0.25s ease-in";
-  .gjs-multiple-transition(~"background-color @{targs}");
+  .gjs-box-sizing(border-box);
+  .gjs-multiple-transition(background-color 0.25s ease-in);
 
   cursor: pointer;
   padding: 10px;
@@ -96,6 +96,12 @@
       margin-right: @gjs-arrowsz;
       top: 50%;
     }
+  }
+
+  &.center {
+    left: 50%;
+    top: 50%;
+    text-align: center;
   }
 
   /**
@@ -180,7 +186,8 @@
   @TRBL_offset: -1 * ceil(@d*1.5);
   @TRBL_center: -1 * (@d/2);
 
-  &:after {
+  &:after,
+  .gjs-arrow {
     content: " ";
     position: absolute;
     display: block;
@@ -191,29 +198,37 @@
 
   &:hover,
   &.focused {
-    &:after {
+    &:after,
+    .gjs-arrow {
       opacity: 1;
     }
   }
 
-  &.topleft:after {
-    border-top:   @d solid @c;
-    border-right: @d solid transparent;
-    bottom: -1 * @d;
-    left: 0;
+  &.topleft {
+    &:after,
+    .gjs-arrow {
+      border-top:   @d solid @c;
+      border-right: @d solid transparent;
+      bottom: -1 * @d;
+      left: 0;
+    }
   }
 
-  &.top:after {
-    border: @d/2+1 solid transparent;
-    border-top: @d solid @c;
+  &.top {
+    &:after,
+    .gjs-arrow {
+      border: @d/2+1 solid transparent;
+      border-top: @d solid @c;
 
-    bottom: @TRBL_offset;
-    left: 50%;
-    margin-left: @TRBL_center;
+      bottom: @TRBL_offset;
+      left: 50%;
+      margin-left: @TRBL_center;
+    }
   }
 
   &.topright {
-    &:after {
+    &:after,
+    .gjs-arrow {
       border-top:   @d solid @c;
       border-right: @d solid transparent;
       bottom: -1 * @d;
@@ -222,7 +237,8 @@
   }
 
   &.right {
-    &:after {
+    &:after,
+    .gjs-arrow {
       border: @d/2+1 solid transparent;
       border-right: @d solid @c;
 
@@ -233,7 +249,8 @@
   }
 
   &.bottomright {
-    &:after {
+    &:after,
+    .gjs-arrow {
       border-bottom:  @d solid @c;
       border-right:   @d solid transparent;
       right: 0;
@@ -242,7 +259,8 @@
   }
 
   &.bottom {
-    &:after {
+    &:after,
+    .gjs-arrow {
       border: @d/2+1 solid transparent;
       border-bottom: @d solid @c;
 
@@ -253,7 +271,8 @@
   }
 
   &.bottomleft {
-    &:after {
+    &:after,
+    .gjs-arrow {
       border-bottom: @d solid @c;
       border-right: @d solid transparent;
       left: 0;
@@ -261,12 +280,15 @@
     }
   }
 
-  &.left:after {
-    border: @d/2+1 solid transparent;
-    border-left: @d solid @c;
+  &.left {
+    &:after,
+    .gjs-arrow {
+      border: @d/2+1 solid transparent;
+      border-left: @d solid @c;
 
-    right: @TRBL_offset;
-    top: 50%;
-    margin-top: @TRBL_center;
+      right: @TRBL_offset;
+      top: 50%;
+      margin-top: @TRBL_center;
+    }
   }
 }

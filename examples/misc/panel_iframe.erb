@@ -1,0 +1,67 @@
+<div class="freespace"></div>
+
+<div id="navbar" class="navbar">
+  <nav id="navbar_links">
+    <a id="action1" class="navbar-link orange" href="/lobby">Action A</a>
+
+    <div id="dd_actions">
+      <a id="action2" href="/expense" class="navbar-link red">Action B</a>
+      <a id="action3" href="/income" class="navbar-link green">Action C</a>
+    </div>
+
+    <a id="action4" class="navbar-link blue" href="/recurrings">Action D</a>
+    <a id="action5" class="navbar-link purple" href="/reports" data-online="disable">Action E</a>
+  </nav>
+
+  <div data-guide-tour="Actions">
+    <p data-guide-spot="#action1" data-guide-options="marker.position:topleft">
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus.
+    </p>
+
+    <p data-guide-spot="#action2" data-guide-caption="Action B">
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+    </p>
+    <p data-guide-spot="#action3" data-guide-caption="Action C">
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium.
+    </p>
+
+    <p data-guide-spot="#action4">
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+    </p>
+
+    <p data-guide-spot="#action5" data-guide-options="marker.position: topright">
+      Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+    </p>
+
+  </div>
+</div>
+
+<script>
+  $(function() {
+    $('h1').hide();
+
+    guide.setOptions({
+      tutor: { enabled: false },
+      toggler: { enabled: false },
+      controls: {
+        withClose: false
+      },
+
+      tours: {
+        alwaysHighlight: false,
+        alwaysMark: false,
+
+        spots: {
+          highlight: false,
+          marker: {
+            position: 'top',
+            width: 280
+          }
+        }
+      }
+    });
+
+    guide.fromDOM();
+    guide.runTour('Actions');
+  })
+</script>
