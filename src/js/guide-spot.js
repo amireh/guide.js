@@ -244,7 +244,7 @@
         throw 'guide.js: bad spot index ' + index;
       }
 
-      this.setOptions(_.extend({},
+      this.setOptions(_.merge({},
         this.defaults,
         tour.getOptions('spots'),
         options));
@@ -549,6 +549,12 @@
       }
 
       return this;
+    },
+
+    __rebuild: function() {
+      this.setOptions(_.extend({},
+        this.defaults,
+        this.tour.getOptions('spots')));
     },
 
     setScrollAnchor: function($el) {

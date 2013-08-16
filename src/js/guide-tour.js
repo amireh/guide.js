@@ -85,7 +85,7 @@
         id: label, // TODO: unique constraints on tour IDs
 
         options: {
-          'default': _.extend({}, this.defaults, guide.getOptions('tours'))
+          'default': _.merge({}, this.defaults, guide.getOptions('tours'))
         },
 
         spots: [],
@@ -139,6 +139,27 @@
       }
 
       this.active = true;
+
+      /**
+       * @event starting
+       *
+       * Fired when the tour is starting, ie: no spots have yet been highlighted
+       * or focused.
+       *
+       * **This event is triggered on the tour delegator, Tour#$.**
+       *
+       * @param {Tour} tour This tour.
+       */
+      this.$.triggerHandler('starting', [ this ]);
+
+      /**
+       * @event starting_tours
+       *
+       * See Tour#event-starting.
+       *
+       * **This event is triggered on Guide#$, the guide event delegator.**
+       */
+      guide.$.triggerHandler('starting.tours', [ this ]);
 
       // Ask the spots to highlight themselves if they should; see Spot#highlight
       _.invoke(this.spots, 'highlight');
@@ -360,6 +381,22 @@
       return _.filter(set || this.spots, function(spot) {
         return spot.isOn('available');
       });
+    },
+
+    rebuild: function() {
+      this._rebuilding = true;
+
+      _.each(this.spots, function(spot) {
+        spot.$.triggerHandler('remove', [ spot ]);
+        spot.__rebuild();
+      }, this);
+
+      _.each(this.spots, function(spot) {
+        this.$.triggerHandler('add', [ spot ]);
+        guide.$.triggerHandler('add', [ spot ]);
+      }, this);
+
+      this._rebuilding = false;
     },
 
     /**
@@ -625,6 +662,10 @@
      * @private
      */
     __removeSpot: function(e, spot) {
+      if (this._rebuilding) {
+        return;
+      }
+
       this.spots = _.without(this.spots, spot);
 
       if (spot === this.current) {
