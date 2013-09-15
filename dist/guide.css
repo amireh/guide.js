@@ -150,7 +150,6 @@
  * gjs.js markers
  */
 .gjs-marker {
-  color: white;
   background-color: #33b5e5;
   background: rgba(51, 181, 229, 0.3);
   text-decoration: none;
@@ -387,6 +386,12 @@
   right: -23px;
   top: 50%;
   margin-top: -7.5px;
+}
+.gjs-with-overlay .gjs-marker {
+  -webkit-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
+  -moz-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
+  -o-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
 }
 .gjs-marker.no-arrow:after {
   display: none;
@@ -792,7 +797,6 @@
 .gjs-with-overlay .gjs-entity {
   z-index: 102;
 }
-.gjs-with-overlay .gjs-marker,
 .gjs-with-overlay .gjs-spot:after {
   -webkit-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);
   -moz-box-shadow: 0 2px 15px 0 rgba(0, 0, 0, 0.4);

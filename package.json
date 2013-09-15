@@ -1,7 +1,7 @@
 {
   "name": "user-guide",
   "description": "Elegant, interactive, and dynamic JavaScript user guides and tutorials.",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "homepage": "https://github.com/amireh/guide.js",
   "author": {
     "name": "Ahmad Amireh",
