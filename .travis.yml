@@ -5,4 +5,4 @@ node_js:
   - "0.8"
 
 before_script:
-  - npm install grunt-cli
+  - sudo npm install -g grunt-cli
