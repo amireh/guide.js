@@ -4,7 +4,6 @@
  * gjs.js markers
  */
 .gjs-marker {
-  color: white;
   background-color: @gjs-highlight-bg;
   background: fade(@gjs-highlight-bg, 30%);
   text-decoration: none;
@@ -291,4 +290,8 @@
       margin-top: @TRBL_center;
     }
   }
+}
+
+.gjs-with-overlay .gjs-marker {
+  .gjs-box-shadow(0; 2px; 15px; 0; rgba(0,0,0,.4));
 }

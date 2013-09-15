@@ -21,7 +21,7 @@
 
   _.extend(Extension.prototype, Guide.Extension, {
     defaults: {
-      enabled: true,
+      enabled: false,
 
       /**
        * @cfg {Boolean} [resetOnStart=true]
