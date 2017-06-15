@@ -26,6 +26,10 @@ If `guide.js` doesn't fit your needs, take a look at [pageguide.js](https://gith
 * [jQuery](http://jquery.com) (1.10.2+ or 2.0.2+)
 * [underscore.js](http://underscorejs.org) (or [lodash](http://lodash.com))
 
+## Demo
+
+See http://guide-js.amireh.net for a bunch of examples.
+
 ## Getting started
 
 Include the core guide.js JavaScript file:
